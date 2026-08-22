@@ -1,0 +1,1853 @@
+{
+  "summary": {
+    "total": 92,
+    "passed": 44,
+    "failed": 48
+  },
+  "records": [
+    {
+      "assetName": "TeamLogo_2DF9A813792342959AD954DBC61EC67C",
+      "proposedName": "Sitka Coastal Ember Paddlefish",
+      "family": "aquaticLife",
+      "priority": 1,
+      "regions": 10,
+      "smallComponents": [],
+      "margins": [
+        10,
+        10,
+        11,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 11338,
+      "pass": false,
+      "failures": [
+        "regions=10"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_613F7CE6DAB84D80ABBEDCD2C886A10C",
+      "proposedName": "Rangeley Granite Saguaros",
+      "family": "botanicalLife",
+      "priority": 1,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        11,
+        10,
+        12,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 1859,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_6E0B4A63CA6848CD8F9D61626462A2B8",
+      "proposedName": "Escanaba Regional Amber Derechos",
+      "family": "atmosphericPhenomenon",
+      "priority": 1,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        28,
+        10,
+        29
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9753,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_80E65D18532E4D94839D9F2E6DBB81DB",
+      "proposedName": "Falmouth Tech Peat Magnetars",
+      "family": "celestialPhenomenon",
+      "priority": 1,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        21,
+        10,
+        22
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 13121,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_95192BA1E5B645A494ED5D44E395EA15",
+      "proposedName": "Flandreau State Verdant Trilobites",
+      "family": "invertebrateLife",
+      "priority": 1,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        48,
+        10,
+        49,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7815,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_954025C43FE546BAAC1F62CF09765A0F",
+      "proposedName": "Webster City Agricultural Kiln Hoodoos",
+      "family": "geologicalRegionalForm",
+      "priority": 1,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        32,
+        10,
+        33,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8106,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_46D018BB3BD9422A91A91971012E8834",
+      "proposedName": "Emporia Timber Geysers",
+      "family": "geologicalForm",
+      "priority": 2,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        32,
+        10,
+        32,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10830,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_4D2BD12BF3B746FE8863CD6973A66EB1",
+      "proposedName": "Red Wing State Cobalt Comets",
+      "family": "celestialPhenomenon",
+      "priority": 2,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        10,
+        34,
+        10,
+        34
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7646,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_612FD3E74D0142E9A010EF4B485965F7",
+      "proposedName": "Holdrege Tidal Perihelions",
+      "family": "celestialPhenomenon",
+      "priority": 2,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        12,
+        10,
+        12
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7759,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_911BB08E62454715A15EA6851AD2F303",
+      "proposedName": "Olney Bramble Morels",
+      "family": "botanicalLife",
+      "priority": 2,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        26,
+        10,
+        26,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8004,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_C0A6908AFD4D408AB0BE70A2298C0B70",
+      "proposedName": "Moberly Thunder Oarfish",
+      "family": "aquaticLife",
+      "priority": 2,
+      "regions": 13,
+      "smallComponents": [],
+      "margins": [
+        53,
+        10,
+        53,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9408,
+      "pass": false,
+      "failures": [
+        "regions=13"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_E8D76C2DF87A4503A1B5B80193FC4F5B",
+      "proposedName": "Claremont Meridian Ghost Orchids",
+      "family": "botanicalLife",
+      "priority": 2,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        32,
+        10,
+        33,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9413,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_61B8C12C990B4E94B3EBDF2DFEDE632C",
+      "proposedName": "Natchez Marsh Waterspouts",
+      "family": "atmosphericPhenomenon",
+      "priority": 3,
+      "regions": 10,
+      "smallComponents": [],
+      "margins": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8613,
+      "pass": false,
+      "failures": [
+        "regions=10"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_6219C3658D4946BE9C4BD302DF0A90D5",
+      "proposedName": "Grangeville A&M Hearth Quasars",
+      "family": "celestialPhenomenon",
+      "priority": 3,
+      "regions": 12,
+      "smallComponents": [],
+      "margins": [
+        10,
+        28,
+        10,
+        28
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 2392,
+      "pass": false,
+      "failures": [
+        "regions=12"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_65AC24FD9E0B4C56A06A53A589DAADD4",
+      "proposedName": "Clayton Poly Gale Scorpions",
+      "family": "invertebrateLife",
+      "priority": 3,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        18,
+        10,
+        18,
+        10
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 15113,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_94D568ED1B87419BB8E4005F63171F1F",
+      "proposedName": "Fairbury Basalt Drumlins",
+      "family": "geologicalRegionalForm",
+      "priority": 3,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        10,
+        66,
+        10,
+        66
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 5511,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_B495A8A8AAFA4736875BC4ECD8E1C5DF",
+      "proposedName": "Derby Central Thunder Bowfin",
+      "family": "aquaticLife",
+      "priority": 3,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        10,
+        23,
+        10,
+        23
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10822,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_5EB19F56878143B29200BB201482D59D",
+      "proposedName": "Essex Junction Maritime Granite Needlefish",
+      "family": "aquaticLife",
+      "priority": 4,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        28,
+        10,
+        29
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9680,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_5F09D018DCA941F78ACD040A07230254",
+      "proposedName": "Yreka Agricultural Granite Meteors",
+      "family": "celestialPhenomenon",
+      "priority": 4,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        17,
+        10,
+        18,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8113,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_7767AA6A6FA7440298D6B02EEA82AF5F",
+      "proposedName": "Ripon Regional Meridian Aurora",
+      "family": "atmosphericPhenomenon",
+      "priority": 4,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        44,
+        10,
+        45
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8456,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_A6B3C25FD8C2410D99818F260720A790",
+      "proposedName": "Millinocket Coastal Flint Gar",
+      "family": "aquaticLife",
+      "priority": 4,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        10,
+        34,
+        10,
+        34
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9935,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_CBDF8F99B7C64B27B545E5FDC61EB999",
+      "proposedName": "Delaware City Anvil Nebulae",
+      "family": "celestialPhenomenon",
+      "priority": 4,
+      "regions": 12,
+      "smallComponents": [],
+      "margins": [
+        10,
+        25,
+        10,
+        26
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10185,
+      "pass": false,
+      "failures": [
+        "regions=12"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_05293748863A41259807C9C4C35E4C11",
+      "proposedName": "New Prague Amber Dogwoods",
+      "family": "botanicalLife",
+      "priority": 5,
+      "regions": 10,
+      "smallComponents": [],
+      "margins": [
+        19,
+        10,
+        20,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10056,
+      "pass": false,
+      "failures": [
+        "regions=10"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_0A036DF9329B4C20A80DD53506FCFDD6",
+      "proposedName": "Rocky Mount Coastal Kiln Chinooks",
+      "family": "atmosphericPhenomenon",
+      "priority": 5,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        16,
+        10,
+        17,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9433,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_4C6A9A21414A4D5E9DE291DD4198640B",
+      "proposedName": "Texarkana Central Iron Supernovae",
+      "family": "celestialPhenomenon",
+      "priority": 5,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        11,
+        10,
+        12
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 11547,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_6A58BFEC098E40C294F6A1B551F098DD",
+      "proposedName": "McCook Iron Orb Weavers",
+      "family": "invertebrateLife",
+      "priority": 5,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        10,
+        12,
+        10,
+        12
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 16676,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_CB7833BC70FE42C0943A61D73AADC350",
+      "proposedName": "Waimea Coastal Anvil Tors",
+      "family": "geologicalRegionalForm",
+      "priority": 6,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 2345,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_DCE1435BDA29499895625FEE1BFDE221",
+      "proposedName": "Canandaigua A&M Verdant Tarpon",
+      "family": "aquaticLife",
+      "priority": 6,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        13,
+        10,
+        13,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 11755,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_E7F41714098941A4B322379A36119847",
+      "proposedName": "Bridgeport Poly Storm Lupines",
+      "family": "botanicalLife",
+      "priority": 6,
+      "regions": 3,
+      "smallComponents": [],
+      "margins": [
+        29,
+        10,
+        29,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9394,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_48C82AECD9914D9B94201CF73B52E9C5",
+      "proposedName": "Oneonta Hollow Luna Moths",
+      "family": "invertebrateLife",
+      "priority": 7,
+      "regions": 11,
+      "smallComponents": [],
+      "margins": [
+        10,
+        31,
+        10,
+        31
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9222,
+      "pass": false,
+      "failures": [
+        "regions=11"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_69C777D146CB46EF878EC26AAD0E1F04",
+      "proposedName": "Lihue Kiln Haboobs",
+      "family": "atmosphericPhenomenon",
+      "priority": 7,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        49,
+        10,
+        50
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 2172,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_7F6BE01D0F634FA994D30E4427168A2B",
+      "proposedName": "Chanute Cedar Bolides",
+      "family": "celestialPhenomenon",
+      "priority": 7,
+      "regions": 18,
+      "smallComponents": [],
+      "margins": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 3003,
+      "pass": false,
+      "failures": [
+        "regions=18"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_57E1B055AFBA4F86931D51D9B1769E46",
+      "proposedName": "Glenwood Springs Valley Thunder Ice Halos",
+      "family": "atmosphericPhenomenon",
+      "priority": 8,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        10,
+        11,
+        10,
+        11
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8691,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_DD1EA5692955458882D8C966CF42EB47",
+      "proposedName": "Lakeview State Bramble Dobsonflies",
+      "family": "invertebrateLife",
+      "priority": 8,
+      "regions": 11,
+      "smallComponents": [],
+      "margins": [
+        42,
+        10,
+        42,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10616,
+      "pass": false,
+      "failures": [
+        "regions=11"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_E6308237BA64482D838B97CBAFC0B502",
+      "proposedName": "Missoula Tidal Sea Stacks",
+      "family": "geologicalRegionalForm",
+      "priority": 8,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        14,
+        10,
+        15,
+        10
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 10880,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_6504837E4DE44C068C9A2E818B668BC5",
+      "proposedName": "Sturgis Thunder Cuttlefish",
+      "family": "aquaticLife",
+      "priority": 9,
+      "regions": 14,
+      "smallComponents": [],
+      "margins": [
+        10,
+        13,
+        10,
+        13
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10307,
+      "pass": false,
+      "failures": [
+        "regions=14"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_DEC9D295AA774D578CECE3E92EFDC219",
+      "proposedName": "Weatherford Shale Cattails",
+      "family": "botanicalLife",
+      "priority": 9,
+      "regions": 10,
+      "smallComponents": [],
+      "margins": [
+        32,
+        10,
+        32,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10151,
+      "pass": false,
+      "failures": [
+        "regions=10"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_E2034539439C471E82C24E04DCE73B42",
+      "proposedName": "Penn Yan Meridian Virga",
+      "family": "atmosphericPhenomenon",
+      "priority": 9,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        16,
+        10,
+        16,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 11032,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_78E19A7EAB7D439A9610668A56547ACC",
+      "proposedName": "Effingham Regional Copper Transits",
+      "family": "celestialPhenomenon",
+      "priority": 10,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        34,
+        10,
+        35
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 6900,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_87497AA4AED84757B45CC5EFEBA7EBEC",
+      "proposedName": "Ogallala Coastal Basalt Bombardier Beetles",
+      "family": "invertebrateLife",
+      "priority": 10,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        33,
+        10,
+        33,
+        10
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 14234,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_8E5802E12E344C2E90F14D92567B26BD",
+      "proposedName": "Iron Mountain Ember Lava Tubes",
+      "family": "geologicalRegionalForm",
+      "priority": 10,
+      "regions": 10,
+      "smallComponents": [],
+      "margins": [
+        10,
+        49,
+        10,
+        50
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 1913,
+      "pass": false,
+      "failures": [
+        "regions=10"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_34CD7F4894904F32B21A97F2E351FACD",
+      "proposedName": "Aberdeen Central Ember Sawfish",
+      "family": "aquaticLife",
+      "priority": 11,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        10,
+        59,
+        10,
+        59
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7862,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_399815996A7A4926AF49340208D9057A",
+      "proposedName": "Abingdon Sable Nautiluses",
+      "family": "aquaticLife",
+      "priority": 11,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        10,
+        37,
+        10,
+        38
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9048,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_99FD7E6AC4764FA297F389E767D8D29F",
+      "proposedName": "Parkersburg Maritime Flint Milkweed",
+      "family": "botanicalLife",
+      "priority": 12,
+      "regions": 11,
+      "smallComponents": [],
+      "margins": [
+        46,
+        10,
+        47,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10295,
+      "pass": false,
+      "failures": [
+        "regions=11"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_BB6717ED25E74CE3838D9292E41AA8C1",
+      "proposedName": "New Haven Meridian Moonbows",
+      "family": "atmosphericPhenomenon",
+      "priority": 12,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        11,
+        10,
+        11,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10046,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_789772DF0D264FCB87E66FB1B0BCAE2F",
+      "proposedName": "Eastport Meridian Solstices",
+      "family": "celestialPhenomenon",
+      "priority": 13,
+      "regions": 3,
+      "smallComponents": [],
+      "margins": [
+        51,
+        10,
+        51,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 12390,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_A30D0E61D95A4C4CB20CF43A6943E341",
+      "proposedName": "Edgartown Frost Pistol Shrimp",
+      "family": "invertebrateLife",
+      "priority": 13,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        10,
+        42,
+        10,
+        42
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 11181,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_1032E7BD52E64C0285D44DC399B13B7A",
+      "proposedName": "Hood River Maritime Iron Bristlecones",
+      "family": "botanicalLife",
+      "priority": 14,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        20,
+        10,
+        21,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9875,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_5413AE6860094F809CAAAF6859C4171F",
+      "proposedName": "Wapakoneta Bramble Thistles",
+      "family": "botanicalLife",
+      "priority": 14,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        12,
+        10,
+        13,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 15000,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_8D6C1461E8BA4C20A25E5DCD872A2A94",
+      "proposedName": "Danville Kindled Moraines",
+      "family": "geologicalRegionalForm",
+      "priority": 15,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        29,
+        10,
+        30
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7986,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_AC5D9C7510594B7C9C988B557A5EAE3D",
+      "proposedName": "Cranston Timber Calderas",
+      "family": "geologicalForm",
+      "priority": 15,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        10,
+        26,
+        10,
+        27
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8360,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_88D0FB28B8354C949FEE25FB63D497FF",
+      "proposedName": "Pella Gale Lampreys",
+      "family": "aquaticLife",
+      "priority": 16,
+      "regions": 12,
+      "smallComponents": [],
+      "margins": [
+        35,
+        10,
+        35,
+        10
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 11507,
+      "pass": false,
+      "failures": [
+        "regions=12"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_D01A0E1378184053ABDE4C27F590D24E",
+      "proposedName": "Payson Regional Timber Trilliums",
+      "family": "botanicalLife",
+      "priority": 16,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        16,
+        10,
+        16,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9276,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_14A2B6E262D44F68B5C899DD51B84249",
+      "proposedName": "New London Valley Iron Rime",
+      "family": "atmosphericPhenomenon",
+      "priority": 17,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        10,
+        31,
+        10,
+        31
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8988,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_34D637F4069E4AFF9A76DCE65F6FE606",
+      "proposedName": "Lock Haven Poly Meridian Red Giants",
+      "family": "celestialPhenomenon",
+      "priority": 17,
+      "regions": 3,
+      "smallComponents": [],
+      "margins": [
+        10,
+        41,
+        10,
+        41
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8101,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_EACE3C20E05E4B7EB63BC0E56460E8EE",
+      "proposedName": "Ely Poly Timber Giant Isopods",
+      "family": "invertebrateLife",
+      "priority": 18,
+      "regions": 20,
+      "smallComponents": [],
+      "margins": [
+        58,
+        10,
+        58,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8557,
+      "pass": false,
+      "failures": [
+        "regions=20"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_FCC35CCD6BB6432091909239ECE10D62",
+      "proposedName": "Red Lodge State Tidal Oxbows",
+      "family": "geologicalRegionalForm",
+      "priority": 18,
+      "regions": 15,
+      "smallComponents": [],
+      "margins": [
+        10,
+        21,
+        10,
+        21
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8703,
+      "pass": false,
+      "failures": [
+        "regions=15"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_75EC4DC65A044142A91EB0F2F30D5ECA",
+      "proposedName": "Williston Central Cinder Mudskippers",
+      "family": "aquaticLife",
+      "priority": 19,
+      "regions": 11,
+      "smallComponents": [],
+      "margins": [
+        10,
+        65,
+        10,
+        65
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7861,
+      "pass": false,
+      "failures": [
+        "regions=11"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_ABD2FF259964494B86E34B89E24B5348",
+      "proposedName": "Kerrville Timber Mangroves",
+      "family": "botanicalLife",
+      "priority": 19,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        30,
+        10,
+        31,
+        10
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 14098,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_19AD9AAA1590417499DB2C132776E7EA",
+      "proposedName": "Pinedale Central Cobalt Mantas",
+      "family": "aquaticLife",
+      "priority": 20,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        10,
+        31,
+        10,
+        31
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8360,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_3CA5936BE1F44851995B3879C39DE729",
+      "proposedName": "Danbury Coastal Granite Horseshoe Crabs",
+      "family": "invertebrateLife",
+      "priority": 20,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        51,
+        10,
+        51,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 6927,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_9BBB69C94FBA4C26BFDF8BAEF98A8682",
+      "proposedName": "Lebanon Regional Harbor Cloudbursts",
+      "family": "atmosphericPhenomenon",
+      "priority": 21,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        13,
+        10,
+        13,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8547,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_C07AC0D116CE4510B26283DB4CAD3E38",
+      "proposedName": "Terre Haute A&M Basalt Lunar Nodes",
+      "family": "celestialPhenomenon",
+      "priority": 21,
+      "regions": 13,
+      "smallComponents": [],
+      "margins": [
+        27,
+        10,
+        28,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 12718,
+      "pass": false,
+      "failures": [
+        "regions=13"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_12F8D33688BE4F10A59A048E58538175",
+      "proposedName": "Shamokin Flint Velvet Ants",
+      "family": "invertebrateLife",
+      "priority": 22,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        27,
+        10,
+        28
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 13779,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_306B310F484F48B98FC04F76DCE0F51F",
+      "proposedName": "Rockland Copper Tidal Bores",
+      "family": "geologicalRegionalForm",
+      "priority": 22,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        21,
+        10,
+        21
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9777,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_0FDAFFDF1E0048D68F5298BEC1B9254A",
+      "proposedName": "Kirksville Verdant Coelacanths",
+      "family": "aquaticLife",
+      "priority": 23,
+      "regions": 21,
+      "smallComponents": [],
+      "margins": [
+        10,
+        49,
+        10,
+        50
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 2266,
+      "pass": false,
+      "failures": [
+        "regions=21"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_4025813E0EF74FBAA82187DB4A5D967F",
+      "proposedName": "Carlisle Anvil Agaves",
+      "family": "botanicalLife",
+      "priority": 23,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        19,
+        10,
+        19
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 11300,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_F9BD5A3A9ED548969CEF085A8A509C2D",
+      "proposedName": "Delavan Tech Sable Dust Devils",
+      "family": "atmosphericPhenomenon",
+      "priority": 24,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        27,
+        10,
+        28,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7882,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_A3B3903E148F481A846900002BEB8BBB",
+      "proposedName": "Dover A&M Verdant Zodiacal Light",
+      "family": "celestialPhenomenon",
+      "priority": 25,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        17,
+        10,
+        17,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8764,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_942F47832857436584FFF3561EE629A2",
+      "proposedName": "Nampa River Leafhoppers",
+      "family": "invertebrateLife",
+      "priority": 26,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        10,
+        61,
+        10,
+        61
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 7705,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_A49BA96C86324844A9585A299EEB60A6",
+      "proposedName": "Jerome Storm Badlands",
+      "family": "geologicalRegionalForm",
+      "priority": 27,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        11,
+        10,
+        11
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8169,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_C1E1DD214DB74A9BB72FE028B4AAA9C3",
+      "proposedName": "Ellensburg Regional Granite Arapaimas",
+      "family": "aquaticLife",
+      "priority": 28,
+      "regions": 15,
+      "smallComponents": [],
+      "margins": [
+        20,
+        10,
+        21,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 11186,
+      "pass": false,
+      "failures": [
+        "regions=15"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_2B1D0B55B4414D5895D30E4CE876BEDE",
+      "proposedName": "Spencer State Frost Sequoias",
+      "family": "botanicalLife",
+      "priority": 29,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        54,
+        10,
+        54,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8863,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_A0D5378A462C4791AE53952A79FCCD62",
+      "proposedName": "Gillette State Bramble Stag Beetles",
+      "family": "invertebrateLife",
+      "priority": 30,
+      "regions": 4,
+      "smallComponents": [],
+      "margins": [
+        47,
+        10,
+        47,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 13583,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_96CC1AF0107D42CAA9CE24F829E6018E",
+      "proposedName": "Siloam Springs Poly Meridian Geodes",
+      "family": "geologicalForm",
+      "priority": 31,
+      "regions": 9,
+      "smallComponents": [],
+      "margins": [
+        10,
+        14,
+        10,
+        14
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8016,
+      "pass": false,
+      "failures": [
+        "regions=9"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
+      "proposedName": "Skowhegan Maritime Meridian Mirages",
+      "family": "atmosphericPhenomenon",
+      "priority": 32,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        10,
+        18,
+        10,
+        19
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10926,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_900EF64D9234456EAA4ED488C78B968E",
+      "proposedName": "Waynesboro A&M Cobalt White Dwarfs",
+      "family": "celestialPhenomenon",
+      "priority": 33,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        10,
+        22,
+        10,
+        22
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 15378,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_A317A3D847BE478B96991FE2861C9E2C",
+      "proposedName": "Johnstown A&M Frost Lacewings",
+      "family": "invertebrateLife",
+      "priority": 34,
+      "regions": 3,
+      "smallComponents": [],
+      "margins": [
+        10,
+        50,
+        10,
+        50
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 10708,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_7E474219E18A4091ADB2A7C4A3A5A445",
+      "proposedName": "Smithfield Central Tidal Sinkholes",
+      "family": "geologicalRegionalForm",
+      "priority": 35,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        10,
+        29,
+        10,
+        30
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8254,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_D851E5D2C6A440CF83085FA0947078EF",
+      "proposedName": "Holly Springs Coastal Basalt Skates",
+      "family": "aquaticLife",
+      "priority": 36,
+      "regions": 8,
+      "smallComponents": [],
+      "margins": [
+        10,
+        18,
+        10,
+        18
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 8818,
+      "pass": false,
+      "failures": [
+        "regions=8"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_336989D4A28D41B4902A2A2EF0164C0D",
+      "proposedName": "Warrensburg Regional Timber Sumac",
+      "family": "botanicalLife",
+      "priority": 37,
+      "regions": 17,
+      "smallComponents": [],
+      "margins": [
+        16,
+        10,
+        17,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 13174,
+      "pass": false,
+      "failures": [
+        "regions=17"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_30283F8523334C579A31DADB683D35CA",
+      "proposedName": "Hillsboro Kiln Frost Flowers",
+      "family": "atmosphericPhenomenon",
+      "priority": 38,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        29,
+        10,
+        30,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9825,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_5EBFD5563D164AD8B0A96D19F8E15FCC",
+      "proposedName": "Sulphur Springs A&M Tidal Sun Dogs",
+      "family": "atmosphericPhenomenon",
+      "priority": 39,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        54,
+        10,
+        54
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9677,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_F546F1FAFFE746E8ABA4CE7943DE80C1",
+      "proposedName": "New Ulm Maritime Slate Sailfins",
+      "family": "aquaticLife",
+      "priority": 40,
+      "regions": 7,
+      "smallComponents": [],
+      "margins": [
+        10,
+        33,
+        10,
+        33
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9615,
+      "pass": false,
+      "failures": [
+        "regions=7"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_A18D99F90C394357A01D2A968BC6B8C0",
+      "proposedName": "Lovelock Frost Ring Moons",
+      "family": "celestialPhenomenon",
+      "priority": 41,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        10,
+        32,
+        10,
+        32
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8935,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_759E356409AA496B9037952E6830FA52",
+      "proposedName": "Rapid City Central Basalt Katydids",
+      "family": "invertebrateLife",
+      "priority": 42,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        67,
+        10,
+        67
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9192,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_A76F3F73396A4D0AAE5F7D5A4E206897",
+      "proposedName": "Laurel Meridian Tufa Towers",
+      "family": "geologicalRegionalForm",
+      "priority": 43,
+      "regions": 12,
+      "smallComponents": [],
+      "margins": [
+        10,
+        13,
+        10,
+        13
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10820,
+      "pass": false,
+      "failures": [
+        "regions=12"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_3CC89B98DB124AF5924F434FF612C1E7",
+      "proposedName": "Elkins Central Thunder Triggerfish",
+      "family": "aquaticLife",
+      "priority": 44,
+      "regions": 5,
+      "smallComponents": [],
+      "margins": [
+        10,
+        12,
+        10,
+        12
+      ],
+      "colors": 3,
+      "edgeAlphaMax": 0,
+      "bytes": 9442,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_35A88873B49C4A9CB99A47F75AD6D35F",
+      "proposedName": "Buckeye Poly Tidal Eclipses",
+      "family": "celestialPhenomenon",
+      "priority": 45,
+      "regions": 3,
+      "smallComponents": [],
+      "margins": [
+        10,
+        10,
+        11,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 10934,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_41BE1B2FCD4B4DEFAE039AB87B565BD6",
+      "proposedName": "Camden Hollow Horsetails",
+      "family": "botanicalLife",
+      "priority": 46,
+      "regions": 12,
+      "smallComponents": [],
+      "margins": [
+        33,
+        10,
+        33,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 13478,
+      "pass": false,
+      "failures": [
+        "regions=12"
+      ]
+    },
+    {
+      "assetName": "TeamLogo_15C385432FBB438F9CC626BBB3DD8B38",
+      "proposedName": "Nacogdoches A&M Bramble Katabatic Winds",
+      "family": "atmosphericPhenomenon",
+      "priority": 47,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        27,
+        10,
+        28,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 8142,
+      "pass": true,
+      "failures": []
+    },
+    {
+      "assetName": "TeamLogo_29A6A1DC04F249E78BF6D6793812399E",
+      "proposedName": "Winnemucca Kindled Solar Flares",
+      "family": "celestialPhenomenon",
+      "priority": 48,
+      "regions": 6,
+      "smallComponents": [],
+      "margins": [
+        20,
+        10,
+        21,
+        10
+      ],
+      "colors": 2,
+      "edgeAlphaMax": 0,
+      "bytes": 9916,
+      "pass": true,
+      "failures": []
+    }
+  ]
+}

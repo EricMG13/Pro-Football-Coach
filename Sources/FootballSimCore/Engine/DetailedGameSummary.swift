@@ -20,6 +20,8 @@ public enum DetailedGameSummaryBuilder {
         var passAttempts = 0
         var passCompletions = 0
         var sacks = 0
+        var explosivePlays = 0
+        var fieldGoals = FieldGoalStatistics()
     }
 
     public static func make(
@@ -54,6 +56,9 @@ public enum DetailedGameSummaryBuilder {
                 case .gain, .touchdown, .fumbleLost:
                     teams[side, default: TeamLine()].passAttempts += 1
                     teams[side, default: TeamLine()].passCompletions += 1
+                    if yards >= MatchupRules.explosivePassYards {
+                        teams[side, default: TeamLine()].explosivePlays += 1
+                    }
                 case .sack, .safety:
                     teams[side, default: TeamLine()].sacks += 1
                 case .kneel, .fieldGoalGood, .fieldGoalMissed, .punt:
@@ -68,14 +73,31 @@ public enum DetailedGameSummaryBuilder {
                 }
             case .run, .kneel:
                 teams[side, default: TeamLine()].plays += 1
+                if play.offensiveCall.playType == .run,
+                   yards >= MatchupRules.explosiveRunYards {
+                    teams[side, default: TeamLine()].explosivePlays += 1
+                }
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].rushing += yards
                 update(play.outcome.ballCarrierID) { $0.rushing += yards }
                 if play.outcome.result == .touchdown {
                     update(play.outcome.ballCarrierID) { $0.touchdowns += 1 }
                 }
-            case .punt, .fieldGoal:
+            case .punt:
                 break
+            case .fieldGoal:
+                let bucket = FieldGoalDistanceBucket(
+                    distanceYards: play.situation.yardsToGoal
+                        + MatchupRules.fieldGoalSnapDistance
+                )
+                switch play.outcome.result {
+                case .fieldGoalGood:
+                    teams[side, default: TeamLine()].fieldGoals.record(bucket, made: true)
+                case .fieldGoalMissed:
+                    teams[side, default: TeamLine()].fieldGoals.record(bucket, made: false)
+                default:
+                    break
+                }
             }
         }
 
@@ -91,7 +113,9 @@ public enum DetailedGameSummaryBuilder {
                 offensivePlays: line.plays,
                 passAttempts: line.passAttempts,
                 passCompletions: line.passCompletions,
-                sacks: line.sacks
+                sacks: line.sacks,
+                explosivePlays: line.explosivePlays,
+                fieldGoals: line.fieldGoals
             )
         }
 

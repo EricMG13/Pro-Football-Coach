@@ -35,6 +35,8 @@ public enum CompetitionRules {
     public static let baselineSackProbability = 0.032
     public static let strengthSackProbabilityScale = 0.001
     public static let baselineTurnoverProbability = 0.05
+    public static let proBaselineExplosivePlayProbability = 0.074
+    public static let collegeBaselineExplosivePlayProbability = 0.072
 
     public static let proBaselineOffensiveYards = 350.0
     public static let collegeBaselineOffensiveYards = 386.0
@@ -59,6 +61,23 @@ public enum CompetitionRules {
 
     public static func baselineOffensiveYards(for tier: Tier) -> Double {
         tier == .college ? collegeBaselineOffensiveYards : proBaselineOffensiveYards
+    }
+
+    public static func baselineExplosivePlayProbability(for tier: Tier) -> Double {
+        tier == .college
+            ? collegeBaselineExplosivePlayProbability
+            : proBaselineExplosivePlayProbability
+    }
+
+    public static func baselineFieldGoalAccuracy(
+        for bucket: FieldGoalDistanceBucket
+    ) -> Double {
+        switch bucket {
+        case .under30: return 0.96
+        case .from30To39: return 0.90
+        case .from40To49: return 0.79
+        case .atLeast50: return 0.64
+        }
     }
 
     public static func passingSharePercent(for scheme: OffensiveScheme) -> Int {

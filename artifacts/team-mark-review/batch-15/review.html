@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 15 · Team Rebrand Review</title>
+  <style>
+    :root { color-scheme:dark; --desk:#0e1118; --panel:#171c26; --line:#353c4c; --ink:#f5f6f8; --muted:#aeb5c2; --lime:#c9ed61; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--desk); color:var(--ink); font:14px/1.4 "Avenir Next",Avenir,sans-serif; }
+    header { padding:28px 36px 22px; border-bottom:1px solid var(--line); }
+    h1,h2,h3,p { margin:0; }
+    h1,h2,h3 { font-family:"Avenir Next Condensed","Avenir Next",sans-serif; text-transform:uppercase; letter-spacing:.025em; }
+    header p { max-width:82ch; margin-top:7px; color:var(--muted); }
+    main { display:grid; gap:34px; padding:28px 36px 50px; }
+    section { display:grid; gap:13px; break-after:page; }
+    .section-head { display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:9px; }
+    .section-head h2 { font-size:25px; }
+    .section-head span,.old,.subject,.size-label { color:var(--muted); }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    article { overflow:hidden; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+    .hero { display:grid; grid-template-columns:1fr 1fr; height:150px; }
+    .hero div { display:grid; place-items:center; }
+    .light { background:#f3f0e8; }
+    .dark { background:#10151d; }
+    .hero img { width:118px; height:118px; object-fit:contain; }
+    .body { display:grid; gap:7px; padding:12px; }
+    h3 { min-height:42px; font-size:17px; line-height:1.15; }
+    .old { min-height:32px; font-size:10px; }
+    .subject { min-height:50px; font-size:11px; }
+    .palette,.sizes { display:flex; align-items:center; gap:8px; }
+    .swatch { width:20px; height:20px; border:1px solid rgba(255,255,255,.28); border-radius:50%; }
+    code { color:var(--muted); font-size:10px; }
+    .sizes { justify-content:space-between; border-top:1px solid var(--line); padding-top:8px; }
+    .size-pair { display:grid; grid-template-columns:1fr 1fr; overflow:hidden; border:1px solid var(--line); border-radius:5px; }
+    .size-pair i { display:grid; place-items:center; width:48px; height:48px; }
+    .size-pair img { object-fit:contain; }
+    .size-label { font-size:10px; text-align:center; }
+    .error { color:#ff8f8f; }
+    @media (max-width:950px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Batch 15 · 38-Team Rebrand Review</h1>
+    <p>Six deliberately new subject families. Candidates are normalized to 256px RGBA with transparent edge padding and shown on light/dark surfaces, including the app’s 20, 32, and 44pt draw sizes. Review only—nothing is installed.</p>
+  </header>
+  <main id="review"><p>Loading review plan…</p></main>
+  <script>
+    const labels = {
+      aquaticLife: "Aquatic life",
+      botanicalLife: "Botanical life",
+      atmosphericPhenomenon: "Atmospheric phenomena",
+      celestialPhenomenon: "Celestial phenomena",
+      invertebrateLife: "Invertebrate life",
+      geologicalForm: "Geological forms"
+    };
+
+    const sizes = [20, 32, 44];
+
+    function card(team) {
+      const src = `candidates/${team.assetName}.png`;
+      const samples = sizes.map(size => `
+        <div>
+          <div class="size-pair">
+            <i class="light"><img src="${src}" width="${size}" height="${size}" alt=""></i>
+            <i class="dark"><img src="${src}" width="${size}" height="${size}" alt=""></i>
+          </div>
+          <div class="size-label">${size}pt</div>
+        </div>`).join("");
+
+      return `<article>
+        <div class="hero"><div class="light"><img src="${src}" alt="${team.proposedName} mark"></div><div class="dark"><img src="${src}" alt=""></div></div>
+        <div class="body">
+          <h3>${team.proposedName}</h3>
+          <p class="old">Replaces: ${team.originalName}</p>
+          <p class="subject">${team.subject}</p>
+          <div class="palette"><i class="swatch" style="background:${team.primaryColorHex}"></i><code>${team.primaryColorHex}</code><i class="swatch" style="background:${team.secondaryColorHex}"></i><code>${team.secondaryColorHex}</code></div>
+          <div class="sizes">${samples}</div>
+        </div>
+      </article>`;
+    }
+
+    async function render() {
+      const root = document.querySelector("#review");
+      try {
+        const plan = await fetch("rebrand-plan.json").then(response => response.json());
+        const requested = new URLSearchParams(location.search).get("family");
+        const families = requested ? [requested] : Object.keys(labels);
+        root.innerHTML = families.map(family => {
+          const teams = plan.teams.filter(team => team.family === family);
+          return `<section data-family="${family}">
+            <div class="section-head"><h2>${labels[family]}</h2><span>${teams.length} teams</span></div>
+            <div class="grid">${teams.map(card).join("")}</div>
+          </section>`;
+        }).join("");
+      } catch (error) {
+        root.innerHTML = `<p class="error">Could not load rebrand-plan.json: ${error.message}</p>`;
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
