@@ -518,10 +518,9 @@ second.
 | AX5 UI batch (6 tests, genuine AX5) | PASS, 0 failures |
 | Remaining UI tests (7, `large`) | 6 pass; `testTeamLogoAssetAndFallbackProof` fails |
 
-`testTeamLogoAssetAndFallbackProof` fails on `team-logo-fallback-proof` not existing. It was
-re-run at `83cf76f` in a throwaway worktree and **fails there identically**, so it is a third
-pre-existing red unrelated to this change; it touches the logo proof screen, which none of these
-edits reach. It is not fixed here and still blocks Task 4.
+`testTeamLogoAssetAndFallbackProof` failed on `team-logo-fallback-proof` not existing. It was
+re-run at `83cf76f` in a throwaway worktree and failed there identically, so it was a third
+pre-existing red unrelated to that change. **Fixed since -- see "The logo proof reds" below.**
 
 Exact-worktree `detect_changes(scope: all)`: medium risk, 16 symbols across 6 files, 2 affected
 processes -- both `ProspectRow` flows via `FloodlitCostLine`, which this change does not touch. The
@@ -650,3 +649,29 @@ selected segment in that frame; reordering a control strip on one sample would b
 Nothing from the 1a reconciliation. What remains is proof breadth, not composition: the full
 manual/device/assistive-technology matrix, and a real retained-game Match Day capture inside the
 production navigator rather than the `PROOF_SCREEN=match` fixture. ID 14 is **not** marked complete.
+
+## The logo proof reds (2026-08-22)
+
+`TeamLogoProofView` renders each catalogue team as a name plus two logo rows, and then rendered the
+unknown-team fallback as a bare `logoRow` with `.accessibilityIdentifier("team-logo-fallback-proof")`
+on it and no name.
+
+`CoachWorldTeamLogo` is decorative by default -- `isDecorative = true`, applied as
+`accessibilityHidden` -- which is correct where a logo sits beside the team name it repeats. So the
+fallback row contained nothing but accessibility-hidden elements, and the identifier had no element
+to attach to: `app.otherElements["team-logo-fallback-proof"]` could never resolve. The asset grid
+above it resolves only incidentally, because it also carries unhidden `Text(team.name)` children.
+
+That single cause was failing **two** tests, not one. `testTeamLogoProofAtAccessibilityType` asserts
+`app.staticTexts["Fallback Team"]` exists, and the view never rendered that text at all -- only the
+catalogue teams were named. It was not in the batch that first surfaced the logo failure, so it had
+gone unreported.
+
+The fallback row is now named like every asset row above it and marked an explicit accessibility
+container. Both tests pass, and eight of eight in the batch that previously carried the failure.
+This is a proof-view defect, not a product one: the decorative default is right, and real surfaces
+that need a spoken logo already opt out.
+
+Left alone deliberately: the asset grid's identifier is still incidental on its `Text` children
+rather than an explicit container. It works, and making it explicit would change how a DEBUG proof
+screen exposes its children for no gain.
