@@ -98,6 +98,14 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// Every value below was reproduced in three or more independent release processes -- four for
 /// the four pins the contaminated tree did not affect, three for the two it did -- before being
 /// written here.
+///
+/// **`pinnedAdvancedRootFingerprint` and `pinnedMatchSessionFingerprint` are KNOWN STALE again as
+/// of this commit.** A second contributor is actively landing calibration work on this branch --
+/// `CompetitionRules`, `CalibrationHarness` and `AbstractGameSimulator` all moved again in
+/// `2aab277` and in further uncommitted changes on top of it, and both fingerprints run through
+/// that code. Re-deriving now would only be stale again within minutes; these are last known-good
+/// placeholders pending a quiet point in the branch. `--architecture-only` is expected red on
+/// these two checks until they are re-pinned.
 private let pinnedRootFingerprint: UInt64 = 10_884_251_571_790_922_168
 
 /// Moved when abstracted summaries gained offensive-play counts and tier-specific calibration.
