@@ -44,6 +44,7 @@
     <section class="catalog" aria-labelledby="catalog-heading"><div class="catalog-head"><h2 id="catalog-heading">Current round</h2><span id="visible-count" class="muted"></span></div><div id="grid" class="logo-grid"></div></section>
     <aside aria-label="Tournament progress"><h2>Progress</h2><p id="round-readout" class="status" aria-live="polite"></p><div id="selection-readout" class="readouts"></div><div class="actions"><button id="rewind">Return one round</button><button id="advance" class="primary">Advance checked</button></div><button id="download-final" class="primary" disabled>Download final 166</button><button id="download-audit">Download audit</button></aside>
     <section class="audit" aria-labelledby="audit-heading"><h2 id="audit-heading">Full inventory audit</h2><p class="lede">Every discovered individual file is catalogued. Versions that cannot be safely tied to today’s teams stay visible here instead of being guessed into the tournament.</p>
+      <details id="shared-details"><summary id="shared-summary"></summary><div id="shared-grid" class="logo-grid audit-grid"></div></details>
       <details id="unassigned-details"><summary id="unassigned-summary"></summary><div id="unassigned-grid" class="logo-grid audit-grid"></div></details>
       <details><summary id="excluded-summary"></summary><ul id="excluded-list" class="excluded-list"></ul></details>
     </section>
@@ -54,7 +55,7 @@
     const $ = (selector) => document.querySelector(selector);
     const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[char]);
     const download = (name, content, type) => { const url = URL.createObjectURL(new Blob([content], { type })); const link = Object.assign(document.createElement("a"), { href:url, download:name }); link.click(); setTimeout(() => URL.revokeObjectURL(url), 0); };
-    let catalog; let session; let auditRendered = false;
+    let catalog; let session; let sharedAuditRendered = false; let heldAuditRendered = false;
 
     const filters = () => ({ search: $("#search").value.trim().toLowerCase(), family: $("#family").value, stage: $("#stage").value, source: $("#source").value, state: $("#state").value });
     const storageKey = () => `pro-football-coach.logo-tournament.${catalog.fingerprint}`;
@@ -87,8 +88,14 @@
       $("#advance").disabled = !round.selectedIDs.length; $("#rewind").disabled = session.rounds.length === 1; $("#download-final").disabled = !status.ready;
     }
 
-    function renderAudit() {
-      if (auditRendered) return; auditRendered = true;
+    function renderSharedAudit() {
+      if (sharedAuditRendered) return; sharedAuditRendered = true;
+      const shared = catalog.heldCandidateIDs.map((id) => candidateByID().get(id)).filter((candidate) => candidate?.origins.some((origin) => origin.path.includes("chatgpt-shared/assets/")));
+      $("#shared-grid").innerHTML = shared.map((candidate) => card(candidate, false)).join("") || `<p class="empty">No shared ChatGPT originals were imported.</p>`;
+    }
+
+    function renderHeldAudit() {
+      if (heldAuditRendered) return; heldAuditRendered = true;
       const held = catalog.heldCandidateIDs.map((id) => candidateByID().get(id)).filter(Boolean);
       $("#unassigned-grid").innerHTML = held.map((candidate) => card(candidate, false)).join("") || `<p class="empty">No held individual variants.</p>`;
     }
@@ -114,6 +121,7 @@
         $("#catalog-count").textContent = `${catalog.candidates.filter((candidate) => candidate.selectionEligible).length.toLocaleString()} reviewed choices · ${catalog.candidates.length.toLocaleString()} versions audited`;
         for (const family of [...new Set(catalog.teams.map((team) => team.family))].sort()) $("#family").insertAdjacentHTML("beforeend", `<option value="${esc(family)}">${esc(family)}</option>`);
         for (const stage of [...new Set(catalog.candidates.flatMap((candidate) => candidate.stages))].sort()) $("#stage").insertAdjacentHTML("beforeend", `<option value="${esc(stage)}">${esc(stage)}</option>`);
+        $("#shared-summary").textContent = `${catalog.candidates.filter((candidate) => candidate.origins.some((origin) => origin.path.includes("chatgpt-shared/assets/"))).length.toLocaleString()} original variants imported from the shared ChatGPT conversations (open to view)`;
         $("#unassigned-summary").textContent = `${catalog.heldCandidateIDs.length.toLocaleString()} low-quality, unreviewed, or unassigned variants held from the tournament (open to view)`;
         $("#excluded-summary").textContent = `${catalog.excluded.length.toLocaleString()} excluded composite contact sheets and previews (open to inspect)`;
         $("#excluded-list").innerHTML = catalog.excluded.map((entry) => `<li>${esc(entry.path)} — ${esc(entry.reason)}</li>`).join("");
@@ -122,7 +130,7 @@
         $("#grid").addEventListener("change", (event) => { const input = event.target.closest("input[data-id]"); if (!input) return; session = setSelected(session, input.dataset.id, input.checked); save(); render(); });
         $("#advance").addEventListener("click", () => { session = advanceRound(session); save(); render(); });
         $("#rewind").addEventListener("click", () => { session = rewindRound(session); save(); render(); });
-        $("#download-final").addEventListener("click", finalExport); $("#download-audit").addEventListener("click", auditExport); $("#unassigned-details").addEventListener("toggle", (event) => { if (event.target.open) renderAudit(); });
+        $("#download-final").addEventListener("click", finalExport); $("#download-audit").addEventListener("click", auditExport); $("#shared-details").addEventListener("toggle", (event) => { if (event.target.open) renderSharedAudit(); }); $("#unassigned-details").addEventListener("toggle", (event) => { if (event.target.open) renderHeldAudit(); });
         render();
       } catch (error) { document.querySelector("main").innerHTML = `<p class="error">Unable to load the local tournament catalog: ${esc(error.message)}. Run <code>python3 Tools/TeamLogos/build_tournament_catalog.py</code> from the repository root.</p>`; }
     }
