@@ -28,49 +28,12 @@
 
 ---
 
-### Task 1: Prepare the Review Workspace
+### Task 1: Generate the Equipment & Vehicle Family
 
 **Files:**
 - Create: `output/logos/two-families-20/raw/equipment-vehicles/`
-- Create: `output/logos/two-families-20/raw/regional-symbols/`
 - Create: `output/logos/two-families-20/equipment-vehicles/`
-- Create: `output/logos/two-families-20/regional-symbols/`
 - Create: `output/logos/two-families-20/qa/`
-
-**Interfaces:**
-- Consumes: approved design at `docs/superpowers/specs/2026-08-22-two-family-football-logo-set-design.md`.
-- Produces: isolated raw, final, and QA destinations used by Tasks 2-6.
-
-- [ ] **Step 1: Create the directories**
-
-Run:
-
-```bash
-mkdir -p \
-  output/logos/two-families-20/raw/equipment-vehicles \
-  output/logos/two-families-20/raw/regional-symbols \
-  output/logos/two-families-20/equipment-vehicles \
-  output/logos/two-families-20/regional-symbols \
-  output/logos/two-families-20/qa
-```
-
-Expected: exit status 0.
-
-- [ ] **Step 2: Verify no final filenames already exist**
-
-Run:
-
-```bash
-find output/logos/two-families-20/equipment-vehicles \
-     output/logos/two-families-20/regional-symbols \
-     -maxdepth 1 -type f -name '*.png'
-```
-
-Expected: no output.
-
-### Task 2: Generate the Equipment & Vehicle Family
-
-**Files:**
 - Create: `output/logos/two-families-20/raw/equipment-vehicles/locomotive.png`
 - Create: `output/logos/two-families-20/raw/equipment-vehicles/biplane.png`
 - Create: `output/logos/two-families-20/raw/equipment-vehicles/submarine.png`
@@ -83,10 +46,25 @@ Expected: no output.
 - Create: `output/logos/two-families-20/raw/equipment-vehicles/steamroller.png`
 
 **Interfaces:**
-- Consumes: uploaded reference image as a style reference and the subject constructions below.
-- Produces: ten independent transparent raw candidates for Task 3.
+- Consumes: approved design at `docs/superpowers/specs/2026-08-22-two-family-football-logo-set-design.md`, the uploaded reference image as a style reference, and the subject constructions below.
+- Produces: ten independent transparent raw candidates for Task 2.
 
-- [ ] **Step 1: Generate one candidate per subject**
+- [ ] **Step 1: Create and verify the Batch 1 directories**
+
+Run:
+
+```bash
+mkdir -p \
+  output/logos/two-families-20/raw/equipment-vehicles \
+  output/logos/two-families-20/equipment-vehicles \
+  output/logos/two-families-20/qa
+find output/logos/two-families-20/equipment-vehicles \
+  -maxdepth 1 -type f -name '*.png'
+```
+
+Expected: exit status 0 and no listed final PNGs.
+
+- [ ] **Step 2: Generate one candidate per subject**
 
 Use one built-in image-generation call for each subject. Apply this prompt frame verbatim, replacing `<subject>` and `<construction>` with the corresponding row:
 
@@ -121,13 +99,13 @@ Copy each generated result from its built-in output path to the exact raw filena
 
 Expected: ten raw RGBA PNG candidates, one per subject.
 
-- [ ] **Step 2: Inspect the family together**
+- [ ] **Step 3: Inspect the family together**
 
 Display all ten raw candidates. Reject and regenerate only candidates that add an object, lose the subject silhouette, copy a reference-image subject, or read as corporate clip art instead of football branding.
 
 Expected: ten visually distinct, recognizable raw subjects.
 
-### Task 3: Normalize and Validate Equipment & Vehicles
+### Task 2: Normalize and Validate Equipment & Vehicles
 
 **Files:**
 - Create: `output/logos/two-families-20/equipment-vehicles/locomotive.png`
@@ -142,8 +120,8 @@ Expected: ten visually distinct, recognizable raw subjects.
 - Create: `output/logos/two-families-20/equipment-vehicles/steamroller.png`
 
 **Interfaces:**
-- Consumes: ten raw Equipment & Vehicle candidates from Task 2.
-- Produces: ten final house-style PNGs for the cross-family audit in Task 6.
+- Consumes: ten raw Equipment & Vehicle candidates from Task 1.
+- Produces: ten final house-style PNGs for the cross-family audit in Task 5.
 
 - [ ] **Step 1: Normalize every raw candidate**
 
@@ -187,7 +165,7 @@ Commit only the ten Equipment & Vehicle final PNGs, their ten raw source PNGs, a
 
 Expected: Batch 1 is committed and viewable; no Regional Symbol image has been generated.
 
-### Task 4: Generate the Regional Symbol Family
+### Task 3: Generate the Regional Symbol Family
 
 **Files:**
 - Create: `output/logos/two-families-20/raw/regional-symbols/volcano.png`
@@ -203,7 +181,7 @@ Expected: Batch 1 is committed and viewable; no Regional Symbol image has been g
 
 **Interfaces:**
 - Consumes: uploaded reference image as a style reference and the subject constructions below.
-- Produces: ten independent transparent raw candidates for Task 5.
+- Produces: ten independent transparent raw candidates for Task 4.
 
 - [ ] **Step 1: Generate one candidate per subject**
 
@@ -246,14 +224,14 @@ Display all ten raw candidates. Reject and regenerate only candidates that add a
 
 Expected: ten visually distinct, recognizable raw natural-feature symbols.
 
-### Task 5: Normalize and Validate Regional Symbols
+### Task 4: Normalize and Validate Regional Symbols
 
 **Files:**
-- Create: all ten final PNGs under `output/logos/two-families-20/regional-symbols/` using the Task 4 filenames.
+- Create: all ten final PNGs under `output/logos/two-families-20/regional-symbols/` using the Task 3 filenames.
 
 **Interfaces:**
-- Consumes: ten raw Regional Symbol candidates from Task 4.
-- Produces: ten final house-style PNGs for the cross-family audit in Task 6.
+- Consumes: ten raw Regional Symbol candidates from Task 3.
+- Produces: ten final house-style PNGs for the cross-family audit in Task 5.
 
 - [ ] **Step 1: Normalize every Regional Symbol candidate**
 
@@ -285,19 +263,19 @@ Verify all ten files are 256 x 256 RGBA; alpha contains only 0 and 255; all four
 
 Expected: ten PASS results.
 
-### Task 6: Cross-Family Review and Mobile Delivery
+### Task 5: Cross-Family Review and Mobile Delivery
 
 **Files:**
 - Create: `output/logos/two-families-20/two-families-20-phone-preview.png`
 - Create: `output/logos/two-families-20/qa/20pt-review.png`
 
 **Interfaces:**
-- Consumes: all 20 final PNGs from Tasks 3 and 5.
+- Consumes: all 20 final PNGs from Tasks 2 and 4.
 - Produces: the final user-review presentation and complete audit result.
 
 - [ ] **Step 1: Verify the exact final file set**
 
-Expected filenames are the ten Equipment & Vehicle names from Task 3 and the ten Regional Symbol names from Task 4. Exclude `raw/`, `qa/`, and preview files from the final-logo count.
+Expected filenames are the ten Equipment & Vehicle names from Task 2 and the ten Regional Symbol names from Task 3. Exclude `raw/`, `qa/`, and preview files from the final-logo count.
 
 Expected: exactly 20 final logo PNGs, with no missing or unexpected final names.
 
@@ -315,7 +293,7 @@ Expected: a legible phone-scrolling preview showing all 20 marks at high fidelit
 
 - [ ] **Step 4: Perform the final audit**
 
-Run the Task 3 technical checks across all 20 final logo files and visually inspect both review sheets.
+Verify the exact size, RGBA mode, binary alpha, transparent edges, safe-area margins, visible-colour count, connected-region count, and minimum retained-feature dimensions across all 20 final logo files, then visually inspect both review sheets.
 
 Expected: `20/20 PASS`; no duplicate subjects, reference-subject copies, generic corporate marks, or unreadable 20-point silhouettes.
 
