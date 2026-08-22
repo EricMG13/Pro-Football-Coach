@@ -18,7 +18,7 @@ export function newSession(catalog) {
     fingerprint: catalog.fingerprint,
     rounds: [{
       candidateIDs: catalog.candidates.map((candidate) => candidate.id),
-      selectedIDs: [],
+      selectedIDs: catalog.candidates.filter((candidate) => candidate.selectionEligible === true).map((candidate) => candidate.id),
     }],
   };
 }

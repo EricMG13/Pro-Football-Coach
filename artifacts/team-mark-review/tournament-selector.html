@@ -50,7 +50,7 @@
     </section>
   </main>
   <script type="module">
-    import { advanceRound, currentRound, finalizationStatus, newSession, restoreSession, rewindRound, setSelected } from "./tournament-state.js?full-inventory";
+    import { advanceRound, currentRound, finalizationStatus, newSession, restoreSession, rewindRound, setSelected } from "./tournament-state.js?curated-round-one";
 
     const $ = (selector) => document.querySelector(selector);
     const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[char]);
@@ -58,7 +58,7 @@
     let catalog; let session; let sharedAuditRendered = false; let heldAuditRendered = false;
 
     const filters = () => ({ search: $("#search").value.trim().toLowerCase(), family: $("#family").value, stage: $("#stage").value, source: $("#source").value, state: $("#state").value });
-    const storageKey = () => `pro-football-coach.logo-tournament.${catalog.fingerprint}`;
+    const storageKey = () => `pro-football-coach.logo-tournament.curated-round-one.${catalog.fingerprint}`;
     const teamByID = () => new Map(catalog.teams.map((team) => [team.stableID, team]));
     const candidateByID = () => new Map(catalog.candidates.map((candidate) => [candidate.id, candidate]));
     const save = () => localStorage.setItem(storageKey(), JSON.stringify(session));

@@ -62,6 +62,21 @@ test("full inventory variants enter the tournament and can finalize", () => {
   assert.equal(finalizationStatus(session, reviewedCatalog).ready, true);
 });
 
+test("reviewed variants seed the curated first round", () => {
+  const reviewedCatalog = {
+    ...catalog,
+    candidates: [
+      { id: "reviewed", teamStableID: "alpha", selectionEligible: true },
+      { id: "held", teamStableID: "alpha", selectionEligible: false },
+      { id: "unassigned", teamStableID: null, selectionEligible: false },
+    ],
+  };
+  assert.deepEqual(newSession(reviewedCatalog).rounds[0], {
+    candidateIDs: ["reviewed", "held", "unassigned"],
+    selectedIDs: ["reviewed"],
+  });
+});
+
 test("a saved session from a narrower inventory is reset", () => {
   const fullCatalog = { ...catalog, candidates: [...catalog.candidates, { id: "held", teamStableID: "alpha", selectionEligible: false }] };
   const legacySession = { fingerprint: fullCatalog.fingerprint, rounds: [{ candidateIDs: ["a1", "a2", "b1"], selectedIDs: ["a1"] }] };
