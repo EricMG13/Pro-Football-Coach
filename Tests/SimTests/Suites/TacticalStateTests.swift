@@ -1,6 +1,32 @@
 import Foundation
 import FootballSimCore
 
+/// Captures the root the weekly step loop had reached at one named checkpoint, so a test can
+/// re-simulate from the state the scheduler itself simulated from rather than from the root the
+/// week began on.
+private final class KickoffStateRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var captured: GameState?
+    private let checkpoint: String
+
+    init(after step: WorldStep) {
+        checkpoint = "step.\(step.rawValue)"
+    }
+
+    var state: GameState? {
+        lock.lock()
+        defer { lock.unlock() }
+        return captured
+    }
+
+    func observe(_ label: String, state: GameState) {
+        guard label == checkpoint else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        captured = state
+    }
+}
+
 func runTacticalStateTests() {
     suite("M4 tactical state") {
         test("weekly plans are calendar-bound, persistent, and deterministic") {
@@ -167,12 +193,29 @@ func runTacticalStateTests() {
                 pressure: .attack
             )
             expect(state.tactical.setPlan(plan, for: game.homeID, at: state.calendar))
+
+            // `injuriesAndRecovery` runs before `nonUserGames`, so a player injured on the health
+            // tick is not on the field for the game played later the same week. Re-simulating from
+            // the root the week began on would compare against a squad that never took it, and the
+            // whole summary — not just the participant lists — is what this asserts. The
+            // comparison root is therefore the one the step loop had reached at the last step
+            // before kickoff.
+            let recorder = KickoffStateRecorder(after: .aiDecisions)
+            WorldScheduler.transactionObserver = { checkpoint, observed in
+                recorder.observe(checkpoint, state: observed)
+            }
+            defer { WorldScheduler.transactionObserver = nil }
+
+            let transition = try WorldScheduler.advanceWeek(state)
+            guard let kickoff = recorder.state else {
+                expect(false, "the week never reached the step before kickoff")
+                return
+            }
             let expected = AbstractGameSimulator.play(
                 game,
-                in: state,
+                in: kickoff,
                 tacticalPlans: [game.homeID: plan]
             )
-            let transition = try WorldScheduler.advanceWeek(state)
             guard let completed = transition.state.competition.currentSchedule.games.first(where: {
                 $0.id == game.id
             }), let result = completed.result else {
