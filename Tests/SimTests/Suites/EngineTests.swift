@@ -6,14 +6,13 @@ import FootballSimCore
 /// constants this branch tuned -- `normalTempoSnapSeconds` and `readyForPlaySeconds` -- landed on
 /// top of origin/main's resolver rework, so the same seed now runs a different number of snaps.
 ///
-/// **KNOWN STALE as of this commit.** A second contributor is actively landing calibration
-/// work on this branch -- `CompetitionRules`, `CalibrationHarness` and `AbstractGameSimulator`
-/// all moved again after these values were measured, in `2aab277` and in further uncommitted
-/// changes on top of it. Re-deriving now would only be stale again within minutes; these are
-/// last known-good values from before that work started and are placeholders pending a quiet
-/// point in the branch. `--engine` is expected red on this test until they are re-pinned.
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 9_120_538_774_305_745_592
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 1_997_190_051_787_914_160
+/// Moved a second time in `0a2b641`, "Calibrate two-tier game statistics and scoring rules" -- a
+/// second contributor's calibration work landed on this branch concurrently with the merge above,
+/// through `2aab277` and further uncommitted changes before reaching that commit. Re-pinning was
+/// held until that work reached a real commit rather than chasing values still moving underneath
+/// it. Reproduced in three independent release processes in a clean worktree at `0a2b641`.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 11_206_707_792_088_495_442
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 15_235_203_604_702_228_493
 
 func runEngineTests() {
     suite("Leverage") {

@@ -99,18 +99,18 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// the four pins the contaminated tree did not affect, three for the two it did -- before being
 /// written here.
 ///
-/// **`pinnedAdvancedRootFingerprint` and `pinnedMatchSessionFingerprint` are KNOWN STALE again as
-/// of this commit.** A second contributor is actively landing calibration work on this branch --
-/// `CompetitionRules`, `CalibrationHarness` and `AbstractGameSimulator` all moved again in
-/// `2aab277` and in further uncommitted changes on top of it, and both fingerprints run through
-/// that code. Re-deriving now would only be stale again within minutes; these are last known-good
-/// placeholders pending a quiet point in the branch. `--architecture-only` is expected red on
-/// these two checks until they are re-pinned.
+/// `pinnedAdvancedRootFingerprint` and `pinnedMatchSessionFingerprint` moved a third time in
+/// `0a2b641`, "Calibrate two-tier game statistics and scoring rules" -- the commit a second
+/// contributor was actively building toward through `2aab277` and the uncommitted changes that
+/// followed it. Re-pinning was held until that work reached a real commit rather than chasing
+/// values that were still moving underneath it; the values below are from a clean worktree
+/// checked out at `0a2b641` with nothing else applied, reproduced in three independent release
+/// processes.
 private let pinnedRootFingerprint: UInt64 = 10_884_251_571_790_922_168
 
 /// Moved when abstracted summaries gained offensive-play counts and tier-specific calibration.
 /// Reproduced in two independent release processes before re-pinning.
-private let pinnedAdvancedRootFingerprint: UInt64 = 6_959_817_986_194_978_730
+private let pinnedAdvancedRootFingerprint: UInt64 = 6_780_552_524_047_722_755
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
@@ -141,7 +141,7 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 1_980_022_057_682_400_5
 /// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
 /// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
 /// PR #9's new trade-dress retries moved it again; this value came from the merged release run.
-private let pinnedMatchSessionFingerprint: UInt64 = 13_095_732_945_037_450_093
+private let pinnedMatchSessionFingerprint: UInt64 = 12_530_842_542_151_119_267
 
 /// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
 /// pins above ever exercise it: they hash the root or a projection of it, never the read-model
