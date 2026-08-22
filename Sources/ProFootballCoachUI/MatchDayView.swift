@@ -700,7 +700,7 @@ public struct MatchDayView: View {
         // printed label getting shorter must not shorten what VoiceOver says about it, which is why
         // the label below still names the number as well as the position.
         return actorToken(
-            label: actor.position, isOurs: actor.side == model.perspective, isForeground: foreground
+            label: actor.shorthand, isOurs: actor.side == model.perspective, isForeground: foreground
         )
             .position(
                 x: size.width * CGFloat(actor.xYardsFromLeftGoalLine / 120),

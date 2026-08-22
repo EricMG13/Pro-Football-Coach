@@ -62,6 +62,52 @@ func runSnapAnchorTests() {
             expectClose(AnchorRules.pathFraction(atPlayback: 9), 1, 1e-9, "over-run time unclamped")
         }
 
+        test("every position on the field carries a shorthand, by construction") {
+            // MATCH-DAY.md section 4 and 04 section 6.5 #18 both state the vocabulary outright:
+            // "labels are position shorthand, not numbers". The provider was emitting SnapRole
+            // codes -- B, R, CV, FIT, RR, D, P -- so the field read as an abstract diagram of
+            // duties rather than as a formation. Enumerated from Position.allCases per CLAUDE.md's
+            // coverage-boundary rule, so a position added tomorrow fails this the day it is added.
+            for position in Position.allCases {
+                for index in 0..<5 {
+                    let mark = SnapAnchors.shorthand(for: position, index: index)
+                    expect(!mark.isEmpty, "\(position) at slot \(index) has no shorthand")
+                    expect(mark.count <= 2,
+                           "\(position) slot \(index) shorthand \"\(mark)\" will not fit a token")
+                    expect(mark == mark.uppercased(),
+                           "\(position) slot \(index) shorthand is not a tracked uppercase mark")
+                }
+                // A negative or absurd slot must not trap or blank: choreograph is total, and the
+                // label it feeds has to be too.
+                expect(!SnapAnchors.shorthand(for: position, index: -4).isEmpty,
+                       "\(position) blanked on a negative slot")
+                expect(!SnapAnchors.shorthand(for: position, index: 99).isEmpty,
+                       "\(position) blanked on an out-of-range slot")
+            }
+
+            // The two sets 04 section 6.5 #18 names, each reachable from the eleven that play it.
+            func marks(_ positions: [Position]) -> Set<String> {
+                var seen: [Position: Int] = [:]
+                var out: Set<String> = []
+                for position in positions {
+                    let index = seen[position, default: 0]
+                    seen[position] = index + 1
+                    out.insert(SnapAnchors.shorthand(for: position, index: index))
+                }
+                return out
+            }
+            let offense = marks([.leftTackle, .guardPosition, .center, .guardPosition, .rightTackle,
+                                 .quarterback, .runningBack, .wideReceiver, .wideReceiver,
+                                 .wideReceiver, .tightEnd])
+            expectEqual(offense, ["LT", "LG", "C", "RG", "RT", "QB", "RB", "X", "H", "Z", "TE"],
+                        "the offensive eleven did not produce 04 section 6.5 #18's own list")
+            let defense = marks([.edgeRusher, .defensiveTackle, .defensiveTackle, .edgeRusher,
+                                 .linebacker, .linebacker, .linebacker, .cornerback, .cornerback,
+                                 .safety, .safety])
+            expectEqual(defense, ["RE", "NT", "DT", "LE", "W", "M", "N", "RC", "LC", "FS", "SS"],
+                        "the defensive eleven did not produce 04 section 6.5 #18's own list")
+        }
+
         test("every position aligns somewhere on the field") {
             // Enumerated from Position.allCases by construction, so a position added tomorrow fails
             // this the day it is added rather than the day someone remembers it.
@@ -193,10 +239,16 @@ func runSnapAnchorTests() {
             let centerAnchor = set.actors.first { $0.playerID == center.id }!
             expect(leftTackleAnchor.end.yard < leftTackleAnchor.start.yard,
                    "a blocker who lost his duel must be drawn driven back off the line")
-            expectEqual(centerAnchor.end.yard, centerAnchor.start.yard,
-                        "a blocker who won his duel must hold his ground")
+            // The winner holds his ground, which is not the same as standing frozen -- 03 section
+            // 9.6 as amended. What must never happen is a winner going backwards, because backwards
+            // is what losing a block looks like and the two cannot be allowed to read alike.
+            expect(centerAnchor.end.yard > centerAnchor.start.yard,
+                   "a blocker who won his duel must step into contact, not stand still")
+            expect(centerAnchor.end.yard - centerAnchor.start.yard
+                    < AnchorRules.beatenBlockerPushYards,
+                   "a winning blocker moved further than a beaten one is driven, which inverts them")
             expectEqual(centerAnchor.end.lateral, centerAnchor.start.lateral,
-                        "a blocker who won his duel must hold his ground")
+                        "a blocker who won his duel must not drift across the field")
             expectIn(leftTackleAnchor.end.yard, 0...100, "a beaten blocker was drawn off the field")
         }
 
@@ -562,9 +614,18 @@ func runSnapAnchorTests() {
             let set = SnapAnchors.choreograph(
                 play: play, offense: offense, defense: Array(personnel.defense.prefix(11))
             )
+            // He blocks; he does not run the route the defaulted passDepth would have given him.
+            // The bug this pins is a *specific* one -- reading air yards off a call that never
+            // threw -- so the assertion is about that depth, not about stillness. 03 section 9.6 as
+            // amended: a receiver who stands frozen through a running play is its own falsehood.
+            let airYards = Double(play.offensiveCall.passDepth.airYards)
+            expect(airYards > AnchorRules.runBlockYards,
+                   "the fixture cannot tell a block from a route unless the route is deeper")
             for actor in set.actors where actor.role == .routeRunner {
-                expectEqual(actor.end.yard, actor.start.yard,
-                            "a receiver ran a route on a running play")
+                expectClose(actor.end.yard, actor.start.yard + AnchorRules.runBlockYards, 0.001,
+                            "a receiver did not block on a running play")
+                expect(actor.end.yard < Double(play.situation.yardLine) + airYards,
+                       "a receiver ran the defaulted pass depth on a running play")
             }
             // The carrier still runs, or the whole thing is inert.
             let carrier = set.actors.first { $0.role == .carrier }
@@ -693,15 +754,22 @@ func runSnapAnchorTests() {
             expect(tacklerAnchor!.start.yard != tacklerEnd.yard,
                    "the tackler never actually moved")
 
-            // Nobody else converges. The record names one man, so one man moves; a second would be
-            // a path nothing recorded.
+            // Everyone else chases and nobody else arrives. Under 03 section 9.6 as amended
+            // 2026-08-22 the old assertion here -- that no other defender moved at all -- is what
+            // produced a field of statues: coverage and run fits were still on 100% of snaps. The
+            // invariant that carries the actual meaning is not stillness, it is that only the man
+            // the record names reaches the ball. Convergence short of it is movement; convergence
+            // onto it is a claim.
             let others = set.actors.filter {
                 $0.side != play.situation.possession && $0.playerID != tackler.id
             }
             expect(!others.isEmpty, "fixture has no other defenders to check")
             for other in others where other.role == .coverage || other.role == .runFit {
-                expectClose(SnapAnchors.position(of: other, at: 1).yard, other.start.yard, 0.001,
-                            "a defender the record never named drifted toward the ball")
+                let end = SnapAnchors.position(of: other, at: 1)
+                expect(end.yard != other.start.yard || end.lateral != other.start.lateral,
+                       "a defender stood still while the ball was carried past him")
+                expect(separation(end, tacklerEnd) >= AnchorRules.pursuitStandoffYards,
+                       "a defender the record never named reached the ball and claimed the stop")
             }
         }
 
@@ -722,10 +790,48 @@ func runSnapAnchorTests() {
                 callInTriggers: []
             )
             let set = SnapAnchors.choreograph(play: play, offense: offense, defense: defense)
+            // An incompletion has no carrier, so there is no spot to converge on and nobody may be
+            // drawn arriving at one. Defenders still play coverage -- 03 section 9.6 as amended
+            // permits template motion -- but the end spot on a play nobody carried is the line of
+            // scrimmage itself, and no defender may be drawn stopping anyone there.
+            let restingSpot = FieldPoint(yard: set.endSpot, lateral: AnchorRules.centerLateral)
             for actor in set.actors where actor.side != play.situation.possession {
                 guard actor.role == .coverage || actor.role == .runFit else { continue }
-                expectClose(SnapAnchors.position(of: actor, at: 1).yard, actor.start.yard, 0.001,
-                            "a defender converged on a play that recorded no tackler")
+                expect(separation(SnapAnchors.position(of: actor, at: 1), restingSpot)
+                        >= AnchorRules.pursuitStandoffYards,
+                       "a defender converged on a play that recorded no tackler")
+            }
+        }
+
+        test("every man on the field moves on a snap somebody carried") {
+            // The measurement that forced the 03 section 9.6 amendment: across 200 resolved snaps,
+            // 62% of actor-snaps had end == start -- 13.6 of the 22 frozen every snap, with
+            // coverage, run fits and decoys still 100% of the time. A specialist is exempt because
+            // a kicker plants and kicks; nobody else is.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let defense = Array(personnel.defense.prefix(11))
+            for playType in [OffensivePlayType.run, .pass] {
+                let play = PlayRecord(
+                    situation: Situation(down: 1, distance: 10, yardLine: 35),
+                    offensiveCall: OffensiveCall(playType: playType),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    outcome: SnapOutcome(
+                        result: .gain, yards: 9, secondsElapsed: 6,
+                        matchups: [MatchupRecord(
+                            kind: .carrierVersusPursuit, attackerID: offense[2].id,
+                            defenderID: defense[6].id, leverage: -0.3
+                        )],
+                        ballCarrierID: offense[2].id, passerID: offense[0].id,
+                        targetID: playType == .pass ? offense[2].id : nil
+                    ),
+                    callInTriggers: []
+                )
+                let set = SnapAnchors.choreograph(play: play, offense: offense, defense: defense)
+                for actor in set.actors where actor.role != .kicker {
+                    expect(separation(actor.start, actor.end) > 0.01,
+                           "\(playType): a \(actor.role) stood still for the whole snap")
+                }
             }
         }
 
@@ -881,4 +987,12 @@ func runSnapAnchorTests() {
             }
         }
     }
+}
+
+/// Distance between two field points in yards, with lateral converted through the field's own
+/// width. A pursuit standoff measured in yards has to be measured in yards on both axes.
+func separation(_ a: FieldPoint, _ b: FieldPoint) -> Double {
+    let alongField = a.yard - b.yard
+    let acrossField = (a.lateral - b.lateral) * AnchorRules.fieldWidthYards
+    return (alongField * alongField + acrossField * acrossField).squareRoot()
 }

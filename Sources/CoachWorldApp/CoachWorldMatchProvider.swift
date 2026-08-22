@@ -70,6 +70,8 @@ public extension CoachWorldReadModelProvider {
                 // grain the playback clock has to restart on.
                 stableID: "\(fixtureID.uuidString)-\(session.revision)",
                 numbers: homeNumbers.merging(awayNumbers) { first, _ in first },
+                shorthands: shorthands(Array(playOffense.prefix(11)))
+                    .merging(shorthands(Array(playDefense.prefix(11)))) { first, _ in first },
                 offenseDirection: .leftToRight,
                 isPaused: session.isPaused
             )
@@ -143,6 +145,7 @@ public extension CoachWorldReadModelProvider {
         from set: SnapAnchorSet,
         stableID: String,
         numbers: [UUID: Int] = [:],
+        shorthands: [UUID: String] = [:],
         offenseDirection: MatchFieldDirection,
         isPaused: Bool = false
     ) -> MatchDayReadModel.Playback {
@@ -165,7 +168,12 @@ public extension CoachWorldReadModelProvider {
                             x: x($0.point.yard), y: $0.point.lateral, fraction: $0.fraction
                         )
                     },
-                    role: roleLabel(actor.role)
+                    // The slot shorthand, not the role code. MATCH-DAY.md §4 and `04` §6.5 #18
+                    // both say "labels are position shorthand, not numbers"; emitting `B`, `R`,
+                    // `CV` and `FIT` instead made the field read as a diagram of duties. Falls back
+                    // to the role only for an identifier the caller did not supply a shorthand for,
+                    // which is a labelled dot rather than a blank one.
+                    role: shorthands[actor.playerID] ?? roleLabel(actor.role)
                 )
             },
             ball: set.ball.map { segment in
@@ -207,10 +215,11 @@ public extension CoachWorldReadModelProvider {
         offenseYard: Double,
         isOffense: Bool
     ) -> [MatchDayReadModel.Actor] {
-        var seen: [Position: Int] = [:]
+        // The engine's own slot index, not a second count of the same thing: `choreograph` places a
+        // man from it and this labels him from it, and two derivations are two things that drift.
+        let indices = SnapAnchors.lineupIndices(players)
         return players.map { player in
-            let index = seen[player.position, default: 0]
-            seen[player.position] = index + 1
+            let index = indices[player.id] ?? 0
             let spot = SnapAnchors.alignment(
                 for: player.position,
                 index: index,
@@ -222,6 +231,7 @@ public extension CoachWorldReadModelProvider {
                 side: side,
                 uniformNumber: String(numbers[player.id] ?? 0),
                 position: positionLabel(player.position),
+                shorthand: SnapAnchors.shorthand(for: player.position, index: index),
                 xYardsFromLeftGoalLine: fieldX(yard: spot.yard, direction: .leftToRight),
                 yFraction: spot.lateral
             )
@@ -365,6 +375,16 @@ public extension CoachWorldReadModelProvider {
         case .specialTeamsCoordinator: return "Special teams coordinator"
         case .strengthCoordinator: return "Strength coordinator"
         case .positionCoach: return "Position coach"
+        }
+    }
+
+    /// Slot shorthands for one side's eleven, keyed the way the playback's tracks are.
+    private static func shorthands(_ players: [Player]) -> [UUID: String] {
+        let indices = SnapAnchors.lineupIndices(players)
+        return players.reduce(into: [:]) { out, player in
+            out[player.id] = SnapAnchors.shorthand(
+                for: player.position, index: indices[player.id] ?? 0
+            )
         }
     }
 
