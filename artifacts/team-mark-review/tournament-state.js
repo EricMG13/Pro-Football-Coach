@@ -17,7 +17,7 @@ export function newSession(catalog) {
   return {
     fingerprint: catalog.fingerprint,
     rounds: [{
-      candidateIDs: catalog.candidates.filter((candidate) => candidate.teamStableID && candidate.selectionEligible !== false).map((candidate) => candidate.id),
+      candidateIDs: catalog.candidates.map((candidate) => candidate.id),
       selectedIDs: [],
     }],
   };
@@ -77,12 +77,7 @@ export function finalizationStatus(session, catalog) {
   const chosen = currentRound(session).selectedIDs.map((id) => candidates.get(id)).filter(Boolean);
   const byTeam = new Map();
   const unassigned = [];
-  const ineligible = [];
   for (const candidate of chosen) {
-    if (candidate.selectionEligible === false) {
-      ineligible.push(candidate.id);
-      continue;
-    }
     if (!candidate.teamStableID) {
       unassigned.push(candidate.id);
       continue;
@@ -93,6 +88,6 @@ export function finalizationStatus(session, catalog) {
   }
   const missingTeamIDs = catalog.teams.filter((team) => !byTeam.has(team.stableID)).map((team) => team.stableID);
   const duplicateTeamIDs = [...byTeam].filter(([, ids]) => ids.length > 1).map(([teamID]) => teamID);
-  const ready = chosen.length === catalog.teams.length && !ineligible.length && !unassigned.length && !missingTeamIDs.length && !duplicateTeamIDs.length;
-  return { ready, chosen, missingTeamIDs, duplicateTeamIDs, unassigned, ineligible };
+  const ready = chosen.length === catalog.teams.length && !unassigned.length && !missingTeamIDs.length && !duplicateTeamIDs.length;
+  return { ready, chosen, missingTeamIDs, duplicateTeamIDs, unassigned };
 }

@@ -51,12 +51,29 @@ test("stale or malformed local state is rejected", () => {
   assert.equal(restoreSession(newSession(catalog), catalog).fingerprint, catalog.fingerprint);
 });
 
-test("held variants are absent from a new tournament and cannot finalize", () => {
+test("full inventory variants enter the tournament and can finalize", () => {
   const reviewedCatalog = {
     ...catalog,
     candidates: [...catalog.candidates, { id: "held", teamStableID: "alpha", selectionEligible: false }],
   };
-  assert.equal(newSession(reviewedCatalog).rounds[0].candidateIDs.includes("held"), false);
-  const forced = { fingerprint: reviewedCatalog.fingerprint, rounds: [{ candidateIDs: ["held"], selectedIDs: ["held"] }] };
-  assert.equal(finalizationStatus(forced, reviewedCatalog).ready, false);
+  assert.equal(newSession(reviewedCatalog).rounds[0].candidateIDs.includes("held"), true);
+  let session = setSelected(newSession(reviewedCatalog), "held", true);
+  session = setSelected(session, "b1", true);
+  assert.equal(finalizationStatus(session, reviewedCatalog).ready, true);
+});
+
+test("a saved session from a narrower inventory is reset", () => {
+  const fullCatalog = { ...catalog, candidates: [...catalog.candidates, { id: "held", teamStableID: "alpha", selectionEligible: false }] };
+  const legacySession = { fingerprint: fullCatalog.fingerprint, rounds: [{ candidateIDs: ["a1", "a2", "b1"], selectedIDs: ["a1"] }] };
+  assert.equal(restoreSession(legacySession, fullCatalog), null);
+});
+
+test("unassigned variants can advance but cannot occupy a final team slot", () => {
+  const fullCatalog = { ...catalog, candidates: [...catalog.candidates, { id: "unknown", teamStableID: null }] };
+  let session = setSelected(newSession(fullCatalog), "a1", true);
+  session = setSelected(session, "b1", true);
+  session = setSelected(session, "unknown", true);
+  const status = finalizationStatus(session, fullCatalog);
+  assert.deepEqual(status.unassigned, ["unknown"]);
+  assert.equal(status.ready, false);
 });
