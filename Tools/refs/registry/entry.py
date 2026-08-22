@@ -8,7 +8,7 @@ from __future__ import annotations
 from ._shared import (
     Chip, Chips, Panel, Row, Rows, Stack, Status, Surface, blocker, desk, gap,
 )
-from surface import Register
+from surface import Lean
 
 new_career = desk(
     id="newCareerCoachIdentity", number=2, name="New Career & Coach Identity",
@@ -29,7 +29,7 @@ new_career = desk(
 
 first_run = Surface(
     id="firstRun", number=71, name="First Run", family="entry",
-    register=Register.DESK, status=Status.OVERLAY,
+    lean=Lean.DESK, status=Status.OVERLAY,
     evidence="FirstRun-v3.dc.html on the design-references branch; no registry entry",
     body=Panel("Your first week", Rows((
         Row("What a coach does", ("Prepare, decide",), "You never control a player"),

@@ -3,12 +3,16 @@ that would otherwise be repeated 59 times."""
 
 from __future__ import annotations
 
-from primitives import Chip, Chips, Col, Custom, Field, Hero, Panel, Row, Rows, Split, Stack, Table
-from surface import Gap, GapKind, NOTHING_MISSING, Register, Status, Surface
+from primitives import (
+    BandLegend, Chip, Chips, Col, Custom, Field, Heat, Hero, Panel, Row, Rows,
+    Split, Stack, Table,
+)
+from surface import Gap, GapKind, NOTHING_MISSING, Lean, Status, Surface
 
 __all__ = [
+    "BandLegend", "Heat",
     "Chip", "Chips", "Col", "Custom", "Field", "Hero", "Panel", "Row", "Rows",
-    "Split", "Stack", "Table", "Gap", "GapKind", "NOTHING_MISSING", "Register",
+    "Split", "Stack", "Table", "Gap", "GapKind", "NOTHING_MISSING", "Lean",
     "Status", "Surface", "desk", "dossier", "broadcast", "gap", "blocker",
 ]
 
@@ -22,15 +26,15 @@ def blocker(kind: str, text: str) -> Gap:
 
 
 def desk(**kw) -> Surface:
-    kw.setdefault("register", Register.DESK)
+    kw.setdefault("lean", Lean.DESK)
     return Surface(**kw)
 
 
 def dossier(**kw) -> Surface:
-    kw.setdefault("register", Register.DOSSIER)
+    kw.setdefault("lean", Lean.DOSSIER)
     return Surface(**kw)
 
 
 def broadcast(**kw) -> Surface:
-    kw.setdefault("register", Register.BROADCAST)
+    kw.setdefault("lean", Lean.BROADCAST)
     return Surface(**kw)

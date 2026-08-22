@@ -29,7 +29,7 @@ from primitives import Chips, Col, Custom, Table, walk
 from registry import REGISTRY
 from screens import BY_ID, FAMILIES
 from source_inventory import SOURCE_LEAN
-from surface import Register, Status
+from surface import Lean, Status
 
 HERE = Path(__file__).parent
 REPO = HERE.resolve().parents[1]
@@ -39,22 +39,20 @@ SWIFT_REGISTRY = REPO / "Sources" / "ProFootballCoachUI" / "ScreenRegistry.swift
 #: 63-74 that have no case yet. The 15 aliases fold into their canonical parent.
 EXPECTED_SURFACES = 59
 
-#: Cells a register may print in one viewport.
-REGISTER_CELLS = {
-    Register.DESK: 72,
-    Register.DOSSIER: 48,
-    Register.MATCH_DAY: 40,
-    Register.BROADCAST: 12,
-}
-COMMITTING_CELLS = 40
+#: Cells per DENSITY TIER, `04` section 4.5a (2026-08-22 amendment). The tier is set by
+#: row height and by whether a commit bar is reserved -- it is NOT the lean. The first
+#: version of this module keyed the budget off the lean and gave every Dossier 48
+#: whatever it drew.
+TIER_CELLS = {"dense": 72, "working": 48, "committing": 40, "broadcast": 12}
 
-#: Mark height per register, as `04` section 6.5's registry states it -- a RANGE, held
-#: here independently of the single value `chrome.MARK_HEIGHT` stamps. Reading the same
-#: constant the generator wrote would make this rule unfalsifiable, which is how the
-#: first draft of it passed while doing nothing.
-#: Team mark, from the source's specification table. A Broadcast or Dossier mark is a
-#: WATERMARK behind the head, not an inline image beside it, which is what makes 390 px
-#: fit inside a 291 pt plate at all.
+#: The Dossier lean's own split, `04` section 2.1: <=8 above the seam, <=40 below. This
+#: bounds the halves; the tier above bounds the surface.
+DOSSIER_ABOVE_CELLS = 8
+DOSSIER_BELOW_CELLS = 40
+
+#: Team mark and largest numeral per lean, `04` section 2.1's table. A Broadcast or
+#: Dossier mark is a WATERMARK behind the head, not an inline image beside it, which is
+#: what makes 390 pt fit inside a 291 pt plate at all.
 MARK_HEIGHT_RANGE = {
     "DESK": (19, 19),
     "BROADCAST": (200, 390),
@@ -62,27 +60,46 @@ MARK_HEIGHT_RANGE = {
     "MATCH_DAY": (19, 19),
 }
 
-#: Largest numeral, same table: "Broadcast 40-72 px · Desk 14 px · Dossier 40 px above,
-#: 11.5 below". The numeral does the work the forbidden portrait would, so drawing it
-#: small is not a small mistake.
 NUMERAL_RANGE = {
     "BROADCAST": (40, 72),
-    "DESK": (0, 14),
+    "DESK": (11, 14),
     "DOSSIER": (40, 40),
-    "MATCH_DAY": (0, 14),
+    "MATCH_DAY": (11, 14),
 }
 
-#: W5: a Dossier's budget is split by the seam -- "<= 8 above, <= 40 below" -- not one
-#: flat number for the surface. A flat 48 lets a dossier print 48 cells above the seam.
-DOSSIER_ABOVE_CELLS = 8
-DOSSIER_BELOW_CELLS = 40
+#: The five heat bands, `04` section 6.4. Token names only -- the hexes are resolved from
+#: the sheet and the contract is COMPUTED in check_heat_bands, never asserted from a
+#: constant written next to them.
+HEAT_BANDS = (
+    ("--heat-well-below", 40, 59),
+    ("--heat-below", 60, 69),
+    ("--heat-average", 70, 79),
+    ("--heat-above", 80, 84),
+    ("--heat-well-above", 85, 99),
+)
+
+#: Grounds every heat band must be legible on.
+HEAT_GROUNDS = ("--world-page", "--world-raised", "--surface-panel")
+
+#: Gold, and the hue separation every other role must keep from it (6.1a(ii)).
+GOLD = "--action-primary"
+MIN_HUE_SEPARATION = 24.0
+
+
+def tier(s) -> str:
+    """The density tier a surface is composed against.
+
+    Interactivity is bought with rows: a tappable row takes the 44 pt control floor, so
+    nine readout rows become six, and reserving a commit bar takes six to five."""
+    if s.lean is Lean.BROADCAST:
+        return "broadcast"
+    if s.commit:
+        return "committing"
+    return "working" if s.tappable_rows else "dense"
 
 
 def cell_budget(s) -> int:
-    """A surface that reserves the committing bar has visibly less room, so the two
-    limits are a minimum rather than a choice between them."""
-    base = REGISTER_CELLS[s.register]
-    return min(base, COMMITTING_CELLS) if s.commit else base
+    return TIER_CELLS[tier(s)]
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +135,32 @@ def resolve_color(name: str, depth: int = 0) -> tuple[float, float, float] | Non
             return None
         return tuple(float(p) / 255 for p in parts[:3])  # type: ignore[return-value]
     return None
+
+
+def hue(rgb: tuple[float, float, float]) -> float:
+    """HSL hue in degrees. Needed because 6.1a(ii)'s rule is about hue separation, and
+    contrast was never the defect -- gold and the old warning both passed contrast."""
+    r, g, b = rgb
+    high, low = max(rgb), min(rgb)
+    if high == low:
+        return 0.0
+    d = high - low
+    if high == r:
+        h = ((g - b) / d) % 6
+    elif high == g:
+        h = (b - r) / d + 2
+    else:
+        h = (r - g) / d + 4
+    return h * 60.0
+
+
+def hue_gap(a: str, b: str) -> float | None:
+    """Smallest angle between two token hues, or None if either is not a flat colour."""
+    ca, cb = resolve_color(a), resolve_color(b)
+    if ca is None or cb is None:
+        return None
+    delta = abs(hue(ca) - hue(cb)) % 360.0
+    return min(delta, 360.0 - delta)
 
 
 def _linear(c: float) -> float:
@@ -311,15 +354,15 @@ def check_baseline() -> list[str]:
                 f"alias .{cid} is drawn; it should fold into "
                 f".{screen.alias_of}, which is the surface it routes to"
             )
-    # The register a surface leans to is the source artifact's decision, not this
+    # The lean a surface takes is the source artifact's decision, not this
     # generator's. Checked here so a lean cannot be quietly reassigned to make a frame
     # easier to draw -- which is how three of the four ceremony surfaces were demoted to
-    # Desk in the first build, emptying the register the design set is named after.
+    # Desk in the first build, emptying the lean the design set is named after.
     for s in REGISTRY:
         want = SOURCE_LEAN.get(s.number)
-        if want and s.register.value != want[0]:
+        if want and s.lean.value != want[0]:
             out.append(
-                f"{s.id} is drawn {s.register.value}; the source inventory says "
+                f"{s.id} is drawn {s.lean.value}; the source inventory says "
                 f"{want[0]} (registry number {s.number})"
             )
 
@@ -358,11 +401,11 @@ def check_cells() -> list[str]:
         if s.cells > cell_budget(s):
             out.append(
                 f"{s.id} prints {s.cells} cells, budget {cell_budget(s)} "
-                f"({s.register.value}{', committing' if s.commit else ''})"
+                f"({s.lean.value}{', committing' if s.commit else ''})"
             )
         # A dossier's budget is split by the seam: the head is a broadcast moment and the
         # body is a working table, so one flat number describes neither.
-        if s.register is Register.DOSSIER and isinstance(s.body, Split):
+        if s.lean is Lean.DOSSIER and isinstance(s.body, Split):
             above, below = s.body.top.cells(), s.body.bottom.cells()
             if above > DOSSIER_ABOVE_CELLS:
                 out.append(
@@ -428,17 +471,17 @@ def check_columns() -> list[str]:
     return out
 
 
-@rule(7, "Register legality")
+@rule(7, "Lean legality")
 def check_registers() -> list[str]:
     from primitives import Split
 
     out = []
     for s in REGISTRY:
-        if s.register is Register.MATCH_DAY and s.id != "matchDay":
+        if s.lean is Lean.MATCH_DAY and s.id != "matchDay":
             out.append(f"{s.id} claims MATCH_DAY; only matchDay may")
-        if s.register is Register.DOSSIER and not isinstance(s.body, Split):
+        if s.lean is Lean.DOSSIER and not isinstance(s.body, Split):
             out.append(f"{s.id} is DOSSIER but its body is {type(s.body).__name__}, not Split")
-        if s.register is Register.BROADCAST:
+        if s.lean is Lean.BROADCAST:
             tables = [n for n in walk(s.body) if isinstance(n, Table)]
             if tables:
                 out.append(f"{s.id} is BROADCAST and carries {len(tables)} table(s)")
@@ -488,40 +531,45 @@ def check_type() -> list[str]:
                 continue
             if node.mark:
                 drawn = node.WATERMARK[node.scale]
-                low, high = MARK_HEIGHT_RANGE[s.register.value]
+                low, high = MARK_HEIGHT_RANGE[s.lean.value]
                 if not low <= drawn <= high:
                     out.append(
                         f"{s.id}: head watermark is {drawn:g} px; "
-                        f"{s.register.value} allows {low}-{high}"
+                        f"{s.lean.value} allows {low}-{high}"
                     )
             if node.numeral:
                 size = node.NUMERAL[node.scale]
-                low, high = NUMERAL_RANGE[s.register.value]
+                low, high = NUMERAL_RANGE[s.lean.value]
                 if not low <= size <= high:
                     out.append(
                         f"{s.id}: head numeral is {size:g} px; "
-                        f"{s.register.value} allows {low}-{high}"
+                        f"{s.lean.value} allows {low}-{high}"
                     )
 
     for s in REGISTRY:
         html = chrome.frame(s, s.body.render())
         declared = re.search(r'data-mark-height="([\d.]+)"', html)
-        low, high = MARK_HEIGHT_RANGE[s.register.value]
+        low, high = MARK_HEIGHT_RANGE[s.lean.value]
         if not declared:
             out.append(f"{s.id} stamps no mark height")
             continue
         height = float(declared.group(1))
         if not low <= height <= high:
             out.append(
-                f"{s.id} stamps mark height {height}; {s.register.value} allows {low}-{high}"
+                f"{s.id} stamps mark height {height}; {s.lean.value} allows {low}-{high}"
             )
     # The stylesheet has to agree with the stamp, or the frame draws one size and
     # declares another.
     css = (HERE / "chrome.css").read_text(encoding="utf-8")
-    drawn = css_px(css, ".fl-header__mark", "height")
+    drawn = css_px(css, ".fl-band__mark", "height")
     low, high = MARK_HEIGHT_RANGE["DESK"]
     if drawn is None or not low <= drawn <= high:
-        out.append(f".fl-header__mark draws at {drawn}; DESK allows {low}-{high}")
+        out.append(f".fl-band__mark draws at {drawn}; DESK allows {low}-{high}")
+    # `04` 6.1d fixes the band's own height, and the band is the sanctioned seventh mark
+    # placement -- if it moves, the mark inside it is no longer the size canon states.
+    band = css_px(css, ".fl-band", "height")
+    if band != 34:
+        out.append(f".fl-band is {band} pt tall; 6.1d says 34")
     return out
 
 
@@ -552,7 +600,12 @@ def check_overflow() -> list[str]:
                 continue
             for index, col in enumerate(node.columns):
                 longest = max(
-                    (len(row[index]) for row in node.rows if index < len(row)), default=0
+                    (
+                        len(str(getattr(row[index], "rating", row[index])))
+                        for row in node.rows
+                        if index < len(row)
+                    ),
+                    default=0,
                 )
                 if longest > col.chars:
                     out.append(
@@ -598,6 +651,134 @@ def check_vocabulary() -> list[str]:
     if used > tokens.CUSTOM_BUDGET:
         out.append(f"{used} Custom nodes, budget {tokens.CUSTOM_BUDGET}")
     return out
+
+
+@rule(16, "Heat bands")
+def check_heat_bands() -> list[str]:
+    """Five bands, each legible on every ground and each clear of gold.
+
+    Computed from the resolved token values, not asserted from a table written beside
+    them -- a rule that reads the number it is checking cannot fail."""
+    out = []
+    if len(HEAT_BANDS) != 5:
+        out.append(f"{len(HEAT_BANDS)} heat bands declared; `04` 6.4 says five")
+
+    covered: list[tuple[int, int]] = []
+    for token, low, high in HEAT_BANDS:
+        covered.append((low, high))
+        colour = resolve_color(token)
+        if colour is None:
+            out.append(f"{token} does not resolve to a flat colour")
+            continue
+        for ground in HEAT_GROUNDS:
+            plate = resolve_color(ground)
+            if plate is None:
+                out.append(f"{ground} does not resolve to a flat colour")
+                continue
+            ratio = contrast(colour, plate)
+            if ratio < 4.5:
+                out.append(f"{token} measures {ratio:.2f} on {ground}, needs 4.5")
+        gap = hue_gap(token, GOLD)
+        if gap is None:
+            out.append(f"cannot measure {token} against gold")
+        elif gap < MIN_HUE_SEPARATION:
+            out.append(
+                f"{token} sits {gap:.1f} degrees from gold, needs {MIN_HUE_SEPARATION:g}"
+            )
+
+    # The bands must tile 40-99 with no hole and no overlap.
+    covered.sort()
+    if covered[0][0] != 40 or covered[-1][1] != 99:
+        out.append(f"the bands span {covered[0][0]}-{covered[-1][1]}, not 40-99")
+    for (_, end), (start, _) in zip(covered, covered[1:]):
+        if start != end + 1:
+            out.append(f"the bands leave a gap or overlap between {end} and {start}")
+
+    # 70-79 is neutral ink, never amber. That is the whole point of the amendment.
+    average = resolve_color("--heat-average")
+    neutral = resolve_color("--content-secondary")
+    if average != neutral:
+        out.append("--heat-average is not --content-secondary; average must read neutral")
+    return out
+
+
+@rule(17, "Alias closure")
+def check_aliases() -> list[str]:
+    """No two role tokens may carry the same literal hex.
+
+    6.1a(ii) lets identical roles stay identical, but as declared aliases, so a future
+    divergence is a deliberate edit and not an accident."""
+    literals: dict[str, list[str]] = {}
+    sheet = tokens._sheet("colors")
+    for prop, value in re.findall(r"(--[a-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{3,8})\s*;", sheet):
+        literals.setdefault(value.lower(), []).append(prop)
+    return [
+        f"{sorted(names)} all declare the literal {value}; alias one to the other"
+        for value, names in literals.items()
+        if len(names) > 1
+    ]
+
+
+@rule(18, "Band table present")
+def check_band_table() -> list[str]:
+    """A surface that bands a rating prints the band table on that surface.
+
+    Without it the player cannot answer "is 74 good?" without a live percentile, which a
+    save with no league history cannot supply."""
+    from primitives import BandLegend, Heat, walk
+
+    out = []
+    for s in REGISTRY:
+        nodes = list(walk(s.body))
+        bands = any(isinstance(n, Heat) for n in nodes)
+        legend = any(isinstance(n, BandLegend) for n in nodes)
+        if bands and not legend:
+            out.append(f"{s.id} bands a rating and prints no band table")
+        if legend and not bands:
+            out.append(f"{s.id} prints a band table and bands nothing")
+    return out
+
+
+@rule(20, "Pure ASCII output")
+def check_ascii() -> list[str]:
+    """The document must be ASCII.
+
+    It is served two ways -- wrapped by the artifact host, which declares a charset, and
+    from a plain file server, which does not. Without a declaration the browser guesses
+    Latin-1 and every multi-byte character mojibakes; `7-0 . #9` rendered as `7-0 A. #9`
+    on the served copy while looking correct in the artifact."""
+    import page
+
+    html = page.build()
+    stray = sorted({ch for ch in html if ord(ch) > 127})
+    return (
+        [f"the page emits non-ASCII: {stray!r}; add them to page._ENTITIES"]
+        if stray
+        else []
+    )
+
+
+@rule(19, "Class ownership")
+def check_class_ownership() -> list[str]:
+    """No CSS class may be emitted by both chrome.py and primitives.py.
+
+    `.fl-band` was briefly claimed by the identity band and by the heat legend's
+    swatches; the swatches inherited the band's absolute positioning and gradient and
+    smeared across every frame that printed a legend. Two owners for one class is the
+    cascade collision the design rules warn about, and nothing caught it but the eye."""
+    #: Typographic utilities that carry no layout and are meant to be shared.
+    shared = {"fl-figure", "fl-label3"}
+    emitted = {}
+    for name in ("chrome", "primitives"):
+        source = (HERE / f"{name}.py").read_text(encoding="utf-8")
+        for cls in re.findall(r'class="(fl-[a-z0-9_ -]+)"', source):
+            for token in cls.split():
+                emitted.setdefault(token, set()).add(name)
+    return [
+        f"class {cls} is emitted by both {' and '.join(sorted(owners))}"
+        for cls, owners in sorted(emitted.items())
+        if len(owners) > 1 and cls not in shared
+    ]
 
 
 @rule(15, "Legal guardrail")

@@ -97,6 +97,96 @@ class Row:
     meta: str | None = None
 
 
+#: The five bands of `04` section 6.4, as (ceiling, token). Average is neutral ink.
+_HEAT = (
+    (59, "--heat-well-below"),
+    (69, "--heat-below"),
+    (79, "--heat-average"),
+    (84, "--heat-above"),
+    (99, "--heat-well-above"),
+)
+
+
+def heat_token(rating: int) -> str:
+    for ceiling, token in _HEAT:
+        if rating <= ceiling:
+            return token
+    return _HEAT[-1][1]
+
+
+@dataclass(frozen=True)
+class Heat:
+    """A rating drawn with its band colour as a SECOND reading of the printed figure.
+
+    Never colour alone: the number is always printed, and `04` 6.4 requires a spoken band
+    too. A surface carrying one of these must also carry a `BandLegend` -- checked."""
+
+    rating: int
+    #: What the simulation has actually observed. `04` 6.4 forbids a band without a
+    #: recorded observation, so this is not optional.
+    observed: str
+
+    @property
+    def band(self) -> str:
+        return heat_token(self.rating)
+
+    @property
+    def label(self) -> str:
+        return {
+            "--heat-well-below": "Well below",
+            "--heat-below": "Below",
+            "--heat-average": "Average",
+            "--heat-above": "Above",
+            "--heat-well-above": "Well above",
+        }[self.band]
+
+    def render(self) -> str:
+        return (
+            f'<span class="fl-heat fl-figure" style="color: var({self.band})"'
+            f' data-ink="{self.band}" data-plate="--surface-panel"'
+            f' aria-label="{self.rating}, {self.label}">{self.rating}</span>'
+        )
+
+
+@dataclass(frozen=True)
+class BandLegend:
+    """The printed band table. Answers "is 74 good?" without a live percentile, and
+    degrades correctly in a save with no league history yet."""
+
+    def cells(self) -> int:
+        return 0  # a legend is chrome, not data
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 22.0
+
+    def render(self) -> str:
+        cells = "".join(
+            f'<span class="fl-heatkey"><i style="background: var({token})"></i>'
+            f'{_ink(label, "--content-quiet", "--surface-panel")}'
+            f'<b class="fl-figure">{low}-{high}</b></span>'
+            for (token, label, low, high) in (
+                ("--heat-well-below", "Well below", 40, 59),
+                ("--heat-below", "Below", 60, 69),
+                ("--heat-average", "Average", 70, 79),
+                ("--heat-above", "Above", 80, 84),
+                ("--heat-well-above", "Well above", 85, 99),
+            )
+        )
+        return f'<div class="fl-bands">{cells}</div>'
+
+
 @dataclass(frozen=True)
 class Chip:
     text: str
@@ -158,8 +248,16 @@ class Table:
             body.append(
                 "".join(
                     f'<div class="col-{c.align}{" fl-figure" if c.figure else ""}">'
-                    f'{_ink(v, "--content-primary" if i == 0 else "--content-secondary", "--surface-panel")}'
-                    "</div>"
+                    + (
+                        v.render()
+                        if isinstance(v, Heat)
+                        else _ink(
+                            v,
+                            "--content-primary" if i == 0 else "--content-secondary",
+                            "--surface-panel",
+                        )
+                    )
+                    + "</div>"
                     for i, (c, v) in enumerate(zip(self.columns, cells))
                 )
             )
@@ -566,8 +664,17 @@ class Custom:
 
 
 def walk(node: Node):
-    """Depth-first over a body tree, for checks that need every node."""
+    """Depth-first over a body tree, for checks that need every node.
+
+    Table rows hold cell VALUES, not nodes, but a `Heat` is a value that carries a rule
+    with it -- so they are yielded too, or the band-table check cannot see the thing it
+    exists to pair with."""
     yield node
+    if isinstance(node, Table):
+        for row in node.rows:
+            for value in row:
+                if isinstance(value, Heat):
+                    yield value
     for name in ("child", "top", "bottom"):
         kid = getattr(node, name, None)
         if kid is not None:

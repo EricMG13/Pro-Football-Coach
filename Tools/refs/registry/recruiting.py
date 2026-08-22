@@ -7,8 +7,8 @@ Retention Decisions, Portal Market and NIL Allocation all route there, and
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, Status, Table,
-    blocker, broadcast, desk, dossier, gap,
+    BandLegend, Chip, Chips, Col, Heat, Hero, Panel, Row, Rows, Split, Stack,
+    Status, Table, blocker, broadcast, desk, dossier, gap,
 )
 
 recruiting_board = desk(
@@ -35,23 +35,37 @@ recruiting_board = desk(
 
 prospect_profile = dossier(
     id="prospectProfile", number=25, name="Prospect Profile", family="recruiting",
-    status=Status.BUILT, commit="Offer a scholarship",
+    status=Status.BUILT,
     body=Split(
         top=Hero(mark="TeamLogo_0017F958E7D04FFC9EA801A252B40FD6",
                  headline="Kalen Ruthers", numeral="68-89",
                  points=("Quarterback, Pecos, 90 miles",),
                  scale="dossier", side="opponent"),
-        bottom=Table(
+        bottom=Stack((Table(
             (Col("Measure", 17, "left", False), Col("Value", 8, "right"),
              Col("Note", 22, "left", False)),
-            (("Scheme fit", "88", "Fits the empty package"),
-             ("Projected ceiling", "86", "Three programmes in")),
-        ),
+            (("Scheme fit", Heat(88, "two looks on film"), "Fits the empty package"),
+             ("Projected ceiling", Heat(86, "two looks on film"), "Three programmes in")),
+        ), BandLegend())),
     ),
     gaps=(
         gap("ART", "Blank photo plate; prospects have no likeness and will not get one."),
         gap("DATA", "Rival interest is a count, not a named set, so the pressure is unreadable."),
-        gap("RULE", "A committing dossier has 241 pt: a 160 pt head, the seam, and 67 pt of evidence -- two rows."),
+        gap(
+            "DATA",
+            "Ratings are point values. `04` 6.4 requires a rating the simulation has not "
+            "earned to be drawn as a RANGE whose width is the confidence, and Unseen "
+            "where nothing has been observed. The scouting-confidence model does not "
+            "exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+        ),
+        blocker(
+            "RULE",
+            "A Dossier that bands a rating cannot also commit at the install floor: `04` "
+            "2.1 gives the head 180-220, 6.4 requires the band table beside the banded "
+            "figure, and 4.5a leaves 241 pt once a commit bar is reserved. The three do "
+            "not fit together. Drawn without the bar, routing to the committing surface "
+            "instead -- an owner question, not a drawing choice.",
+        )
     ),
 )
 

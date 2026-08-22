@@ -2,8 +2,11 @@
    Dark only. There is no production light palette, no derived light register,
    and no user-facing appearance switch.
 
-   Base values are the shipped hexes from
-   Sources/ProFootballCoachUI/DesignTokens.swift. Role aliases carry the names
+   Base values were the shipped hexes from
+   Sources/ProFootballCoachUI/DesignTokens.swift. THAT IS NO LONGER TRUE for
+   --fl-warning and the heat scale: `04` sections 6.1a(ii) and 6.4 amended both on
+   2026-08-22 and DesignTokens.swift still ships the retired warning hex. Canon leads the
+   Swift here; the app carries the gap. Role aliases carry the names
    every view actually reads (`palette.actionPrimary`, `palette.stateWarning`).
    Tokens name purpose, never hue. */
 
@@ -29,19 +32,22 @@
   /* ---- State ------------------------------------------------------------ */
   --fl-live: #37E08A;
   --fl-positive: #4FD08C;
-  --fl-warning: #FFB03A;
+  /* Left the yellow band on 2026-08-22: at 6.1 degrees from gold, identical saturation
+     and 0.6% luminance apart, a caution and a commit were the same colour at 11 pt under
+     a thumb. 24.1 degrees from gold, 5.57:1 on page. `04` 6.1a(ii). */
+  --fl-warning: #C9704A;
   --fl-negative: #FF3B54;
   --fl-info: #6FA8DC;
 
   /* ---- Tier ------------------------------------------------------------- */
   --fl-college: #B07BD6;
-  --fl-pro: #6FA8DC;
+  --fl-pro: var(--fl-info);            /* alias, 6.1a(ii) */
 
   /* ---- Field ------------------------------------------------------------ */
   --fl-field-turf: #072616;
-  --fl-field-line: #F6FAFF;
+  --fl-field-line: var(--fl-ink-1);    /* alias, 6.1a(ii) */
   --fl-field-annotation: #FFCE6A;
-  --fl-field-live: #4FD08C;
+  --fl-field-live: var(--fl-positive); /* alias, 6.1a(ii) */
 
   /* ---- Broadcast turf ramp (6.1b) --------------------------------------- */
   --fl-turf: #1C6E42;
@@ -88,7 +94,8 @@
 
   --action-primary: var(--fl-gold);
   --action-secondary: var(--fl-ink-2);
-  --action-destructive: var(--fl-negative);
+  /* An alias, not a repeat: a future divergence must be a deliberate edit. */
+  --action-destructive: var(--state-negative);
 
   --state-live: var(--fl-live);
   --state-positive: var(--fl-positive);
@@ -97,7 +104,8 @@
   --state-info: var(--fl-info);
 
   --college-identity: var(--fl-college);
-  --pro-identity: var(--fl-pro);
+  /* Alias, per 6.1a(ii). */
+  --pro-identity: var(--state-info);
 
   --field-turf: var(--fl-field-turf);
   --field-line: var(--fl-field-line);
@@ -123,11 +131,17 @@
   --rule-glass: rgba(255, 255, 255, 0.13);
   --rule-row: rgba(255, 255, 255, 0.14);
 
-  /* The 40–99 heat scale. Always a SECOND reading of a printed figure.
-     red < 70, amber 70–84, green 85+ */
-  --heat-strong: var(--state-positive);
-  --heat-steady: var(--state-warning);
-  --heat-weak: var(--state-negative);
+  /* The 40-99 heat scale: FIVE bands diverging around a neutral centre (`04` 6.4,
+     amended 2026-08-22). The three-band red/amber/green it replaces made an average
+     starter read as a caution -- the warm hue now sits BELOW the median, and 70-79 is
+     neutral ink, not amber. Always a SECOND reading of a printed figure.
+     Every band clears 4.5:1 on page, raised and panel, and sits >=24 degrees from gold;
+     `checks.check_heat_bands` computes both rather than trusting this comment. */
+  --heat-well-below: var(--state-negative);   /* 40-59 */
+  --heat-below: var(--state-warning);         /* 60-69 */
+  --heat-average: var(--content-secondary);   /* 70-79, neutral */
+  --heat-above: #7FCB9E;                      /* 80-84, positive lightened */
+  --heat-well-above: var(--state-positive);   /* 85-99 */
 
   /* The committing action's fill, and the only gradient that means
      "this moves the game forward". Gold never means "this is good". */

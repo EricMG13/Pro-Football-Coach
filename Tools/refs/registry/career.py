@@ -15,7 +15,7 @@ from ._shared import (
     Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, Status, Surface, Table,
     blocker, broadcast, desk, dossier, gap,
 )
-from surface import Register
+from surface import Lean
 
 LEGACY = "Sources/ProFootballCoachUI/LegacyHistoryView.swift -- 175 lines, four concepts, two record kinds"
 OVERLAY_GAP = (
@@ -254,7 +254,7 @@ appearance = desk(
 
 teaching = Surface(
     id="teaching", number=72, name="Teaching", family="career",
-    register=Register.DESK, status=Status.OVERLAY,
+    lean=Lean.DESK, status=Status.OVERLAY,
     evidence="Teaching-v3.dc.html on the design-references branch; no registry entry",
     body=Panel("Explosive play", Rows((
         Row("Definition", ("16+ yards",), "A run or pass gaining sixteen or more"),
@@ -268,7 +268,7 @@ teaching = Surface(
 
 failure = Surface(
     id="failure", number=73, name="Failure", family="career",
-    register=Register.DESK, status=Status.OVERLAY,
+    lean=Lean.DESK, status=Status.OVERLAY,
     evidence="failure-v3.dc.html is one of the eight canon sheets; no registry screen corresponds",
     body=Panel("Could not advance the week", Rows((
         Row("What happened", ("Save refused",), "The disk is full"),
@@ -282,7 +282,7 @@ failure = Surface(
 
 system_state = Surface(
     id="systemState", number=74, name="System State", family="career",
-    register=Register.DESK, status=Status.OVERLAY,
+    lean=Lean.DESK, status=Status.OVERLAY,
     evidence="CoachWorldSystemState exists with empty, loading and error kinds; no surface owns them",
     body=Panel("Kinds", Rows((
         Row("Empty", ("Drawn once",), "CollegeOffseasonView.emptyState"),

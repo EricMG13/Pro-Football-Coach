@@ -114,3 +114,68 @@ primitive is fat, which spends the budget on chrome instead of data.
 Fixing it means retuning `.fl-row` and re-measuring `primitives._ROW`, and is the next
 thing worth doing to this generator. Recorded rather than hidden: a frame that fits by
 being empty is not the same as a frame that fits.
+
+---
+
+## Canon amendments, 2026-08-22
+
+`docs/04` gained six amendments. All are applied; three of them settle entries above.
+
+### 11. §4.5a settles §1 and §2 — they were already right, now they are canon
+
+The measured 291 / 241 viewport and the 9 / 6 / 5 row budgets are no longer inferred from
+the design source: `04` §4.5a states them. §1 and §2 above stand as written.
+
+What did change is that the cell budget keys off the **density tier**, not the lean. Dense
+72 · Working 48 · Committing 40 · Broadcast 12, where the tier is set by row height and by
+whether a commit bar is reserved. The previous build gave every Dossier 48 whatever it
+drew.
+
+### 12. §2.1 renames the axis this generator was already modelling
+
+What this module called `Register` is the **presentation lean** — a second axis orthogonal
+to canon's nine registers. Renamed. **The nine-register assignment is not modelled**: it is
+not derivable from the amendment, and inventing it is what produced nine fabricated
+surfaces last time.
+
+### 13. §6.1d replaces the header and the icon rail with one identity band
+
+34 pt, gradient from club primary to `world.page`, hairline of club secondary, mark 19 pt,
+enclosing the whole navigation row. The icon rail is gone. The plate keeps its 115 pt
+leading so the content box stays the canon 709 — the rail's space is simply vacated.
+
+### 14. §6.4's five bands are computed, not asserted
+
+`check_heat_bands` resolves each band and computes its contrast on page / raised / panel and
+its hue separation from gold. Independently reproduces canon's table to two decimals:
+5.67 / 4.64 / 5.26 · 5.57 / 4.56 / 5.16 · 10.00 / 8.20 / 9.28 · 10.32 / 8.46 / 9.57 ·
+10.13 / 8.30 / 9.39, at 49.7 / 24.1 / 170.4 / 102.4 / 106.3 degrees.
+
+### 15. A banded Dossier cannot also commit at the install floor
+
+§2.1 gives the Dossier head 180–220, §6.4 requires the band table beside a banded figure,
+and §4.5a leaves 241 pt once a commit bar is reserved. The three do not fit. Player Profile
+and Prospect Profile are drawn **without the bar**, routing to their committing surface, and
+each declares the conflict as a blocking `RULE` gap. **This is an owner question.**
+
+### 16. Ranged ratings are declared, not faked
+
+§6.4 requires an unearned rating drawn as a range with `Unseen` where nothing is observed.
+The scouting-confidence model does not exist (`07` GAP-06), so surfaces render point values
+and declare the gap — four of them do.
+
+### 17. Canon now leads `DesignTokens.swift`
+
+`--fl-warning` is `#C9704A` per §6.1a(ii); `DesignTokens.swift` still ships the retired hex,
+and its `Heat` enum still has three bands. The vendored token sheet no longer mirrors the
+Swift, and says so at the top. **The app carries both gaps.**
+
+### 18. Two defects this pass introduced and caught
+
+- A blanket `Register` → `Lean` rename rewrote the page **title**. Rule: the title is stable
+  across redeploys because the artifact is found by it; it is now commented as such.
+- `.fl-band` was claimed by both the identity band and the heat legend's swatches, so the
+  swatches inherited the band's absolute positioning and smeared across every frame with a
+  legend. Rule 19 makes a second owner for one class a build failure.
+- The standalone file carries no charset, so a plain file server mojibaked every multi-byte
+  character while the artifact host rendered it correctly. Rule 20 requires ASCII output.

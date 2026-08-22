@@ -19,7 +19,7 @@ import checks  # noqa: E402
 import tokens  # noqa: E402
 from dataclasses import replace  # noqa: E402
 from primitives import Chip, Chips, Col, Custom, Panel, Row, Rows, Stack, Table  # noqa: E402
-from surface import Gap, GapKind, Register, Status  # noqa: E402
+from surface import Gap, GapKind, Lean, Status  # noqa: E402
 
 PASSED: list[str] = []
 FAILED: list[str] = []
@@ -60,7 +60,7 @@ def main() -> int:
         return rs
 
     def blow_cells(rs):
-        i = _first(rs, lambda s: s.register is Register.BROADCAST)
+        i = _first(rs, lambda s: s.lean is Lean.BROADCAST)
         rs[i] = replace(
             rs[i],
             body=Table(
@@ -76,7 +76,7 @@ def main() -> int:
         return rs
 
     def too_many_rows(rs):
-        i = _first(rs, lambda s: s.register is Register.DESK)
+        i = _first(rs, lambda s: s.lean is Lean.DESK)
         rs[i] = replace(
             rs[i],
             body=Rows(tuple(Row(f"row {n}") for n in range(12)), kind="tappable"),
@@ -84,7 +84,7 @@ def main() -> int:
         return rs
 
     def too_many_columns(rs):
-        i = _first(rs, lambda s: s.register is Register.DESK)
+        i = _first(rs, lambda s: s.lean is Lean.DESK)
         rs[i] = replace(
             rs[i],
             body=Table(tuple(Col(f"c{n}", 3) for n in range(11)), (tuple("x" * 11),)),
@@ -93,7 +93,7 @@ def main() -> int:
 
     def illegal_register(rs):
         i = _first(rs, lambda s: s.id != "matchDay")
-        rs[i] = replace(rs[i], register=Register.MATCH_DAY)
+        rs[i] = replace(rs[i], lean=Lean.MATCH_DAY)
         return rs
 
     def bad_contrast(rs):
@@ -107,7 +107,7 @@ def main() -> int:
         return rs
 
     def overflow(rs):
-        i = _first(rs, lambda s: s.register is Register.DESK)
+        i = _first(rs, lambda s: s.lean is Lean.DESK)
         rs[i] = replace(rs[i], body=Table((Col("Narrow", 3),), (("far too long",),)))
         return rs
 
@@ -146,7 +146,7 @@ def main() -> int:
     expect(5, too_many_rows, "12 tappable rows")
 
     def too_tall(rs):
-        i = _first(rs, lambda s: s.register is Register.DESK)
+        i = _first(rs, lambda s: s.lean is Lean.DESK)
         rs[i] = replace(rs[i], body=Stack(tuple(
             Panel(f"p{n}", Rows((Row("x"),), kind="readout")) for n in range(6)
         )))
@@ -158,13 +158,13 @@ def main() -> int:
     expect(8, bad_contrast, "quiet ink on secondary ink")
     expect(11, overflow, "a 12-character cell in a 3-character column")
     def wrong_lean(rs):
-        i = _first(rs, lambda s: s.register is Register.DESK and s.number <= 62)
-        rs[i] = replace(rs[i], register=Register.BROADCAST)
+        i = _first(rs, lambda s: s.lean is Lean.DESK and s.number <= 62)
+        rs[i] = replace(rs[i], lean=Lean.BROADCAST)
         return rs
 
     def dossier_top_heavy(rs):
         from primitives import Split, Hero
-        i = _first(rs, lambda s: s.register is Register.DOSSIER)
+        i = _first(rs, lambda s: s.lean is Lean.DOSSIER)
         head = Hero(None, "x", numeral="1", points=tuple(f"p{n}" for n in range(12)),
                     scale="dossier")
         rs[i] = replace(rs[i], body=Split(top=head, bottom=Rows((Row("y"),))))
@@ -173,8 +173,8 @@ def main() -> int:
     def broadcast_head_on_a_desk(rs):
         # A 64 px numeral and a 390 px watermark on a frame that claims Desk. Desk allows
         # 14 px and a 19 px band mark, so both halves of rule 9 should fire.
-        i = _first(rs, lambda s: s.register is Register.BROADCAST)
-        rs[i] = replace(rs[i], register=Register.DESK)
+        i = _first(rs, lambda s: s.lean is Lean.BROADCAST)
+        rs[i] = replace(rs[i], lean=Lean.DESK)
         return rs
 
     expect(2, wrong_lean, "a Desk surface redrawn as Broadcast")

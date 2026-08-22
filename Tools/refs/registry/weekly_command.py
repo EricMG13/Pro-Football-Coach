@@ -5,7 +5,7 @@ what Saturday did."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Field, Hero, NOTHING_MISSING, Panel, Register, Row, Rows,
+    Chip, Chips, Col, Field, Hero, NOTHING_MISSING, Panel, Lean, Row, Rows,
     Split, Stack, Status, Surface, Table, blocker, broadcast, desk, gap,
 )
 
@@ -123,7 +123,7 @@ team_health = desk(
 
 match_day = Surface(
     id="matchDay", number=14, name="Match Day", family="weeklyCommand",
-    register=Register.MATCH_DAY, status=Status.BUILT,
+    lean=Lean.MATCH_DAY, status=Status.BUILT,
     body=Stack((
         Field(
             home="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",

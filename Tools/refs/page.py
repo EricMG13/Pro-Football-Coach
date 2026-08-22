@@ -1,6 +1,6 @@
 """The single-document shell: fonts, index rail, frames, gap roll-up, JSON manifest.
 
-The missing-items register is rendered three ways from one loop -- a `<details>` under
+The missing-items lean is rendered three ways from one loop -- a `<details>` under
 each frame, a document-level roll-up grouped by kind, and a manifest entry -- because a
 gap that only appears in one of the three is a gap someone will miss.
 """
@@ -17,6 +17,9 @@ from render import render_surface
 from screens import FAMILIES
 from surface import GapKind, Status
 
+#: Stable across redeploys -- the artifact is found by this name. Do not rename it
+#: as a side effect of renaming a symbol; a blanket Register->Lean pass already did
+#: that once.
 TITLE = "Floodlit Surface Register"
 
 FAMILY_NAMES = {
@@ -105,7 +108,7 @@ def _entry(surface) -> str:
         '<div class="entry__head">'
         f"<h3>{surface.number}. {escape(surface.name)}</h3>"
         f'<span class="badge badge--{surface.status_name}">{surface.status_name}</span>'
-        f'<span class="badge">{surface.register.value}</span>'
+        f'<span class="badge">{surface.lean.value}</span>'
         f'<span class="badge">{surface.cells} cells</span>'
         f"{evidence}</div>"
         f'<div class="scroller">{render_surface(surface)}</div>'
@@ -148,6 +151,22 @@ def _counts() -> str:
     )
 
 
+#: Characters that must leave the document as entities. The published artifact is wrapped
+#: with a charset declaration; a plain file server supplies none, the browser guesses
+#: Latin-1, and every multi-byte character mojibakes. Entities read the same either way.
+_ENTITIES = {
+    "\u00b7": "&middot;", "\u2014": "&mdash;", "\u2013": "&ndash;",
+    "\u00b0": "&deg;", "\u2212": "&minus;", "\u00a7": "&sect;",
+    "\u00d7": "&times;", "\u2265": "&ge;", "\u2264": "&le;",
+}
+
+
+def _ascii(html: str) -> str:
+    for char, entity in _ENTITIES.items():
+        html = html.replace(char, entity)
+    return html.encode("ascii", "xmlcharrefreplace").decode("ascii")
+
+
 def build(only: tuple[str, ...] | None = None) -> str:
     """The whole set, or a named subset.
 
@@ -168,7 +187,7 @@ def build(only: tuple[str, ...] | None = None) -> str:
             + "".join(_entry(s) for s in members)
             + "</section>"
         )
-    return (
+    return _ascii(
         f"<title>{TITLE}</title>\n"
         f"<style>{tokens.emit_css()}\n"
         f"{(Path(__file__).parent / 'chrome.css').read_text(encoding='utf-8')}\n"
@@ -200,7 +219,7 @@ def manifest() -> dict:
                 "number": s.number,
                 "name": s.name,
                 "family": s.family,
-                "register": s.register.value,
+                "lean": s.lean.value,
                 "status": s.status_name,
                 "cells": s.cells,
                 "commit": s.commit,

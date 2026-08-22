@@ -7,29 +7,36 @@ than over it."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Hero, NOTHING_MISSING, Panel, Row, Rows, Split, Stack,
-    Status, Table, blocker, desk, dossier, gap,
+    BandLegend, Chip, Chips, Col, Heat, Hero, NOTHING_MISSING, Panel, Row, Rows,
+    Split, Stack, Status, Table, blocker, desk, dossier, gap,
 )
 
 roster = desk(
     id="roster", number=16, name="Roster", family="personnel", status=Status.BUILT,
-    body=Table(
+    body=Stack((Table(
         (Col("Player", 18, "left", False), Col("Pos", 4, "left", False), Col("Yr", 3, "left", False),
          Col("Ovr", 4, "right"), Col("Pot", 4, "right"), Col("Snaps", 6, "right"),
          Col("Form", 5, "right"), Col("Status", 9, "left", False)),
-        (("Reed Vance", "QB", "Jr", "84", "89", "412", "+3", "Fit"),
-         ("Amos Kerr", "WR", "Sr", "81", "82", "388", "+1", "Doubtful"),
-         ("Milo Prasad", "RB", "So", "77", "86", "301", "-2", "Fit"),
-         ("Teo Marchetti", "OT", "Sr", "79", "80", "419", "0", "Limited"),
-         ("Ruben Sallow", "LB", "Jr", "78", "84", "0", "0", "Out"),
-         ("Dara Whitlock", "CB", "So", "75", "87", "356", "+4", "Fit"),
-         ("Nico Barrow", "S", "Sr", "80", "81", "402", "-1", "Fit"),
-         ("Ilya Fenner", "DT", "Jr", "76", "83", "288", "+2", "Fit"),
-         ("Sable Ruiz", "TE", "Fr", "68", "88", "94", "+5", "Fit")),
-    ),
+        (("Reed Vance", "QB", "Jr", Heat(84, "412 snaps"), "89", "412", "+3", "Fit"),
+         ("Amos Kerr", "WR", "Sr", Heat(81, "388 snaps"), "82", "388", "+1", "Doubtful"),
+         ("Milo Prasad", "RB", "So", Heat(77, "301 snaps"), "86", "301", "-2", "Fit"),
+         ("Teo Marchetti", "OT", "Sr", Heat(79, "419 snaps"), "80", "419", "0", "Limited"),
+         ("Ruben Sallow", "LB", "Jr", Heat(78, "no snaps this season"), "84", "0", "0", "Out"),
+         ("Dara Whitlock", "CB", "So", Heat(75, "356 snaps"), "87", "356", "+4", "Fit"),
+         ("Nico Barrow", "S", "Sr", Heat(80, "402 snaps"), "81", "402", "-1", "Fit"),
+         ("Ilya Fenner", "DT", "Jr", Heat(76, "288 snaps"), "83", "288", "+2", "Fit"),
+         ("Sable Ruiz", "TE", "Fr", Heat(68, "94 snaps"), "88", "94", "+5", "Fit")),
+    ), BandLegend())),
     gaps=(
         gap("INTERACTION", "Sorting and filtering are drawn as column heads but no sort state is modelled."),
         gap("DATA", "Form is a single signed integer; the engine has no rolling window behind it."),
+        gap(
+            "DATA",
+            "Ratings are point values. `04` 6.4 requires a rating the simulation has not "
+            "earned to be drawn as a RANGE whose width is the confidence, and Unseen "
+            "where nothing has been observed. The scouting-confidence model does not "
+            "exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+        ),
     ),
 )
 
@@ -59,7 +66,6 @@ depth_chart = desk(
 player_profile = dossier(
     id="playerProfile", number=18, name="Player Profile", family="personnel",
     status=Status.BUILT,
-    commit="Open development plan",
     body=Split(
         top=Hero(
             mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
@@ -68,17 +74,31 @@ player_profile = dossier(
             points=("Senior wide receiver, doubtful",),
             scale="dossier",
         ),
-        bottom=Table(
+        bottom=Stack((Table(
             (Col("Attribute", 14, "left", False), Col("Now", 4, "right"),
              Col("Ceiling", 8, "right"), Col("Season", 19, "left", False)),
-            (("Hands", "86", "87", "41 receptions"),
-             ("Route running", "83", "85", "612 yards")),
-        ),
+            (("Hands", Heat(86, "41 receptions"), "87", "41 receptions"),
+             ("Route running", Heat(83, "612 yards"), "85", "612 yards")),
+        ), BandLegend())),
     ),
     gaps=(
         gap("ART", "The person plate is blank: no player likeness exists and none is planned."),
         gap("DATA", "Ceiling is drawn as a point, but the model holds a range."),
-        gap("RULE", "A committing dossier has 241 pt: a 160 pt head, the seam, and 67 pt of evidence -- two rows."),
+        blocker(
+            "RULE",
+            "A Dossier that bands a rating cannot also commit at the install floor: `04` "
+            "2.1 gives the head 180-220, 6.4 requires the band table beside the banded "
+            "figure, and 4.5a leaves 241 pt once a commit bar is reserved. The three do "
+            "not fit together. Drawn without the bar, routing to the committing surface "
+            "instead -- an owner question, not a drawing choice.",
+        ),
+        gap(
+            "DATA",
+            "Ratings are point values. `04` 6.4 requires a rating the simulation has not "
+            "earned to be drawn as a RANGE whose width is the confidence, and Unseen "
+            "where nothing has been observed. The scouting-confidence model does not "
+            "exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+        ),
     ),
 )
 
@@ -121,17 +141,24 @@ staff_room = desk(
 compare = desk(
     id="compare", number=68, name="Compare", family="personnel",
     status=Status.MISSING, evidence="no Swift case; source inventory M6",
-    body=Panel("Kerr against Ruiz", Table(
+    body=Stack((Panel("Kerr against Ruiz", Table(
         (Col("Attribute", 14, "left", False), Col("Kerr", 6, "right"),
          Col("Ruiz", 6, "right"), Col("Delta", 6, "right")),
-        (("Overall", "81", "68", "-13"), ("Ceiling", "82", "88", "+6"),
-         ("Hands", "86", "72", "-14"), ("Separation", "78", "80", "+2"),
-         ("Blocking", "61", "66", "+5")),
-    )),
+        (("Overall", Heat(81, "388 snaps"), Heat(68, "94 snaps"), "-13"),
+         ("Ceiling", "82", "88", "+6"),
+         ("Hands", Heat(86, "41 receptions"), Heat(72, "6 receptions"), "-14"),
+         ("Separation", Heat(78, "388 snaps"), Heat(80, "94 snaps"), "+2")),
+    )), BandLegend())),
     gaps=(
         blocker("SCREEN", "One of Football Manager's core verbs and one of Madden's depth-chart affordances; no registry screen performs it."),
         gap("INTERACTION", "Choosing the second subject has no designed picker."),
-        gap("DATA", "Ratings are point values, so a comparison cannot show the confidence either side carries."),
+        gap(
+            "DATA",
+            "Ratings are point values. `04` 6.4 requires a rating the simulation has not "
+            "earned to be drawn as a RANGE whose width is the confidence, and Unseen "
+            "where nothing has been observed. The scouting-confidence model does not "
+            "exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+        ),
     ),
 )
 

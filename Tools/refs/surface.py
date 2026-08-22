@@ -15,10 +15,23 @@ from enum import Enum
 from primitives import Node, custom_count
 
 
-class Register(str, Enum):
+class Lean(str, Enum):
+    """The presentation lean, `04` section 2.1 (2026-08-22 amendment).
+
+    Orthogonal to canon's nine registers, which say what a screen is ABOUT; the lean says
+    how much presentation it may spend. Every surface carries one of each. This generator
+    models the lean only -- the nine-register assignment is not derivable from the
+    amendment and is declared as a gap rather than invented.
+
+    The axis is whether the player is being told something or working something out.
+    Frequency does not set it: a frequency-first rule classifies Match Day as a working
+    surface because it is seen fifteen times a season, which is plainly wrong."""
+
     BROADCAST = "BROADCAST"
     DESK = "DESK"
     DOSSIER = "DOSSIER"
+    #: Match Day is the only surface carrying two leans at once -- a Broadcast ground with
+    #: a Desk plate on it. Not an exception to be tolerated; the product's central claim.
     MATCH_DAY = "MATCH_DAY"
 
 
@@ -64,7 +77,7 @@ class Surface:
     number: int
     name: str
     family: str
-    register: Register
+    lean: Lean
     status: Status
     body: Node
     #: The single gold action. Also reserves the 44 pt bar, which is why it is the one

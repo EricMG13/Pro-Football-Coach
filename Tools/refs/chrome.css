@@ -23,46 +23,53 @@
   pointer-events: none;
 }
 
-/* ---- Identity header ---------------------------------------------------- */
+/* ---- Identity band (`04` 6.1d) ----------------------------------------------
+   One band enclosing the whole navigation row. 34 pt, gradient from the club's primary
+   to world.page, hairline of the club's secondary. The mark is 19 pt because the band is
+   the only place a Desk surface spends club colour. */
 
-.fl-header {
+.fl-band {
   position: absolute;
   top: var(--header-top);
   left: var(--leading-inset);
   right: var(--gutter);
-  height: calc(var(--header-primary-row) + var(--header-secondary-row));
-}
-
-.fl-header__primary {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-sm-plus);
-  height: var(--header-primary-row);
-}
-
-.fl-header__mark { height: 19px; width: 19px; object-fit: contain; }
-
-.fl-header__club {
-  font: var(--weight-bold) var(--size-panel) / 1.1 var(--font-display);
-  color: var(--content-primary);
-}
-
-.fl-header__tier {
-  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-
-.fl-header__tier--college { color: var(--college-identity); }
-.fl-header__tier--pro { color: var(--pro-identity); }
-
-.fl-header__secondary {
+  height: 34px;
   display: flex;
   align-items: center;
   gap: var(--gap-md);
-  height: var(--header-secondary-row);
+  padding: 0 var(--gap-lg);
+  border-radius: var(--radius-row);
+  background: linear-gradient(90deg, var(--club) 0%, var(--world-page) 62%);
+  box-shadow: inset 0 0 0 var(--hairline) var(--club-line);
   overflow: hidden;
 }
+
+.fl-band__mark { height: 19px; width: 19px; object-fit: contain; flex: none; }
+
+.fl-band__club {
+  font: var(--weight-bold) var(--size-panel) / 1.1 var(--font-display);
+  color: var(--content-primary);
+  white-space: nowrap;
+}
+
+.fl-band__record { font-size: var(--size-pill); color: var(--content-secondary); flex: none; }
+
+.fl-band__rule {
+  width: var(--hairline);
+  height: 17px;
+  background: var(--rule-legible);
+  flex: none;
+}
+
+.fl-band__family {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+  flex: none;
+}
+
+.fl-band__tabs { display: flex; gap: var(--gap-md); overflow: hidden; min-width: 0; }
 
 .fl-tab {
   font: var(--weight-semibold) var(--size-pill) / 1.1 var(--font-display);
@@ -73,33 +80,12 @@
 
 .fl-tab--here { color: var(--content-primary); }
 
-/* ---- Icon rail ---------------------------------------------------------- */
-
-.fl-rail {
-  position: absolute;
-  left: var(--rail-leading);
-  top: var(--rail-top);
-  width: var(--rail-width);
-  display: flex;
-  flex-direction: column;
-  gap: var(--rail-gap);
-}
-
-.fl-rail__button {
-  height: var(--min-target);
-  border-radius: var(--radius-row);
-  background: var(--surface-panel);
-  display: grid;
-  place-items: center;
-  font: var(--weight-bold) var(--size-flag) / 1 var(--font-display);
-  letter-spacing: var(--track-flag);
+.fl-band__context {
+  margin-left: auto;
+  padding-left: var(--gap-lg);
+  font-size: var(--size-pill);
   color: var(--content-quiet);
-  text-transform: uppercase;
-}
-
-.fl-rail__button--here {
-  background: var(--world-raised);
-  color: var(--content-primary);
+  flex: none;
 }
 
 /* ---- Content plate ------------------------------------------------------ */
@@ -260,5 +246,29 @@
   font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
+  color: var(--content-quiet);
+}
+
+/* Heat: the band is a second reading of a printed figure, never the only one. */
+.fl-heat { font-variant-numeric: tabular-nums lining-nums; font-weight: 600; }
+
+/* The printed band table. `04` 6.4: where a surface bands a rating it prints this. */
+.fl-bands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-lg);
+  align-items: center;
+  padding-top: var(--gap-xxs);
+}
+.fl-heatkey { display: inline-flex; align-items: center; gap: var(--gap-xxs); }
+.fl-heatkey i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.fl-heatkey span {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+}
+.fl-heatkey b {
+  font-weight: 500;
+  font-size: var(--size-pill);
   color: var(--content-quiet);
 }

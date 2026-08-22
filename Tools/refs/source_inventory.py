@@ -1,10 +1,10 @@
 """The source inventory, transcribed from the "Two Registers" design artifact.
 
 `claude.ai/code/artifact/34b9992d-8d69-40f0-a2f3-b8e1c15b3311`, read 2026-08-22. Its
-inventory table assigns a register ("lean") to all 62 registry numbers, and that
+inventory table assigns a lean ("lean") to all 62 registry numbers, and that
 assignment is the design decision -- not this generator's to make. The first build of
 this module invented five of them and flattened three of the four ceremony surfaces out
-of the Broadcast register entirely, which is how a document called "Two Registers"
+of the Broadcast lean entirely, which is how a document called "Two Registers"
 ended up drawing one.
 
 `state` is the source's own reading of the Swift (Built >=180 lines, Thin 100-179, Stub
@@ -14,7 +14,7 @@ from source with file:line evidence, because line count is not build state.
 
 from __future__ import annotations
 
-#: registry number -> (register, the source's build state)
+#: registry number -> (lean, the source's build state)
 SOURCE_LEAN: dict[int, tuple[str, str]] = {
      1: ("BROADCAST", "THIN"),  # Title / Continue
      2: ("DESK", "BUILT"),  # New Career & Coach Identity
