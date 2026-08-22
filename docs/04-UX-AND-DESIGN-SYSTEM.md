@@ -1029,18 +1029,25 @@ Match is the strongest game-authenticity gate.
 
 - The complete 120-yard field remains in frame, with both end zones, line of scrimmage and first-down
   line.
-- Native drawing may add restrained turf bands, yard lines, hash marks and field numbers. Route
-  vectors appear only when the recorded read model supplies that route; decorative or invented
-  movement is prohibited.
+- Native drawing may add restrained turf bands, yard lines, hash marks and field numbers.
+  **Decorative movement is prohibited, and "invented" was amended 2026-08-22 to mean what it was
+  always for.** The two are not the same thing, and reading them as one produced a field of
+  statues: 62% of actor-snaps never moved, with every corner, safety and linebacker frozen for a
+  whole game. A path that *asserts* something the record does not hold — a tackle nobody made, a
+  block nobody won, a catch that never happened — stays prohibited absolutely. A path that asserts
+  nothing and merely places an unrecorded man plausibly is **template motion**, it is governed by
+  `03` §9.6, and it is permitted on the same footing as the §9.4 alignment template that already
+  invents every player's stance. Route vectors still come from the read model.
 - **The play-art vocabulary is fixed (added 2026-08-12):** route vectors as recorded polylines,
   formation dots per §6.5 #18's role tokens, the line-of-scrimmage and first-down rules, and the
   §6.6 broadcast marks. Route-tree and formation notation are drawn conventions of the sport, not
   protected expression; a specific playbook's diagrams are someone's expression and are never
   reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent.
-  **G-06's anchor contract is `03` §9, added 2026-08-17.** Match Day draws play art from a recorded
-  anchor set: alignment starts come from the §9.4 position template, and movement ends come from the
-  identities the outcome records. Sheets that have not yet adopted the anchor set still draw play art
-  in target form only.
+  **G-06's anchor contract is `03` §9, added 2026-08-17, amended 2026-08-22.** Match Day draws play
+  art from a recorded anchor set: alignment starts come from the §9.4 position template, movement
+  ends come from the identities the outcome records, and everyone the record does not name moves on
+  a §9.6 template. Sheets that have not yet adopted the anchor set still draw play art in target
+  form only.
 - Offense direction is recorded data. It owns defended end-zone labels and whether the first-down
   line lies left or right of the line of scrimmage; the view never guesses from home/away colour.
 - All 22 actors are represented; no more than three are visually foregrounded at once.
