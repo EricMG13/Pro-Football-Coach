@@ -85,7 +85,6 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 }
             }
         }
-        .accessibilityIdentifier("coaching-hq-screen")
     }
 
     private var worldStrip: some View {
@@ -236,12 +235,8 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private var standardLayout: some View {
         HStack(alignment: .top, spacing: CoachWorldTokens.Gap.smPlus) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
-                FloodlitLabel3(
-                    model.opponent == nil ? "No game scheduled" : "Before kickoff",
-                    palette: palette
-                )
-                weekAgendaColumn
                 decisionColumn
+                weekAgendaColumn
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
 
@@ -253,12 +248,14 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         }
     }
 
-    @ViewBuilder
     private var kickoffCard: some View {
-        if let opponent = model.opponent {
-            FloodlitCard(palette: palette, depth: .deep) {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
-                    FloodlitLabel3("Kickoff", palette: palette)
+        FloodlitCard(palette: palette, depth: .glass) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                FloodlitLabel3(
+                    model.opponent == nil ? "No game scheduled" : "Before kickoff",
+                    palette: palette
+                )
+                if let opponent = model.opponent {
                     Text(opponent.name)
                         .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                     if let venue = model.venue {
@@ -266,31 +263,24 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                             .font(CoachWorldTokens.TypeRole.caption)
                             .foregroundStyle(palette.contentSecondary.color)
                     }
-                    Text(model.week.nextDeadline)
-                        .font(CoachWorldTokens.TypeRole.caption)
-                        .foregroundStyle(palette.contentSecondary.color)
                 }
-                .accessibilityElement(children: .combine)
+                Text(model.week.nextDeadline)
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentSecondary.color)
             }
+            .accessibilityElement(children: .combine)
         }
     }
 
     // MARK: The week's agenda
 
     private var weekAgendaColumn: some View {
-        HStack(alignment: .center, spacing: CoachWorldTokens.Gap.xs) {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
-                FloodlitLabel3(
-                    "\(model.week.weekLabel) \u{00B7} \(model.week.currentDay)", palette: palette
-                )
-                Text("\(model.obligations.count) OPEN")
-                    .coachWorldDisplay(HQMetric.heroSize, weight: .heavy)
-                    .foregroundStyle(palette.contentPrimary.color)
-                    .lineLimit(1)
-                    .minimumScaleFactor(HQMetric.heroScaleFloor)
-            }
-            .fixedSize(horizontal: true, vertical: false)
-
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3(
+                "Remaining obligations \u{00B7} \(model.week.weekLabel) \u{00B7} "
+                    + model.week.currentDay,
+                palette: palette
+            )
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: CoachWorldTokens.Gap.hair) {
                     ForEach(model.obligations, id: \.stableID) { obligation in
@@ -320,7 +310,8 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
     @ViewBuilder
     private var decisionColumn: some View {
-        if let decision = model.decision {
+        FloodlitCard(palette: palette, depth: .deep) {
+            if let decision = model.decision {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 HStack {
                     FloodlitLabel3(
@@ -328,12 +319,15 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                             ?? decision.deadline,
                         palette: palette
                     )
+                    .accessibilityIdentifier("weekly-command-screen-8")
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
+                        .accessibilityIdentifier("coaching-hq-screen")
                 }
                 Text(decision.title)
                     .coachWorldDisplay(CoachWorldTokens.DisplaySize.lead, weight: .bold)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("weekly-command-dominant")
                 if let evidence = decision.evidence.first {
                     Text(evidence)
                         .font(CoachWorldTokens.TypeRole.body)
@@ -345,17 +339,42 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         choiceRow(choice)
                     }
                 }
+                let selected = decision.choices.first(where: {
+                    $0.intentID == selectedChoiceID
+                })
+                FloodlitCommittingAction(
+                    selected.map { "Commit \($0.title)" } ?? "Commit decision",
+                    isEnabled: selected?.isAvailable == true,
+                    action: {
+                        guard let selected else { return }
+                        onCommit(selected.intentID)
+                    }
+                )
+                .accessibilityIdentifier("hq-commit-decision")
+                if let selected {
+                    Text(selected.consequence)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 HStack(spacing: CoachWorldTokens.Gap.xs) {
                     FloodlitLabel3("Why it is here", palette: palette)
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     secondaryAction("Open film", action: onInspect)
                     secondaryAction("Delegate", action: onDelegate)
                 }
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Spacer(minLength: .zero)
             }
             .accessibilitySortPriority(90)
-        } else {
-            noDecision
+            } else {
+                noDecision
+            }
         }
     }
 
@@ -367,7 +386,6 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             palette: palette,
             action: {
                 selectedChoiceID = choice.intentID
-                onCommit(choice.intentID)
             }
         ) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
@@ -383,6 +401,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         }
         .disabled(!choice.isAvailable)
         .opacity(choice.isAvailable ? 1 : CoachWorldTokens.Motion.disabledOpacity)
+        .accessibilityIdentifier("hq-choice-\(choice.intentID.rawValue)")
     }
 
     private func secondaryAction(_ title: String, action: @escaping () -> Void) -> some View {
@@ -410,7 +429,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private var supportColumn: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
             if !model.squadHealth.isEmpty {
-                FloodlitCard(palette: palette, depth: .deep) {
+                FloodlitCard(palette: palette, depth: .glass) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
                         FloodlitLabel3("Squad health", palette: palette)
                         ForEach(model.squadHealth) { row in
@@ -428,7 +447,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                     .foregroundStyle(
                                         row.isConcern
                                             ? palette.stateWarning.color
-                                            : palette.stateLive.color
+                                            : palette.contentQuiet.color
                                     )
                             }
                             .accessibilityElement(children: .combine)
@@ -439,7 +458,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             }
 
             if !model.stakeholders.isEmpty {
-                FloodlitCard(palette: palette, depth: .deep) {
+                FloodlitCard(palette: palette, depth: .glass) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
                         FloodlitLabel3("Stakeholders", palette: palette)
                         ForEach(model.stakeholders) { row in
@@ -471,9 +490,6 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
             Spacer(minLength: .zero)
 
-            Text("\(model.obligations.count) still open")
-                .font(CoachWorldTokens.TypeRole.caption)
-                .foregroundStyle(palette.contentSecondary.color)
             FloodlitCommittingAction("Advance", isEnabled: canAdvance, action: onContinue)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -482,27 +498,12 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
     private var accessibleLayout: some View {
         ScrollView {
-            VStack(spacing: deskGap) {
-                decisionFloor
-                if let decision = model.decision {
-                    decisionActions(decision)
-                        .padding(.horizontal, CoachWorldTokens.Space.sm)
-                        .background(palette.work.color)
-                        .overlay(alignment: .top) { seam }
-                }
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 // The shared chrome states the programme; drawing this as well stacks two navigations.
                 if chrome == nil { worldStrip }
-                HStack(alignment: .top, spacing: deskGap) {
-                    identityRail
-                    deskWire
-                }
-                // Neither column takes a fixed width of its own -- standardLayout applies that at
-                // its call site -- so both flow full width here instead of the side-by-side
-                // columns standardLayout uses. Without these, accessibleLayout carried no way to
-                // advance the week at all (its only continueButton call sat inside worldStrip,
-                // itself gated on chrome == nil, which production's shared-chrome construction
-                // never satisfies) and silently dropped squad health and stakeholders too.
+                decisionColumn
                 weekAgendaColumn
+                kickoffCard
                 supportColumn
             }
             .padding(CoachWorldTokens.Space.sm)

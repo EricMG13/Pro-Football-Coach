@@ -209,6 +209,60 @@ func runDesignContractTests() {
     }
 
     suite("All-screen Floodlit system") {
+        test("the shared stage leaves descendant automation identifiers intact") {
+            let path = packageRoot()
+                .appendingPathComponent("Sources/ProFootballCoachUI/CoachWorldDeskComponents.swift")
+            let source = strippingLineComments(
+                (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+            )
+
+            expect(
+                !source.contains(".accessibilityIdentifier(\"floodlit-stage\")"),
+                "the unused stage identifier must not overwrite descendant action and proof IDs"
+            )
+            let compositionPath = packageRoot().appendingPathComponent(
+                "Sources/ProFootballCoachUI/CoachWorldFloodlitComposition.swift"
+            )
+            let composition = strippingLineComments(
+                (try? String(contentsOf: compositionPath, encoding: .utf8)) ?? ""
+            )
+            expect(
+                !composition.contains(".accessibilityIdentifier(\"floodlit-surface\")"),
+                "the unused surface identifier must not overwrite descendant action and proof IDs"
+            )
+            let matchPath = packageRoot().appendingPathComponent(
+                "Sources/ProFootballCoachUI/MatchDayView.swift"
+            )
+            let match = strippingLineComments(
+                (try? String(contentsOf: matchPath, encoding: .utf8)) ?? ""
+            )
+            expect(
+                !match.contains(".accessibilityIdentifier(\"match-day-standard\")"),
+                "the unused standard-layout identifier must not overwrite field landmark IDs"
+            )
+        }
+
+        test("post-game production layouts retain one declared dominant surface") {
+            let root = packageRoot().appendingPathComponent("Sources/ProFootballCoachUI")
+            for file in ["AftermathView.swift", "GameDetailBoxScoreView.swift"] {
+                let source = strippingLineComments(
+                    (try? String(contentsOf: root.appendingPathComponent(file), encoding: .utf8))
+                        ?? ""
+                )
+                expectEqual(
+                    source.components(separatedBy: "depth: .deep").count - 1,
+                    1,
+                    "\(file) must declare one dominant deep surface"
+                )
+                expect(source.contains("depth: .glass"), "\(file) needs glass support surfaces")
+                expect(
+                    source.contains("weekly-command-screen-")
+                        && source.contains("weekly-command-dominant"),
+                    "\(file) must retain root and dominant proof hooks"
+                )
+            }
+        }
+
         test("the approved all-screen type scale is canonical") {
             expectEqual(CoachWorldTokens.DisplaySize.hero, 32)
             expectEqual(CoachWorldTokens.DisplaySize.name, 26)

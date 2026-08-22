@@ -20,17 +20,20 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
 
     private let model: FloodlitChromeReadModel
     private let palette: CoachWorldTokens.Palette
+    private let viewportWidth: CGFloat
     private let onNavigate: (CoachWorldIntentID) -> Void
     private let content: () -> Content
 
     init(
         model: FloodlitChromeReadModel,
         palette: CoachWorldTokens.Palette = CoachWorldTokens.dark,
+        viewportWidth: CGFloat,
         onNavigate: @escaping (CoachWorldIntentID) -> Void,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.model = model
         self.palette = palette
+        self.viewportWidth = viewportWidth
         self.onNavigate = onNavigate
         self.content = content
     }
@@ -44,9 +47,8 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
                 } else {
                     standardLayout
                         // Stage tokens are absolute full-frame coordinates that already clear the
-                        // sensor housing. Keep vertical safe-area ownership with the app window:
-                        // expanding through the home-indicator inset recentres this absolute
-                        // composition upward and moves the 12 pt header partly off screen.
+                        // sensor housing. Keep the navigator full-window without allowing the
+                        // expanded safe-area proposal to widen the surface content beneath it.
                         .ignoresSafeArea(edges: .horizontal)
                 }
             }
@@ -64,7 +66,6 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
                 .zIndex(10)
             }
         }
-        .accessibilityIdentifier("floodlit-surface")
     }
 
     private var registryOpener: () -> Void {
@@ -77,7 +78,16 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
         // what happened when the header was added to the stack before the content.
         ZStack(alignment: .topLeading) {
             content()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .frame(
+                    width: max(
+                        viewportWidth
+                            - CoachWorldTokens.Stage.contentLeading
+                            - CoachWorldTokens.Frame.gutter,
+                        .zero
+                    ),
+                    alignment: .topLeading
+                )
+                .frame(maxHeight: .infinity, alignment: .topLeading)
                 .padding(.leading, CoachWorldTokens.Stage.contentLeading)
                 .padding(.trailing, CoachWorldTokens.Frame.gutter)
                 .padding(.top, CoachWorldTokens.Stage.contentTop)

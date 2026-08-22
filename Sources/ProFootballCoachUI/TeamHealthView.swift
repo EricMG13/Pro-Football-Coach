@@ -49,31 +49,39 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
                 if dynamicTypeSize.isAccessibilitySize {
                     readinessTable
                     casePanel
+                    healthyRemainder
+                    alertBar
                 } else {
-                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
-                        readinessTable
-                        casePanel
-                            .frame(width: HealthMetric.panelWidth)
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+                        HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
+                            readinessTable
+                            casePanel
+                                .frame(width: HealthMetric.panelWidth)
+                        }
+                        healthyRemainder
                     }
                 }
             }
             .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
-        .safeAreaInset(edge: .bottom) { alertBar }
+        .safeAreaInset(edge: .bottom) {
+            if !dynamicTypeSize.isAccessibilitySize {
+                alertBar
+            }
+        }
     }
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
             FloodlitLabel3(
-                "Team health \u{00B7} \(model.weekLabel) \u{00B7} "
-                    + "\(model.players.count) on the readiness list",
+                "Team health \u{00B7} \(model.weekLabel)",
                 palette: palette
             )
+            .accessibilityIdentifier("weekly-command-screen-13")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitLabel3(
                 "Condition \(model.averageCondition)%",
-                palette: palette,
-                tint: CoachWorldTokens.Heat.color(for: model.averageCondition, palette: palette)
+                palette: palette
             )
         }
     }
@@ -83,32 +91,37 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
     /// Ordered worst first. A readiness list sorted by squad number makes the coach hunt for the
     /// three names that matter; the reference's own ordering puts the concern at the top.
     private var readinessTable: some View {
-        VStack(alignment: .leading, spacing: .zero) {
-            HStack(spacing: CoachWorldTokens.Gap.smPlus) {
-                FloodlitLabel3("Pos", palette: palette)
-                    .frame(width: HealthMetric.positionColumn, alignment: .leading)
-                FloodlitLabel3("Player", palette: palette)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                FloodlitLabel3("Status", palette: palette)
-                    .frame(width: HealthMetric.statusColumn, alignment: .leading)
-                FloodlitLabel3("Condition", palette: palette)
-                    .frame(width: HealthMetric.evidenceColumn, alignment: .trailing)
-            }
-            .padding(.horizontal, CoachWorldTokens.Pad.row.h)
-            .frame(minHeight: HealthMetric.headerHeight)
-            .accessibilityHidden(true)
-            if model.players.isEmpty {
-                CoachWorldSystemState(
-                    .empty("No readiness evidence is recorded for this squad."),
-                    palette: palette
-                )
-            } else {
-                ForEach(orderedPlayers) { player in
-                    readinessRow(player)
+        FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: .zero) {
+                FloodlitLabel3("Readiness exceptions", palette: palette)
+                    .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+                    .padding(.bottom, CoachWorldTokens.Gap.xxs)
+                    .accessibilityIdentifier("weekly-command-dominant")
+                HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+                    FloodlitLabel3("Pos", palette: palette)
+                        .frame(width: HealthMetric.positionColumn, alignment: .leading)
+                    FloodlitLabel3("Exception", palette: palette)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    FloodlitLabel3("Status", palette: palette)
+                        .frame(width: HealthMetric.statusColumn, alignment: .leading)
+                    FloodlitLabel3("Condition", palette: palette)
+                        .frame(width: HealthMetric.evidenceColumn, alignment: .trailing)
+                }
+                .frame(minHeight: HealthMetric.headerHeight)
+                .accessibilityHidden(true)
+                if exceptionPlayers.isEmpty {
+                    CoachWorldSystemState(
+                        .empty("No readiness exceptions are recorded for this squad."),
+                        palette: palette
+                    )
+                } else {
+                    ForEach(exceptionPlayers) { player in
+                        readinessRow(player)
+                    }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Worst condition first, then by name so the order is stable across snapshots.
@@ -116,6 +129,14 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
         model.players.sorted {
             $0.condition == $1.condition ? $0.name < $1.name : $0.condition < $1.condition
         }
+    }
+
+    private var exceptionPlayers: [TeamHealthReadModel.PlayerStatus] {
+        orderedPlayers.filter { !$0.availability.lowercased().hasPrefix("available") }
+    }
+
+    private var healthyPlayers: [TeamHealthReadModel.PlayerStatus] {
+        orderedPlayers.filter { $0.availability.lowercased().hasPrefix("available") }
     }
 
     private func readinessRow(_ player: TeamHealthReadModel.PlayerStatus) -> some View {
@@ -184,7 +205,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
     /// evidence behind it. There is no treatment plan or return date in this build, so the card
     /// carries what is recorded and says so rather than filling the slot with a projection.
     private var casePanel: some View {
-        FloodlitCard(palette: palette, depth: .deep) {
+        FloodlitCard(palette: palette, depth: .glass) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 if let subject = caseSubject {
                     FloodlitLabel3("The case to watch", palette: palette)
@@ -219,8 +240,52 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
 
     /// The player the card is about: the least available, worst-conditioned name on the list.
     private var caseSubject: TeamHealthReadModel.PlayerStatus? {
-        orderedPlayers.first { !$0.availability.lowercased().hasPrefix("available") }
-            ?? orderedPlayers.first
+        exceptionPlayers.first
+    }
+
+    @ViewBuilder
+    private var healthyRemainder: some View {
+        if !healthyPlayers.isEmpty {
+            FloodlitCard(palette: palette, depth: .glass) {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
+                    FloodlitLabel3("Available", palette: palette)
+                    ForEach(healthyPlayers) { player in
+                        HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+                            Text(player.position.uppercased())
+                                .font(
+                                    CoachWorldTokens.display(
+                                        CoachWorldTokens.DisplaySize.pill, weight: .bold
+                                    )
+                                )
+                                .foregroundStyle(palette.contentQuiet.color)
+                                .frame(width: HealthMetric.positionColumn, alignment: .leading)
+                            Text(player.name)
+                                .font(
+                                    CoachWorldTokens.display(
+                                        CoachWorldTokens.DisplaySize.row, weight: .bold
+                                    )
+                                )
+                                .lineLimit(1)
+                            Spacer(minLength: CoachWorldTokens.Gap.xs)
+                            Text("\(player.condition)%")
+                                .font(
+                                    CoachWorldTokens.figure(
+                                        CoachWorldTokens.DisplaySize.pill, weight: .semibold
+                                    )
+                                )
+                                .foregroundStyle(palette.contentSecondary.color)
+                        }
+                        .frame(minHeight: HealthMetric.rowHeight)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(
+                            "\(player.position) \(player.name), available, condition "
+                                + "\(player.condition) percent"
+                        )
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
     }
 
     /// `proportionOf` drives both the bar's fill and the printed figure, so they always agree with

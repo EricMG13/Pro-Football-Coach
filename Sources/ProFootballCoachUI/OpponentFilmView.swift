@@ -51,6 +51,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
                         .empty("Opponent film unavailable. " + reason),
                         palette: palette
                     )
+                    .accessibilityIdentifier("weekly-command-dominant")
                 } else if dynamicTypeSize.isAccessibilitySize {
                     tendencies
                     sourcePanel
@@ -71,6 +72,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
             FloodlitLabel3(headline, palette: palette)
+                .accessibilityIdentifier("weekly-command-screen-10")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if !model.isCurrent {
                 FloodlitLabel3("Stale", palette: palette, tint: palette.stateWarning.color)
@@ -94,20 +96,23 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
     /// down-and-distance tendency would be a figure with nothing behind it, and `04` section 4.4
     /// refuses invented evidence more firmly than it dislikes a short table.
     private var tendencies: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
-            FloodlitLabel3("What the film says", palette: palette)
-            tendencyRow(
-                "Pass rate",
-                proportion: Double(model.passRate) / FilmMetric.percentScale,
-                split: "\(model.passRate)% pass \u{00B7} \(100 - model.passRate)% run"
-            )
-            tendencyRow(
-                "Turnovers",
-                proportion: Double(model.turnoverRate) / FilmMetric.percentScale,
-                split: "\(model.turnoverRate)% of drives"
-            )
+        FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
+                FloodlitLabel3("What the film says", palette: palette)
+                    .accessibilityIdentifier("weekly-command-dominant")
+                tendencyRow(
+                    "Pass rate",
+                    proportion: Double(model.passRate) / FilmMetric.percentScale,
+                    split: "\(model.passRate)% pass \u{00B7} \(100 - model.passRate)% run"
+                )
+                tendencyRow(
+                    "Turnovers",
+                    proportion: Double(model.turnoverRate) / FilmMetric.percentScale,
+                    split: "\(model.turnoverRate)% of drives"
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func tendencyRow(
@@ -146,7 +151,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
 
     /// The right panel: how far the evidence goes, and where it stops.
     private var sourcePanel: some View {
-        FloodlitCard(palette: palette, depth: .deep) {
+        FloodlitCard(palette: palette, depth: .glass) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 HStack(spacing: CoachWorldTokens.Gap.xs) {
                     FloodlitLabel3("How far this goes", palette: palette)

@@ -61,13 +61,18 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
     /// score and nothing per quarter, so the columns are absent. Four cells reading the final score
     /// divided four ways would be a scoring summary the game never played.
     private var scoreLines: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
-            FloodlitLabel3(
-                "Final \u{00B7} \(model.venue.name) \u{00B7} \(model.resultLabel)",
-                palette: palette
-            )
-            scoreLine(model.away)
-            scoreLine(model.home)
+        FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
+                FloodlitLabel3(
+                    "Final \u{00B7} \(model.venue.name) \u{00B7} \(model.resultLabel)",
+                    palette: palette
+                )
+                .accessibilityIdentifier("weekly-command-screen-47")
+                scoreLine(model.away)
+                    .accessibilityIdentifier("weekly-command-dominant")
+                scoreLine(model.home)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -165,7 +170,7 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
     /// sentences rather than as a totals table, so the sentences are what the column holds; an
     /// opposed bar needs two figures, and there are none to oppose.
     private var evidencePanel: some View {
-        FloodlitCard(palette: palette, depth: .deep) {
+        FloodlitCard(palette: palette, depth: .glass) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 evidenceGroup(
                     "How the game went",

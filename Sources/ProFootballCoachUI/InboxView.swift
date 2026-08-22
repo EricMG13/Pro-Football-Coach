@@ -61,23 +61,24 @@ public struct InboxView: View, CoachWorldChromedSurface {
                         ),
                         palette: palette
                     )
+                    .accessibilityIdentifier("weekly-command-dominant")
                 } else if dynamicTypeSize.isAccessibilitySize {
                     // At AX sizes the two columns stack: the reading pane cannot hold a message
                     // beside a list of six at 310 points wide, and cutting the message is worse
                     // than scrolling to it.
-                    messageList
                     readingPane
+                    messageList
                 } else {
                     HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
+                        readingPane
                         messageList
                             .frame(width: InboxMetric.listWidth)
-                        readingPane
                     }
                 }
+                commitBar
             }
             .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
-        .safeAreaInset(edge: .bottom) { commitBar }
     }
 
     private var header: some View {
@@ -96,6 +97,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                 .buttonStyle(.plain)
             }
             FloodlitLabel3("Inbox \u{00B7} \(model.weekLabel)", palette: palette)
+                .accessibilityIdentifier("weekly-command-screen-9")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if unreadCount > 0 {
                 FloodlitLabel3(
@@ -181,6 +183,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                     HStack(spacing: CoachWorldTokens.Gap.smPlus) {
                         FloodlitLabel3(item.sourceLabel, palette: palette)
+                            .accessibilityIdentifier("weekly-command-dominant")
                         Spacer(minLength: CoachWorldTokens.Gap.xs)
                         FloodlitFlag(tag(for: item), tint: tone(for: item), palette: palette)
                     }
