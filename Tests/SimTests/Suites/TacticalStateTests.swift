@@ -7,10 +7,15 @@ import FootballSimCore
 private final class KickoffStateRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private var captured: GameState?
-    private let checkpoint: String
+    private let checkpoint: String?
 
-    init(after step: WorldStep) {
-        checkpoint = "step.\(step.rawValue)"
+    /// Named by the step it comes *before*, and resolved through `WorldScheduler.steps`, so a step
+    /// inserted ahead of kickoff moves this with it. Restating the predecessor by name would make
+    /// the day someone reorders the week the day this silently measures the wrong root.
+    init(before step: WorldStep) {
+        let steps = WorldScheduler.steps
+        checkpoint = steps.firstIndex(of: step)
+            .flatMap { $0 > 0 ? "step.\(steps[$0 - 1].rawValue)" : nil }
     }
 
     var state: GameState? {
@@ -20,7 +25,7 @@ private final class KickoffStateRecorder: @unchecked Sendable {
     }
 
     func observe(_ label: String, state: GameState) {
-        guard label == checkpoint else { return }
+        guard let checkpoint, label == checkpoint else { return }
         lock.lock()
         defer { lock.unlock() }
         captured = state
@@ -200,7 +205,7 @@ func runTacticalStateTests() {
             // whole summary — not just the participant lists — is what this asserts. The
             // comparison root is therefore the one the step loop had reached at the last step
             // before kickoff.
-            let recorder = KickoffStateRecorder(after: .aiDecisions)
+            let recorder = KickoffStateRecorder(before: .nonUserGames)
             WorldScheduler.transactionObserver = { checkpoint, observed in
                 recorder.observe(checkpoint, state: observed)
             }
