@@ -216,6 +216,15 @@ func runTacticalStateTests() {
                 expect(false, "the week never reached the step before kickoff")
                 return
             }
+            // The two inputs this call leaves out that `nonUserGames` passes in. The simulator reads
+            // neither from the root — only from these arguments — so stating them here is what makes
+            // the equality below a claim about the home plan being consumed rather than an accident
+            // of this seed. If a fixture ever gives the away side a plan or anyone a personnel plan,
+            // this says so instead of failing on an opaque summary diff.
+            expect(kickoff.tactical.plan(for: game.awayID, at: kickoff.calendar) == nil,
+                   "the away side carries a plan this comparison does not pass")
+            expect(kickoff.tactical.personnelPlansByOrganisation.isEmpty,
+                   "a personnel plan exists that this comparison does not pass")
             let expected = AbstractGameSimulator.play(
                 game,
                 in: kickoff,
