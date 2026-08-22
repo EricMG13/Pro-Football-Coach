@@ -1,5 +1,8 @@
 # Claude build handoff
 
+> **Superseded:** resume from `docs/HANDOFF-CLAUDE-2026-08-22.md`. The material below is an older
+> milestone handoff retained for history.
+
 Checkpoint: **M7 is complete except conference realignment.** Continue from here; do not redo the
 green gates below.
 
