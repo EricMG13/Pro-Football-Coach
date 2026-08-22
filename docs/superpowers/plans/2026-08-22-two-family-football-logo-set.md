@@ -23,7 +23,8 @@
 - Every mark must remain recognizable after reduction to 27 x 27 pixels, approximating a 20-point display.
 - The uploaded reference controls construction and visual language only; do not copy its depicted subjects.
 - Do not modify application code, the canonical logo manifest, or asset catalogues.
-- Leave generated review assets uncommitted until the owner explicitly requests repository integration.
+- Commit only the new batch assets and their QA review files in this isolated worktree; do not integrate the canonical logo manifest or asset catalogue.
+- Stop after the Equipment & Vehicle family is reviewed and presented; begin Regional Symbols only after explicit owner approval.
 
 ---
 
@@ -179,6 +180,12 @@ Expected: every Equipment & Vehicle mark has at most six connected regions and n
 Verify size, mode, alpha values, edge transparency, margins, colour count, region count, and minimum component dimensions.
 
 Expected: ten PASS results; no file has fewer than two or more than three visible colours, any non-zero edge alpha, a margin below 11 pixels, more than six regions, or a retained feature below 13 pixels.
+
+- [ ] **Step 4: Commit and present Batch 1**
+
+Commit only the ten Equipment & Vehicle final PNGs, their ten raw source PNGs, and their family-specific QA artifacts. Present a phone-sized family preview and stop until the owner explicitly approves Batch 2.
+
+Expected: Batch 1 is committed and viewable; no Regional Symbol image has been generated.
 
 ### Task 4: Generate the Regional Symbol Family
 
