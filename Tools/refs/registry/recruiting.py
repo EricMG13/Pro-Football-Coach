@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from ._shared import (
     Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, Status, Table,
-    blocker, desk, dossier, gap,
+    blocker, broadcast, desk, dossier, gap,
 )
 
 recruiting_board = desk(
@@ -37,19 +37,21 @@ prospect_profile = dossier(
     id="prospectProfile", number=25, name="Prospect Profile", family="recruiting",
     status=Status.BUILT, commit="Offer a scholarship",
     body=Split(
-        top=Hero(mark=None, headline="Kalen Ruthers", numeral="4 stars",
-                 points=("Quarterback, Pecos", "90 miles, high interest")),
-        bottom=Panel("Fit", Table(
+        top=Hero(mark="TeamLogo_0017F958E7D04FFC9EA801A252B40FD6",
+                 headline="Kalen Ruthers", numeral="68-89",
+                 points=("Quarterback, Pecos, 90 miles",),
+                 scale="dossier", side="opponent"),
+        bottom=Table(
             (Col("Measure", 17, "left", False), Col("Value", 8, "right"),
              Col("Note", 22, "left", False)),
             (("Scheme fit", "88", "Fits the empty package"),
-             ("Academic", "Clear", "No qualifying risk"),
              ("Projected ceiling", "86", "Three programmes in")),
-        )),
+        ),
     ),
     gaps=(
         gap("ART", "Blank photo plate; prospects have no likeness and will not get one."),
         gap("DATA", "Rival interest is a count, not a named set, so the pressure is unreadable."),
+        gap("RULE", "A committing dossier has 241 pt: a 160 pt head, the seam, and 67 pt of evidence -- two rows."),
     ),
 )
 
@@ -59,7 +61,6 @@ shortlist = desk(
         Row("Kalen Ruthers", ("QB", "4"), "Visit booked for week 9"),
         Row("Bram Teasdale", ("OT", "3"), "Committed, hold the place"),
         Row("Wren Kovalik", ("LB", "3"), "Wants a defensive coordinator meeting"),
-        Row("Emory Salk", ("CB", "3"), "Waiting on a second offer"),
     ), kind="tappable")),
     gaps=(
         gap("INTERACTION", "Removing from the shortlist has no designed confirmation."),
@@ -74,7 +75,6 @@ contact_visit = desk(
             (Col("Prospect", 18, "left", False), Col("Action", 14, "left", False),
              Col("Cost", 6, "right"), Col("Window", 10, "left", False)),
             (("Kalen Ruthers", "Official visit", "3", "Week 9"),
-             ("Ovie Adeyemi", "Call", "1", "Any"),
              ("Wren Kovalik", "Home visit", "2", "Week 8")),
         )),
         Panel("Budget", Rows((
@@ -107,20 +107,22 @@ class_overview = desk(
     ),
 )
 
-signing_day = desk(
+signing_day = broadcast(
     id="signingDay", number=29, name="Signing Day", family="recruiting",
     status=Status.PARTIAL, parent="CollegeOffseasonView",
     evidence="Sources/ProFootballCoachUI/CollegeOffseasonView.swift -- no focus parameter",
-    commit="Close the class",
-    body=Panel("Today", Rows((
-        Row("Bram Teasdale", ("Signed",), "09:12"),
-        Row("Isolde Grange", ("Signed",), "10:40"),
-        Row("Kalen Ruthers", ("Deciding",), "Announces at 14:00"),
-        Row("Wren Kovalik", ("Lost",), "Signed elsewhere"),
-    ), kind="readout")),
+    body=Hero(
+        mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
+        headline="Bram Teasdale signs",
+        numeral="3",
+        points=("Offensive tackle, Blackmere", "Second of the class",
+                "Twenty places still open"),
+        scale="broadcast",
+    ),
     gaps=(
         blocker("SCREEN", "Delegates to CollegeOffseasonView, which takes no focus, so this number renders the offseason hub."),
-        gap("INTERACTION", "No live arrival of a decision; the list is static."),
+        blocker("DATA", "Nothing fires signing day, and nothing guarantees nothing fires on a routine week."),
+        gap("ART", "The jersey lockup replaces the portrait the product may never draw; no lockup component exists."),
     ),
 )
 
@@ -140,46 +142,5 @@ college_offseason = desk(
     ),
 )
 
-# ---- New -----------------------------------------------------------------------
-
-recruiting_pitch = desk(
-    id="recruitingPitch", number=71, name="Recruiting Pitch", family="recruiting",
-    status=Status.MISSING, evidence="no Swift case; contact actions have no content",
-    commit="Make the pitch",
-    body=Stack((
-        Panel("What Ruthers cares about", Table(
-            (Col("Motive", 18, "left", False), Col("Weight", 7, "right"), Col("Our standing", 24, "left", False)),
-            (("Early playing time", "High", "One senior ahead"),
-             ("Distance from home", "High", "90 miles, strong"),
-             ("Development record", "Medium", "Two quarterbacks drafted")),
-        )),
-        Rows((
-            Row("Lead with playing time", ("Fit: high",)),
-            Row("Lead with development", ("Fit: medium",), "Safer, slower"),
-        ), kind="tappable"),
-    )),
-    gaps=(
-        blocker("SCREEN", "Contact actions exist as a cost with no content; nothing is said to a prospect."),
-        blocker("DATA", "Prospect motives are not modelled at all."),
-        gap("RULE", "A promise made in a pitch has no representation and cannot be broken or kept."),
-    ),
-)
-
-commitment_feed = desk(
-    id="commitmentFeed", number=72, name="Commitment Feed", family="recruiting",
-    status=Status.MISSING, evidence="no Swift case; commitments appear only as a status column",
-    body=Panel("Across the conference", Rows((
-        Row("Zumbrota Central", ("4 stars", "QB"), "Flipped from a rival, week 7"),
-        Row("Pecos Bramble", ("3 stars", "OT"), "Local commitment"),
-        Row("Union Maritime", ("2 stars", "K"), "Isolde Grange"),
-        Row("Edgartown Cedar", ("4 stars", "DT"), "Sanjay Rooke, whom we wanted"),
-    ), kind="readout")),
-    gaps=(
-        blocker("SCREEN", "Rival recruiting is invisible; a class is lost with no notice."),
-        gap("ART", "Each row wants the rival's mark, which resolves, and its conference mark, which does not exist."),
-    ),
-)
-
 SURFACES = (recruiting_board, prospect_profile, shortlist, contact_visit,
-            class_overview, signing_day, college_offseason,
-            recruiting_pitch, commitment_feed)
+            class_overview, signing_day, college_offseason)

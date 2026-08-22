@@ -24,6 +24,7 @@ _GAP_HAIR = tokens.px("--gap-hair")
 _GAP_MD = tokens.px("--gap-md")
 _GAP_SM = tokens.px("--gap-sm")
 _GAP_LG = tokens.px("--gap-lg")
+_GAP_XS = tokens.px("--gap-xs")
 _PANEL_HEAD = 25.0                       # .fl-panel__head, measured
 _PANEL_PAD = 11.0 * 2                    # --pad-panel, vertical
 _LABEL3 = 9.0 * 1.1 + tokens.px("--gap-xxs")   # a column-head row
@@ -36,12 +37,10 @@ _SEAM = 2.0
 # effort than reading it off the page once. Captured 2026-08-22 in the Browser pane at
 # 1280x720 against docs/refs/subset.html; re-measure with
 # `build.py --only <id>` if chrome.css changes a padding or a face.
-_ROW = {
-    ("tappable", True): 64.0,
-    ("tappable", False): 44.0,
-    ("readout", True): 52.0,
-    ("readout", False): 40.0,
-}
+# Two constants, not four: a row measures the same with or without its meta line, because
+# the line box of the values column sets the height either way. The first version branched
+# on meta and was wrong about why rows are tall.
+_ROW = {"tappable": 64.0, "readout": 52.0}
 
 # --------------------------------------------------------------------------
 # What a node has to answer
@@ -196,8 +195,8 @@ class Rows:
         """Per item, not per row: a row carrying a meta line is half as tall again as
         the min-height its track declares, and the first build clipped because this
         used the track alone."""
-        total = sum(_ROW[(self.kind, item.meta is not None)] for item in self.items)
-        return total + max(len(self.items) - 1, 0) * _GAP_HAIR
+        n = len(self.items)
+        return n * _ROW[self.kind] + max(n - 1, 0) * _GAP_HAIR
 
     def render(self) -> str:
         out = []
@@ -305,12 +304,46 @@ class Field:
 
 @dataclass(frozen=True)
 class Hero:
-    """A Broadcast or Dossier head: one mark, one headline, one numeral, a few points."""
+    """A Broadcast or Dossier head.
+
+    The source spends a whole section on why this exists: the product may never draw a
+    face, so "the mark, huge" and "the numeral, huge" carry the drama a portrait would.
+    That makes three things load-bearing here and none of them optional -- the mark runs
+    as a WATERMARK behind the text rather than as an inline image beside it, the numeral
+    runs at 40-72, and the ground is flooded with club or opponent colour.
+
+    The first build drew a 96 px inline mark, a 34 px numeral and a neutral ground, which
+    is a Desk frame with a bigger headline."""
 
     mark: str | None
     headline: str
     numeral: str | None = None
     points: tuple[str, ...] = ()
+    #: "broadcast" floods the plate; "dossier" is the band above the seam.
+    scale: str = "broadcast"
+    #: Whose colour floods -- "club" or "opponent".
+    side: str = "club"
+
+    #: Watermark size and head height per scale, from the source's specification table
+    #: (Broadcast mark 200-390, Dossier 180-220 above the seam) and its drawn examples
+    #: (Signing day: 72 pt headline, 390 px watermark; Prospect dossier: 132 pt head,
+    #: 212 px watermark, name at 38, ceiling at 40).
+    WATERMARK = {"broadcast": 390.0, "dossier": 212.0}
+    HEADLINE = {"broadcast": 72.0, "dossier": 38.0}
+    NUMERAL = {"broadcast": 64.0, "dossier": 40.0}
+    #: A dossier head is a fixed band above the seam. A broadcast head is the whole
+    #: plate, so it flexes to whatever the frame gives it and reports only the height its
+    #: content actually needs -- declaring 291 made every committing broadcast surface
+    #: overflow its own 241 pt plate.
+    #: Chrome around the head's text, MEASURED per scale like the row heights above.
+    #: Broadcast is the 28 pt of --pad-band; a dossier head measures 48.5, and chasing the
+    #: extra 20 through the flex box is a worse use of effort than reading it off the page.
+    #: Captured 2026-08-22 at 1280x720; `--only <id>` plus the DOM probe in the README
+    #: re-measures it.
+    CHROME = {"broadcast": 28.0, "dossier": 48.5}
+    #: Line box of one point in the head's list, plus the list's own 4 pt.
+    POINT = 16.8
+    POINTS_PAD = 4.0
 
     def cells(self) -> int:
         return (1 if self.numeral else 0) + len(self.points)
@@ -327,42 +360,46 @@ class Hero:
     def golds(self) -> int:
         return 0
 
-    #: Mark size in the head band. The band is 180-220 for a Dossier (`04` 6.5), and
-    #: the mark sits inside it rather than above it -- stacked, a 180 px mark plus its
-    #: own headline already exceeds the 275 pt a committing plate has.
-    MARK = 96.0
-    #: Measured band height at MARK 96: the mark plus the flex row's own line boxes.
-    BAND = 107.0
-
     def height(self) -> float:
-        text = tokens.px("--size-title") * 1.05
+        total = self.CHROME[self.scale] + self.HEADLINE[self.scale] * 1.02
         if self.numeral:
-            text += tokens.px("--size-figure") + _GAP_SM
+            total += self.NUMERAL[self.scale] + _GAP_XS
         if self.points:
-            text += len(self.points) * 11.0 * 1.35 + _GAP_SM
-        return max(text, self.BAND if self.mark else 0.0)
+            total += len(self.points) * self.POINT + self.POINTS_PAD + _GAP_XS
+        return total
 
     def render(self) -> str:
         from marks import mark_uri
 
         mark = (
-            f'<img class="fl-hero__mark" src="{mark_uri(self.mark)}" alt="">'
+            f'<img class="fl-hero__watermark" src="{mark_uri(self.mark)}" alt=""'
+            f' style="height: {self.WATERMARK[self.scale]:g}px">'
             if self.mark
             else ""
         )
+        ground = "--fl-club-field" if self.side == "club" else "--fl-opponent-field"
+        ink = "--fl-club-ink" if self.side == "club" else "--fl-opponent-ink"
         numeral = (
-            f'<div class="fl-hero__numeral fl-figure">'
-            f'{_ink(self.numeral, "--content-primary", "--world-page")}</div>'
+            f'<div class="fl-hero__numeral fl-figure"'
+            f' style="font-size: {self.NUMERAL[self.scale]:g}px">'
+            f"{_ink(self.numeral, ink, ground)}</div>"
             if self.numeral
             else ""
         )
         points = "".join(
-            f'<li>{_ink(p, "--content-secondary", "--world-page")}</li>' for p in self.points
+            f"<li>{_ink(p, ink, ground)}</li>" for p in self.points
         )
+        # The head takes the height its content needs; a broadcast head then flexes to
+        # fill the plate it is the whole of.
+        band = "flex: none" if self.scale == "dossier" else "flex: 1 1 auto"
         return (
-            f'<div class="fl-hero">{mark}'
+            f'<div class="fl-hero fl-hero--{self.scale}"'
+            f' style="--fl-flood: var({ground}); {band}">'
+            f"{mark}"
             '<div class="fl-hero__text">'
-            f'<div class="fl-hero__headline">{_ink(self.headline, "--content-primary", "--world-page")}</div>'
+            f'<div class="fl-hero__headline"'
+            f' style="font-size: {self.HEADLINE[self.scale]:g}px">'
+            f'{_ink(self.headline, ink, ground)}</div>'
             f"{numeral}"
             f'<ul class="fl-hero__points">{points}</ul></div></div>'
         )
@@ -472,7 +509,9 @@ class Chips:
                 "negative": "--state-negative",
                 "gold": "--ink-on-gold",
             }[chip.tone]
-            plate = "--action-primary" if chip.tone == "gold" else "--surface-panel"
+            # --gold-field is a gradient; --fl-gold is its mid stop and the
+            # darkest ground the ink actually sits on.
+            plate = "--fl-gold" if chip.tone == "gold" else "--surface-panel"
             out.append(
                 f'<span class="fl-chip fl-chip--{chip.tone}">'
                 f"{_ink(chip.text, ink, plate)}</span>"
@@ -494,6 +533,15 @@ class Custom:
     declared_tappable: int = 0
     declared_golds: int = 0
     declared_height: float = 0.0
+
+    def __post_init__(self) -> None:
+        # A Custom that declares nothing costs nothing against every budget, which makes
+        # the escape hatch a way out of all of them. Six are allowed; each has to say what
+        # it weighs.
+        if self.declared_height <= 0:
+            raise ValueError(
+                "Custom must declare a height; the checks cannot measure arbitrary HTML"
+            )
 
     def cells(self) -> int:
         return self.declared_cells

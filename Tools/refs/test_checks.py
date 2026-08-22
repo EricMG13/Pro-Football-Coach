@@ -101,7 +101,8 @@ def main() -> int:
         # quiet ink on the raised ground is below 4.5.
         i = _first(rs, lambda s: True)
         rs[i] = replace(rs[i], body=Custom(
-            '<span data-ink="--content-quiet" data-plate="--content-secondary">x</span>'
+            '<span data-ink="--content-quiet" data-plate="--content-secondary">x</span>',
+            declared_height=40,
         ))
         return rs
 
@@ -115,16 +116,16 @@ def main() -> int:
         return rs
 
     def banned_word(rs):
-        rs[0] = replace(rs[0], body=Custom("<p>TODO: finish this</p>"))
+        rs[0] = replace(rs[0], body=Custom("<p>TODO: finish this</p>", declared_height=40))
         return rs
 
     def external_url(rs):
-        rs[0] = replace(rs[0], body=Custom('<img src="https://example.com/a.png">'))
+        rs[0] = replace(rs[0], body=Custom('<img src="https://example.com/a.png">', declared_height=40))
         return rs
 
     def too_many_customs(rs):
         for i in range(tokens.CUSTOM_BUDGET + 1):
-            rs[i] = replace(rs[i], body=Custom("<p>escape hatch</p>"))
+            rs[i] = replace(rs[i], body=Custom("<p>escape hatch</p>", declared_height=40))
         return rs
 
     def missing_evidence(rs):
@@ -156,19 +157,33 @@ def main() -> int:
     expect(7, illegal_register, "MATCH_DAY on a surface that is not matchDay")
     expect(8, bad_contrast, "quiet ink on secondary ink")
     expect(11, overflow, "a 12-character cell in a 3-character column")
+    def wrong_lean(rs):
+        i = _first(rs, lambda s: s.register is Register.DESK and s.number <= 62)
+        rs[i] = replace(rs[i], register=Register.BROADCAST)
+        return rs
+
+    def dossier_top_heavy(rs):
+        from primitives import Split, Hero
+        i = _first(rs, lambda s: s.register is Register.DOSSIER)
+        head = Hero(None, "x", numeral="1", points=tuple(f"p{n}" for n in range(12)),
+                    scale="dossier")
+        rs[i] = replace(rs[i], body=Split(top=head, bottom=Rows((Row("y"),))))
+        return rs
+
+    def broadcast_head_on_a_desk(rs):
+        # A 64 px numeral and a 390 px watermark on a frame that claims Desk. Desk allows
+        # 14 px and a 19 px band mark, so both halves of rule 9 should fire.
+        i = _first(rs, lambda s: s.register is Register.BROADCAST)
+        rs[i] = replace(rs[i], register=Register.DESK)
+        return rs
+
+    expect(2, wrong_lean, "a Desk surface redrawn as Broadcast")
+    expect(3, dossier_top_heavy, "13 cells above the dossier seam")
+    expect(9, broadcast_head_on_a_desk, "a 64 px numeral on a frame claiming Desk")
     expect(12, no_gaps, "a surface with no declared gap")
 
-    # Rules 9 and 10 are not registry-shaped, so they are mutated at their source.
-    import chrome
-
-    saved = chrome.MARK_HEIGHT["BROADCAST"]
-    chrome.MARK_HEIGHT["BROADCAST"] = 19  # Desk's size on a Broadcast frame
-    try:
-        hit = [f for f in checks.check_type() if "mark height" in f]
-        (PASSED if hit else FAILED).append("rule 9: a wrong mark height for the register")
-    finally:
-        chrome.MARK_HEIGHT["BROADCAST"] = saved
-
+    # Rule 10 is not registry-shaped, so it is mutated at its source. Rule 9's mark and
+    # numeral scales are now mutated through the registry above (`small_numeral`).
     stray = checks.HERE / "_mutation_probe.py"
     stray.write_text("ACCENT = \"#ff0000\"\n", encoding="utf-8")
     try:
@@ -184,6 +199,15 @@ def main() -> int:
         print(f"  ok    {line}")
     for line in FAILED:
         print(f"  DEAD  {line} -- the rule did not fire")
+    # Rule 15 cannot be mutated through the registry: it reads the shipped catalogue and
+    # the Swift blocklist. Exercised at its source instead.
+    import legal
+
+    if legal.blocks("Alabama Red Elephants") and not legal.blocks("Union Maritime Meridian"):
+        PASSED.append("rule 15: a blocklisted institution name in a published identity")
+    else:
+        FAILED.append("rule 15: the blocklist port does not discriminate")
+
     print(f"\n{len(PASSED)} rules bite, {len(FAILED)} dead")
     print(
         "Rule 14 (determinism) is not mutated here: making a build non-deterministic on "

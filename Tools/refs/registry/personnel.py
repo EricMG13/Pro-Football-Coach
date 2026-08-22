@@ -13,7 +13,7 @@ from ._shared import (
 
 roster = desk(
     id="roster", number=16, name="Roster", family="personnel", status=Status.BUILT,
-    body=Panel("Squad", Table(
+    body=Table(
         (Col("Player", 18, "left", False), Col("Pos", 4, "left", False), Col("Yr", 3, "left", False),
          Col("Ovr", 4, "right"), Col("Pot", 4, "right"), Col("Snaps", 6, "right"),
          Col("Form", 5, "right"), Col("Status", 9, "left", False)),
@@ -26,7 +26,7 @@ roster = desk(
          ("Nico Barrow", "S", "Sr", "80", "81", "402", "-1", "Fit"),
          ("Ilya Fenner", "DT", "Jr", "76", "83", "288", "+2", "Fit"),
          ("Sable Ruiz", "TE", "Fr", "68", "88", "94", "+5", "Fit")),
-    )),
+    ),
     gaps=(
         gap("INTERACTION", "Sorting and filtering are drawn as column heads but no sort state is modelled."),
         gap("DATA", "Form is a single signed integer; the engine has no rolling window behind it."),
@@ -62,22 +62,23 @@ player_profile = dossier(
     commit="Open development plan",
     body=Split(
         top=Hero(
-            mark=None,
+            mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
             headline="Amos Kerr",
             numeral="81",
-            points=("Senior wide receiver", "Doubtful, hamstring"),
+            points=("Senior wide receiver, doubtful",),
+            scale="dossier",
         ),
-        bottom=Panel("Attributes", Table(
+        bottom=Table(
             (Col("Attribute", 14, "left", False), Col("Now", 4, "right"),
              Col("Ceiling", 8, "right"), Col("Season", 19, "left", False)),
             (("Hands", "86", "87", "41 receptions"),
-             ("Route running", "83", "85", "612 yards"),
-             ("Separation", "78", "84", "14.9 per catch")),
-        )),
+             ("Route running", "83", "85", "612 yards")),
+        ),
     ),
     gaps=(
         gap("ART", "The person plate is blank: no player likeness exists and none is planned."),
         gap("DATA", "Ceiling is drawn as a point, but the model holds a range."),
+        gap("RULE", "A committing dossier has 241 pt: a 160 pt head, the seam, and 67 pt of evidence -- two rows."),
     ),
 )
 
@@ -115,44 +116,23 @@ staff_room = desk(
     ),
 )
 
-# ---- New -----------------------------------------------------------------------
+# ---- New: M6, the one the source names for this family ----------------------------
 
-injury_report = desk(
-    id="injuryReport", number=69, name="Injury Report", family="personnel",
-    status=Status.MISSING, evidence="no Swift case; Team Health prints availability, not diagnosis",
-    body=Stack((
-        Panel("Active injuries", Table(
-            (Col("Player", 18, "left", False), Col("Injury", 14, "left", False),
-             Col("Weeks", 6, "right"), Col("Risk if played", 15, "left", False)),
-            (("Amos Kerr", "Hamstring", "1-2", "Re-injury, high"),
-             ("Ruben Sallow", "Ankle", "3", "Not available"),
-             ("Teo Marchetti", "Shoulder", "0", "Manageable")),
-        )),
-        Panel("Staff view", Rows((
-            Row("Ines Fallon", ("Hold Kerr",), "Recommends a week"),
-        ), kind="readout")),
-    )),
-    gaps=(
-        blocker("DATA", "The engine models availability but not diagnosis, duration confidence or re-injury risk."),
-        gap("SCREEN", "No surface presents a medical recommendation the coach can accept or overrule."),
-    ),
-)
-
-player_comparison = desk(
-    id="playerComparison", number=70, name="Player Comparison", family="personnel",
-    status=Status.MISSING, evidence="no Swift case; comparison exists only as two visits to Player Profile",
-    body=Panel("Side by side", Table(
+compare = desk(
+    id="compare", number=68, name="Compare", family="personnel",
+    status=Status.MISSING, evidence="no Swift case; source inventory M6",
+    body=Panel("Kerr against Ruiz", Table(
         (Col("Attribute", 14, "left", False), Col("Kerr", 6, "right"),
          Col("Ruiz", 6, "right"), Col("Delta", 6, "right")),
         (("Overall", "81", "68", "-13"), ("Ceiling", "82", "88", "+6"),
          ("Hands", "86", "72", "-14"), ("Separation", "78", "80", "+2"),
-         ("Blocking", "61", "66", "+5"), ("Snaps", "388", "94", "-294")),
+         ("Blocking", "61", "66", "+5")),
     )),
     gaps=(
-        blocker("SCREEN", "No comparison surface exists at any registry number."),
-        gap("INTERACTION", "Choosing the second player has no designed picker."),
+        blocker("SCREEN", "One of Football Manager's core verbs and one of Madden's depth-chart affordances; no registry screen performs it."),
+        gap("INTERACTION", "Choosing the second subject has no designed picker."),
+        gap("DATA", "Ratings are point values, so a comparison cannot show the confidence either side carries."),
     ),
 )
 
-SURFACES = (roster, depth_chart, player_profile, development_plan, staff_room,
-            injury_report, player_comparison)
+SURFACES = (roster, depth_chart, player_profile, development_plan, staff_room, compare)

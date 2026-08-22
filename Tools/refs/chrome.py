@@ -18,16 +18,11 @@ from screens import BY_ID, siblings
 
 REGISTERS = ("BROADCAST", "DESK", "DOSSIER", "MATCH_DAY")
 
-#: Head-band height per register. Desk is the 19 px identity mark; Broadcast and
-#: Dossier are the height of the head the frame opens with. See
-#: `checks.MARK_HEIGHT_RANGE` for the contract these are measured against, and
-#: `docs/refs/DECISIONS.md` for why Dossier is 96 rather than `04` 6.5's 180.
-MARK_HEIGHT = {
-    "DESK": 19,
-    "BROADCAST": 200,
-    "DOSSIER": 96,
-    "MATCH_DAY": 19,
-}
+#: The identity mark in the Desk band. Every register carries this one; Broadcast and
+#: Dossier carry a watermark on top of it, whose size is a property of the `Hero` that
+#: draws it rather than a second table here. Holding two tables for one concept is what
+#: let the stamped size and the drawn size disagree in the first build.
+BAND_MARK_HEIGHT = 19
 
 
 def _header(surface) -> str:
@@ -67,18 +62,33 @@ def _rail(surface) -> str:
     return f'<nav class="fl-rail">{buttons}</nav>'
 
 
+def head_mark_height(surface) -> float:
+    """The largest mark the frame draws: a Hero's watermark if it has one, else the
+    19 px band mark. This is what the mark-scale rule is measured against."""
+    from primitives import Hero, walk
+
+    heads = [n for n in walk(surface.body) if isinstance(n, Hero) and n.mark]
+    return max((n.WATERMARK[n.scale] for n in heads), default=float(BAND_MARK_HEIGHT))
+
+
 def frame(surface, body_html: str) -> str:
     """One reference frame at the install floor."""
     committing = surface.commit is not None
     height = tokens.viewport_height(committing)
+    # The one control the design system says must be unmistakable, stamped like every
+    # other text run so its contrast is actually scored. The first build left it bare.
     commit = (
-        f'<div class="fl-commit">{escape(surface.commit)}</div>' if committing else ""
+        '<div class="fl-commit">'
+        f'<span data-ink="--ink-on-gold" data-plate="--fl-gold"'
+        f' style="color: var(--ink-on-gold)">{escape(surface.commit)}</span></div>'
+        if committing
+        else ""
     )
     return (
         f'<div class="fl-frame" data-surface="{surface.id}" data-number="{surface.number}"'
         f' data-register="{surface.register}" data-status="{surface.status_name}"'
         f' data-viewport="{height:g}" data-cells="{surface.cells}"'
-        f' data-mark-height="{MARK_HEIGHT[surface.register]}">'
+        f' data-mark-height="{head_mark_height(surface):g}">'
         f"{_header(surface)}{_rail(surface)}"
         f'<div class="fl-plate" style="height: {height:g}px">{body_html}</div>'
         f"{commit}"

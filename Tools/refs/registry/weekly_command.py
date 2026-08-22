@@ -17,8 +17,7 @@ coaching_hq = desk(
         Panel("This week", Rows((
             Row("Week 7 at Zumbrota Central", ("Sat 15:30",), "Away, conference"),
             Row("Practice plan", ("Set",), "Emphasis: red zone"),
-            Row("Game plan", ("Draft",), "Two personnel groups short"),
-        ), kind="tappable")),
+        ), kind="tappable"), meta="Game plan still a draft"),
     )),
     gaps=(
         gap("INTERACTION", "No move between HQ and any surface is designed; the mock cuts instantly."),
@@ -33,7 +32,6 @@ inbox = desk(
             Row("Athletic director", ("Tue",), "Scheduling for next season"),
             Row("Amos Kerr's family", ("Tue",), "Asking about the hamstring"),
             Row("Compliance", ("Mon",), "Contact log for the Pecos visit"),
-            Row("Booster collective", ("Mon",), "NIL pool for the spring"),
         ), kind="tappable")),
     )),
     gaps=(
@@ -53,7 +51,6 @@ film_room = desk(
             (("Play action, first down", "1st", "38%", "8.4"),
              ("Outside zone, own half", "1st", "44%", "4.9"),
              ("Empty backfield", "3rd", "61%", "6.1"),
-             ("Two-high shell", "2nd", "72%", "5.2"),
              ("Blitz off the slot", "3rd", "29%", "3.8")),
         )),
         Rows((
@@ -73,7 +70,6 @@ game_plan = desk(
     body=Stack((
         Rows((
             Row("First down", ("Run lean",), "Sets up the play action they punish"),
-            Row("Third and long", ("Empty",), "Kerr's route tree if he clears"),
         ), kind="tappable"),
         Panel("Personnel groups", Table(
             (Col("Group", 14, "left", False), Col("Snaps", 6, "right"), Col("Yds/play", 9, "right")),
@@ -98,8 +94,7 @@ practice_plan = desk(
              ("Recovery", "20", "10", "10", "30")),
         )),
         Rows((
-            Row("Fatigue", ("+6",), "Above the line for a road week"),
-            Row("Injury risk", ("Low",), "Two full-pad sessions"),
+            Row("Fatigue", ("+6",), "Above the line; two full-pad sessions"),
         ), kind="readout"),
     )),
     gaps=(
@@ -118,8 +113,7 @@ team_health = desk(
              ("Teo Marchetti", "OT", "Limited", "Week 7")),
         )),
         Panel("Load", Rows((
-            Row("Squad fatigue", ("Amber",), "Sixth straight week without a bye"),
-            Row("Snap concentration", ("High",), "Four players over 90 percent"),
+            Row("Squad fatigue", ("Amber",), "Sixth week without a bye; four over 90 percent snaps"),
         ), kind="readout")),
     )),
     gaps=(
@@ -138,7 +132,6 @@ match_day = Surface(
         ),
         Rows((
             Row("Union Maritime", ("17",), "3 timeouts, ball on the 34"),
-            Row("Zumbrota Central", ("14",), "2 timeouts, Q3 6:42"),
         ), kind="readout"),
     )),
     gaps=(
@@ -154,7 +147,8 @@ aftermath = broadcast(
         mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
         headline="Union Maritime 24, Zumbrota Central 21",
         numeral="7-0",
-        points=("Kerr's hamstring held for 38 snaps", "Third down 9 of 14", "Next: home to Pecos, week 8"),
+        points=("Kerr held for 38 snaps", "Third down 9 of 14", "Next: Pecos, week 8"),
+        scale="broadcast",
     ),
     gaps=(
         gap("ART", "No competition mark exists, so a conference win and a non-conference win look identical."),
@@ -183,46 +177,29 @@ box_score = desk(
     ),
 )
 
-# ---- New: the two Match Day states beyond one drive ----------------------------
+# ---- New: M5, the one the source names for this family ----------------------------
 
-halftime = desk(
-    id="halftimeAdjustments", number=63, name="Halftime Adjustments",
+while_you_were_away = desk(
+    id="whileYouWereAway", number=67, name="While You Were Away",
     family="weeklyCommand", status=Status.MISSING,
-    evidence="no Swift case; Match Day ends at the end of a drive",
-    commit="Send them back out",
+    evidence="no Swift case; source inventory M5",
     body=Stack((
-        Panel("First half", Table(
-            (Col("Measure", 20, "left", False), Col("Us", 7, "right"), Col("Them", 7, "right")),
-            (("Yards per play", "5.4", "6.8"), ("Third down", "3/7", "5/8"), ("Explosives", "2", "4")),
-        )),
+        Panel("Handled for you", Rows((
+            Row("Recruiting calls", ("9 made",), "Cyrus Mbeki, within your thresholds"),
+            Row("Injury report", ("Filed",), "Ines Fallon cleared Marchetti"),
+        ), kind="readout")),
         Rows((
-            Row("Safety help over Kerr's side", ("Cost: box",)),
-            Row("Slow the tempo", ("Cost: drives",), "Keeps their offence off the field"),
+            Row("Stopped for you", ("Kerr",), "Re-injury risk crossed your threshold"),
         ), kind="tappable"),
     )),
     gaps=(
-        blocker("SCREEN", "Halftime does not exist: the match view has no break state between drives."),
-        blocker("DATA", "No half-boundary summary is produced by the engine."),
-        gap("RULE", "An adjustment's cost is drawn but not defined anywhere in canon."),
-    ),
-)
-
-end_of_game = broadcast(
-    id="endOfGame", number=64, name="End of Game", family="weeklyCommand",
-    status=Status.MISSING, evidence="no Swift case; Aftermath is the nearest built surface",
-    body=Hero(
-        mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
-        headline="Final: Union Maritime 24, Zumbrota Central 21",
-        numeral="24-21",
-        points=("Seventh straight", "Kerr, 94 yards on a hamstring"),
-    ),
-    gaps=(
-        blocker("SCREEN", "The final whistle cuts straight to Aftermath with no held final state."),
-        gap("ART", "A final needs the corner marks the v3 set specified; no competition mark exists to draw them from."),
+        blocker("SCREEN", "Automation halts on a threshold and hands control back; nothing renders what happened in between."),
+        blocker("DATA", "No delegation policy exists -- no area enum, no assignment, no persistence -- so every handled line here is unbacked."),
+        gap("RULE", "Invisible delegation is indistinguishable from a bug, which is why this surface is not optional."),
     ),
 )
 
 SURFACES = (
     coaching_hq, inbox, film_room, game_plan, practice_plan, team_health,
-    match_day, aftermath, box_score, halftime, end_of_game,
+    match_day, aftermath, box_score, while_you_were_away,
 )

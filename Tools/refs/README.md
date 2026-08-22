@@ -1,7 +1,7 @@
 # Tools/refs — surface reference frames
 
 Generates one drawn frame per Coach World surface at the install floor (844x390), with a
-declared register of what is not built beneath each, and checks fourteen rules over the
+declared register of what is not built beneath each, and checks fifteen rules over the
 result. Output is a single self-contained HTML file plus a JSON gap manifest.
 
 ```bash
@@ -17,6 +17,8 @@ Nothing in `Sources/` changes. Zero dependencies beyond the standard library.
 
 ```
 tokens.py       parses tokens/*.css; nothing re-authors a design value
+source_inventory.py  the design source's register-per-surface table, transcribed
+legal.py        the institution blocklist, ported from Blocklist.swift
 marks.py        the 13 vendored marks, resolved against the pinned baseline catalogue
 primitives.py   eight body primitives that report cells, rows, height and gold
 chrome.py       header, rail, plate, seam, committing bar -- derived, never declared
@@ -37,9 +39,17 @@ tell a column head from a value; measured that way the published artifact read R
 78 cells and Signing day at 17 while counting prose.
 
 **Every rule is mutation-tested.** `test_checks.py` breaks the registry one specific way
-per rule and requires that rule to fire. Two rules passed their first draft while doing
-nothing — rule 9 compared the generator's constant to itself, and rule 5 counted rows
-while six frames clipped. A rule that cannot fail is decoration.
+per rule and requires that rule to fire. Three rules passed a first draft while doing
+nothing — rule 9 compared the generator's constant to itself, rule 5 counted rows while six
+frames clipped, and rule 3 gave a dossier one flat budget across a seam that splits it. A
+rule that cannot fail is decoration.
+
+**The design source is authoritative and checked, not summarised.** `source_inventory.py`
+holds the artifact's register-per-surface table and its list of the twelve missing
+surfaces; check 2 fails the build if a frame is drawn in a register the source did not
+assign it. The first build read a summary of the artifact instead of the artifact,
+invented nine of the twelve missing surfaces, and demoted three of the four ceremony
+surfaces out of the Broadcast register entirely.
 
 See `docs/refs/BASELINE.md` for which commit identities resolve against and why, and
 `docs/refs/DECISIONS.md` for every number here that disagrees with one written elsewhere.

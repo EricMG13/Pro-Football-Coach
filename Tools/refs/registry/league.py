@@ -20,7 +20,6 @@ world_search = desk(
             Row("Zumbrota Central Marsh Lodestars", ("Programme",), "Conference rival, 6-1"),
             Row("Kalen Ruthers", ("Prospect",), "Quarterback, four stars"),
             Row("Perrin Oduya", ("Staff",), "Our offensive coordinator"),
-            Row("Pecos Bramble Millwrights", ("Programme",), "Week 8 opponent"),
         ), kind="tappable")),
     )),
     gaps=(
@@ -50,15 +49,16 @@ team_profile = dossier(
     family="league", status=Status.BUILT,
     body=Split(
         top=Hero(mark="TeamLogo_0017F958E7D04FFC9EA801A252B40FD6",
-                 headline="Zumbrota Central Marsh Lodestars", numeral="6-1",
-                 points=("Zumbrota", "Second in conference")),
-        bottom=Panel("This season", Table(
+                 headline="Zumbrota Central Marsh", numeral="6-1",
+                 points=("Zumbrota, second in conference",),
+                 scale="dossier", side="opponent"),
+        bottom=Table(
             (Col("Measure", 18, "left", False), Col("Value", 8, "right"),
              Col("Rank", 6, "right"), Col("Against us", 20, "left", False)),
             (("Points per game", "31.4", "3", "Last five: 3-2"),
              ("Points allowed", "18.9", "7", "We won the last two"),
              ("Yards per play", "6.1", "2", "Week 7, 24-21")),
-        )),
+        ),
     ),
     gaps=(
         gap("ART", MARK_GAP),
@@ -159,9 +159,10 @@ awards = broadcast(
     id="awardsHonours", number=49, name="Awards & Honours", family="league",
     status=Status.BUILT,
     body=Hero(mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
-              headline="Reed Vance, Offensive Player of the Year",
-              numeral="2,104",
-              points=("Junior quarterback", "First for the programme since the rebuild")),
+              headline="Reed Vance, Player of the Year",
+              numeral="2104",
+              points=("Junior quarterback", "First since the rebuild"),
+              scale="broadcast"),
     gaps=(
         gap("ART", MARK_GAP),
     ),
@@ -173,7 +174,6 @@ news = desk(
     body=Panel("This week", Rows((
         Row("Union Maritime hold on the road", ("Week 7",), "Third one-score win in five"),
         Row("Rooke reaches nine and a half", ("Week 7",), "Pecos edge rusher leads the conference"),
-        Row("Kirksville part with their coordinator", ("Week 7",), "Sixth straight defeat"),
         Row("Portal window opens in three weeks", ("Notice",), "Conference-wide"),
     ), kind="tappable")),
     gaps=(
@@ -182,52 +182,40 @@ news = desk(
     ),
 )
 
-realignment = desk(
+realignment = broadcast(
     id="realignmentEvent", number=51, name="Realignment Event", family="league",
     status=Status.PARTIAL, evidence="swaps.prefix(2) caps the event at two moves",
-    body=Panel("Moves", Rows((
-        Row("Cambridge A&M Peat Ferrymen", ("Joins",), "From the western conference"),
-        Row("Kirksville State Cedar Wreckers", ("Leaves",), "To the northern conference"),
-    ), kind="readout")),
+    body=Hero(
+        mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
+        headline="The conference changes shape",
+        numeral="2",
+        points=("Cambridge A&M Peat Ferrymen join", "Kirksville State leave"),
+        scale="broadcast",
+    ),
     gaps=(
         blocker("DATA", "Capped at swaps.prefix(2); a realignment larger than two moves cannot be shown."),
         gap("ART", MARK_GAP),
     ),
 )
 
-# ---- New -----------------------------------------------------------------------
-
-news_detail = dossier(
-    id="newsDetail", number=65, name="News Detail", family="league",
-    status=Status.MISSING, evidence="NewsView.swift:124 routes here and draws nothing",
-    body=Split(
-        top=Hero(mark=None, headline="Union Maritime hold on the road", numeral=None,
-                 points=("Week 7", "Conference report")),
-        bottom=Panel("Report", Rows((
-            Row("Final", ("24-21",), "At Zumbrota Central"),
-            Row("Turning point", ("Q4 6:42",), "Fourth and two, converted"),
-            Row("Reaction", ("Warm",), "Board and boosters both quiet"),
-        ), kind="readout")),
-    ),
-    gaps=(
-        blocker("SCREEN", "The destination of every news tap; it has never been drawn or built."),
-        blocker("DATA", "No story body is generated -- the feed carries headlines only."),
-    ),
-)
+# ---- New: M2, the one the source names for this family ----------------------------
 
 championship = broadcast(
-    id="championship", number=66, name="Championship", family="league",
-    status=Status.MISSING, evidence="no Swift case; the final is an ordinary fixture",
-    body=Hero(mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
-              headline="Union Maritime Meridian, conference champions",
-              numeral="31-24",
-              points=("First since the rebuild", "Hood River Maritime in the final")),
+    id="championshipResult", number=64, name="Championship Result", family="league",
+    status=Status.MISSING, evidence="no Swift case; source inventory M2",
+    body=Hero(
+        mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
+        headline="Union Maritime, conference champions",
+        numeral="31",
+        points=("Hood River Maritime beaten 31-24", "First since the rebuild"),
+        scale="broadcast",
+    ),
     gaps=(
+        blocker("SCREEN", "The fifth sanctioned ceremony has no registry case at all."),
         blocker("ART", "The surface exists to show a competition, and no competition mark exists on any branch."),
-        blocker("DATA", "EventBadge is constructed nowhere, so a final cannot be distinguished from week 3."),
-        gap("SCREEN", "The v3 set specified corner marks on a final at bug height 52; nothing implements them."),
+        gap("DATA", "EventBadge is constructed nowhere, so a final cannot be distinguished from week 3."),
     ),
 )
 
 SURFACES = (world_search, league_map, team_profile, standings, schedule, rankings,
-            bracket, statistics, awards, news, realignment, news_detail, championship)
+            bracket, statistics, awards, news, realignment, championship)

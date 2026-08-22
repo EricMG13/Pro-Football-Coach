@@ -86,11 +86,26 @@ ROW_MIN_HEIGHT = px("--row-min-height")  # 32
 # a hand-edit to any of the three should fail here rather than silently reflow.
 assert CONTENT_W == FLOOR_W - CONTENT_LEADING - px("--gutter"), "content width drifted"
 
-#: Usable content height with no committing bar. 390 - 46 - 25.
-VIEWPORT_H = FLOOR_H - CONTENT_TOP - BOTTOM_INSET
+#: The GEOMETRIC content box: 390 - 46 - 25. Not the usable height -- see below.
+CONTENT_BOX_H = FLOOR_H - CONTENT_TOP - BOTTOM_INSET
 
-#: Usable content height once a surface reserves the 44 pt committing bar.
-VIEWPORT_H_COMMITTING = VIEWPORT_H - MIN_TARGET
+#: Usable scroll viewport, MEASURED in the running app.
+#:
+#: The source states both numbers and they are not in conflict: "Geometry gives a
+#: 709 x 319 pt content box, but the running app measures the usable scroll viewport at
+#: 291 pt, and 241 once a commit bar is reserved outside the scroll." The first build of
+#: this module read that as a contradiction, kept the geometric 319, and wrote the
+#: disagreement up as settled -- at which point 24 of 59 frames overflowed the plate they
+#: are actually drawn into. 319 is the box; 291 is what scrolls inside it.
+VIEWPORT_H = 291.0
+
+#: Usable height once the committing bar is reserved OUTSIDE the scroll. The 50 pt gap
+#: from 291 is the bar plus its clearance, which is why this is not 291 - 44.
+VIEWPORT_H_COMMITTING = 241.0
+
+#: How much of the geometric box the scroll container does not get. Asserted rather than
+#: assumed, so a token change that moves the box without a fresh measurement is visible.
+SCROLL_CHROME = CONTENT_BOX_H - VIEWPORT_H  # 28
 
 
 def viewport_height(committing: bool) -> float:
@@ -119,15 +134,17 @@ CELL_BUDGET = {
 #: Cells a surface may print once it reserves the committing bar.
 CELL_BUDGET_COMMITTING = 40
 
-def row_budget(committing: bool) -> tuple[int, int]:
-    """(readout, tappable) rows that fit, derived from the same viewport expression.
+#: (readout, tappable) rows per the source: "Nine readout rows at 32 pt, six tappable at
+#: 44, five once the bar is reserved. Eight columns. That is where 72 comes from, and why
+#: a committing surface gets 40."
+#:
+#: Stated, not derived. The first build derived them -- from the geometric box -- and got
+#: (9, 7) and (8, 6): drift-proof against the wrong number.
+ROW_BUDGET = {False: (9, 6), True: (8, 5)}
 
-    Not hardcoded: 9 readout and 7 tappable are what 319 pt divides into at the 32 and
-    44 pt tracks, and 8 / 6 are what 275 pt does once the committing bar is reserved.
-    Writing the four numbers down instead would let them drift from the frame the
-    moment an inset moves, which is the failure this module exists to prevent."""
-    height = viewport_height(committing)
-    return int(height // ROW_MIN_HEIGHT), int(height // MIN_TARGET)
+
+def row_budget(committing: bool) -> tuple[int, int]:
+    return ROW_BUDGET[committing]
 
 #: Columns in a dense table, and the character grid the overflow check uses.
 COLUMN_BUDGET = 8

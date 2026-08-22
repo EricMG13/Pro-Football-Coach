@@ -204,12 +204,32 @@
 .fl-split__top, .fl-split__bottom { min-height: 0; }
 .fl-split__bottom { padding-top: var(--gap-lg); }
 
-.fl-hero { display: flex; align-items: center; gap: var(--gap-xl); }
-.fl-hero__text { display: flex; flex-direction: column; gap: var(--gap-sm); min-width: 0; }
-.fl-hero__mark { height: 96px; width: 96px; object-fit: contain; flex: none; }
-.fl-hero__headline { font: var(--type-display); }
-.fl-hero__numeral { font: var(--weight-bold) var(--size-figure) / 1 var(--font-figure); }
-.fl-hero__points { margin: 0; padding-left: var(--gap-lg); font: var(--type-caption); }
+/* Broadcast and Dossier heads. The ground FLOODS with club or opponent colour and the
+   mark runs as a watermark behind the text -- both are the specification, not styling. */
+.fl-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-block);
+  background: var(--fl-flood);
+  padding: var(--pad-band);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.fl-hero--broadcast { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%); }
+.fl-hero__watermark {
+  position: absolute;
+  right: -6%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.18;
+  object-fit: contain;
+  pointer-events: none;
+}
+.fl-hero__text { position: relative; display: flex; flex-direction: column; gap: var(--gap-xs); min-width: 0; }
+.fl-hero__headline { font-family: var(--font-display); font-weight: 700; line-height: 1.02; }
+.fl-hero__numeral { font-family: var(--font-figure); font-weight: 700; line-height: 1; letter-spacing: var(--track-tight); }
+.fl-hero__points { margin: 0; padding-left: var(--gap-lg); font: var(--type-callout); }
 
 .fl-field { position: relative; height: 200px; border-radius: var(--radius-card); overflow: hidden; }
 .fl-field__turf {

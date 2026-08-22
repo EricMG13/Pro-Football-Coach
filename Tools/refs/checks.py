@@ -22,11 +22,13 @@ import re
 from html.parser import HTMLParser
 from pathlib import Path
 
+import legal
 import marks
 import tokens
 from primitives import Chips, Col, Custom, Table, walk
 from registry import REGISTRY
 from screens import BY_ID, FAMILIES
+from source_inventory import SOURCE_LEAN
 from surface import Register, Status
 
 HERE = Path(__file__).parent
@@ -50,17 +52,30 @@ COMMITTING_CELLS = 40
 #: here independently of the single value `chrome.MARK_HEIGHT` stamps. Reading the same
 #: constant the generator wrote would make this rule unfalsifiable, which is how the
 #: first draft of it passed while doing nothing.
+#: Team mark, from the source's specification table. A Broadcast or Dossier mark is a
+#: WATERMARK behind the head, not an inline image beside it, which is what makes 390 px
+#: fit inside a 291 pt plate at all.
 MARK_HEIGHT_RANGE = {
     "DESK": (19, 19),
     "BROADCAST": (200, 390),
-    # `04` section 6.5 as quoted in the plan says 180-220 for a Dossier head. That is
-    # unachievable on a committing dossier at the install floor: 180 head + 2 seam +
-    # 12 gap + a 44 pt bar leaves 37 pt for the evidence half, which is less than one
-    # panel's own chrome. Drawn at 96 and recorded as an owner question in
-    # docs/refs/DECISIONS.md rather than enforced at a number nothing can satisfy.
-    "DOSSIER": (96, 220),
+    "DOSSIER": (180, 220),
     "MATCH_DAY": (19, 19),
 }
+
+#: Largest numeral, same table: "Broadcast 40-72 px · Desk 14 px · Dossier 40 px above,
+#: 11.5 below". The numeral does the work the forbidden portrait would, so drawing it
+#: small is not a small mistake.
+NUMERAL_RANGE = {
+    "BROADCAST": (40, 72),
+    "DESK": (0, 14),
+    "DOSSIER": (40, 40),
+    "MATCH_DAY": (0, 14),
+}
+
+#: W5: a Dossier's budget is split by the seam -- "<= 8 above, <= 40 below" -- not one
+#: flat number for the surface. A flat 48 lets a dossier print 48 cells above the seam.
+DOSSIER_ABOVE_CELLS = 8
+DOSSIER_BELOW_CELLS = 40
 
 
 def cell_budget(s) -> int:
@@ -296,6 +311,18 @@ def check_baseline() -> list[str]:
                 f"alias .{cid} is drawn; it should fold into "
                 f".{screen.alias_of}, which is the surface it routes to"
             )
+    # The register a surface leans to is the source artifact's decision, not this
+    # generator's. Checked here so a lean cannot be quietly reassigned to make a frame
+    # easier to draw -- which is how three of the four ceremony surfaces were demoted to
+    # Desk in the first build, emptying the register the design set is named after.
+    for s in REGISTRY:
+        want = SOURCE_LEAN.get(s.number)
+        if want and s.register.value != want[0]:
+            out.append(
+                f"{s.id} is drawn {s.register.value}; the source inventory says "
+                f"{want[0]} (registry number {s.number})"
+            )
+
     for s in REGISTRY:
         if s.number <= 62 and s.id not in BY_ID:
             out.append(f"{s.id} claims registry number {s.number} but Swift has no such case")
@@ -324,12 +351,30 @@ def check_baseline() -> list[str]:
 
 @rule(3, "Cell budget")
 def check_cells() -> list[str]:
-    return [
-        f"{s.id} prints {s.cells} cells, budget {cell_budget(s)} "
-        f"({s.register.value}{', committing' if s.commit else ''})"
-        for s in REGISTRY
-        if s.cells > cell_budget(s)
-    ]
+    from primitives import Split
+
+    out = []
+    for s in REGISTRY:
+        if s.cells > cell_budget(s):
+            out.append(
+                f"{s.id} prints {s.cells} cells, budget {cell_budget(s)} "
+                f"({s.register.value}{', committing' if s.commit else ''})"
+            )
+        # A dossier's budget is split by the seam: the head is a broadcast moment and the
+        # body is a working table, so one flat number describes neither.
+        if s.register is Register.DOSSIER and isinstance(s.body, Split):
+            above, below = s.body.top.cells(), s.body.bottom.cells()
+            if above > DOSSIER_ABOVE_CELLS:
+                out.append(
+                    f"{s.id} prints {above} cells above the seam, budget "
+                    f"{DOSSIER_ABOVE_CELLS}"
+                )
+            if below > DOSSIER_BELOW_CELLS:
+                out.append(
+                    f"{s.id} prints {below} cells below the seam, budget "
+                    f"{DOSSIER_BELOW_CELLS}"
+                )
+    return out
 
 
 @rule(4, "Gold once")
@@ -434,14 +479,38 @@ def check_type() -> list[str]:
         out.append(f"authored floor is {tokens.TYPE_AUTHORED_FLOOR}, contract says 12")
     if tokens.TYPE_MICRO_FLOOR < 9:
         out.append(f"micro-label floor is {tokens.TYPE_MICRO_FLOOR}, contract says 9")
+    from primitives import Hero, Split, walk
+
+    for s in REGISTRY:
+        # The head's watermark and numeral, measured where they are actually drawn.
+        for node in walk(s.body):
+            if not isinstance(node, Hero):
+                continue
+            if node.mark:
+                drawn = node.WATERMARK[node.scale]
+                low, high = MARK_HEIGHT_RANGE[s.register.value]
+                if not low <= drawn <= high:
+                    out.append(
+                        f"{s.id}: head watermark is {drawn:g} px; "
+                        f"{s.register.value} allows {low}-{high}"
+                    )
+            if node.numeral:
+                size = node.NUMERAL[node.scale]
+                low, high = NUMERAL_RANGE[s.register.value]
+                if not low <= size <= high:
+                    out.append(
+                        f"{s.id}: head numeral is {size:g} px; "
+                        f"{s.register.value} allows {low}-{high}"
+                    )
+
     for s in REGISTRY:
         html = chrome.frame(s, s.body.render())
-        declared = re.search(r'data-mark-height="(\d+)"', html)
+        declared = re.search(r'data-mark-height="([\d.]+)"', html)
         low, high = MARK_HEIGHT_RANGE[s.register.value]
         if not declared:
             out.append(f"{s.id} stamps no mark height")
             continue
-        height = int(declared.group(1))
+        height = float(declared.group(1))
         if not low <= height <= high:
             out.append(
                 f"{s.id} stamps mark height {height}; {s.register.value} allows {low}-{high}"
@@ -449,11 +518,10 @@ def check_type() -> list[str]:
     # The stylesheet has to agree with the stamp, or the frame draws one size and
     # declares another.
     css = (HERE / "chrome.css").read_text(encoding="utf-8")
-    for selector, register in ((".fl-header__mark", "DESK"), (".fl-hero__mark", "DOSSIER")):
-        drawn = css_px(css, selector, "height")
-        low, high = MARK_HEIGHT_RANGE[register]
-        if drawn is None or not low <= drawn <= high:
-            out.append(f"{selector} draws at {drawn}; {register} allows {low}-{high}")
+    drawn = css_px(css, ".fl-header__mark", "height")
+    low, high = MARK_HEIGHT_RANGE["DESK"]
+    if drawn is None or not low <= drawn <= high:
+        out.append(f".fl-header__mark draws at {drawn}; DESK allows {low}-{high}")
     return out
 
 
@@ -529,6 +597,36 @@ def check_vocabulary() -> list[str]:
     used = sum(s.customs for s in REGISTRY)
     if used > tokens.CUSTOM_BUDGET:
         out.append(f"{used} Custom nodes, budget {tokens.CUSTOM_BUDGET}")
+    return out
+
+
+@rule(15, "Legal guardrail")
+def check_legal() -> list[str]:
+    """No published identity may contain a blocklisted institution name.
+
+    `CLAUDE.md` makes this a test, not a review item, and this generator publishes
+    identities to a hosted page the Swift suite never sees. Only the institution limb is
+    checked here; the trade-dress delta-E test stays Swift-side and is named in
+    docs/refs/DECISIONS.md as a limit rather than covered by silence."""
+    out = list(legal.check_lists_match_swift())
+    seen: set[str] = set()
+    for key in marks.available():
+        identity = marks.identity(key)
+        for field in (identity.name, identity.abbreviation):
+            if field in seen:
+                continue
+            seen.add(field)
+            hit = legal.blocks(field)
+            if hit:
+                out.append(
+                    f"{key} publishes {field!r}, which contains the blocked entry "
+                    f"{hit!r}"
+                )
+    # Copy this generator authors is held to the same rule as generated names.
+    for s in REGISTRY:
+        hit = legal.blocks(s.name)
+        if hit:
+            out.append(f"surface name {s.name!r} contains the blocked entry {hit!r}")
     return out
 
 
