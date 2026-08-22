@@ -23,8 +23,16 @@ struct TeamLogoProofView: View {
                 }
             }
             .accessibilityIdentifier("team-logo-asset-proof")
-            logoRow(unknown, surface: palette.raised)
-                .accessibilityIdentifier("team-logo-fallback-proof")
+            // Named, like every asset row above it. `CoachWorldTeamLogo` is decorative by default
+            // and hides itself from accessibility, so an unlabelled row holds nothing but hidden
+            // elements -- the identifier had no element to attach to and the proof could not be
+            // queried at all. The grid above resolves only because it also carries team names.
+            VStack(alignment: .leading) {
+                Text(unknown.name)
+                logoRow(unknown, surface: palette.raised)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("team-logo-fallback-proof")
         }
         .padding()
         .background(palette.work.color)
