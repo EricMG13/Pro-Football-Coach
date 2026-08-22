@@ -151,6 +151,9 @@ public enum MatchupRules {
 
     // MARK: - Run
 
+    public static let quarterbackDesignedRunProbability = 0.05
+    public static let reserveBackDesignedRunProbability = 0.25
+
     /// The yards a carry gains when the front is even, the carrier wins nothing and no tackle
     /// breaks. Without it, `resolveRun` was `lane * laneYardScale + broken` and an even front
     /// averages a lane leverage of zero, so a neutral run gained **nothing**: every yard in the
