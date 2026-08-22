@@ -156,7 +156,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                     .padding(.top, furnitureTop)
 
                 topRightStack
-                    .padding(.trailing, CoachWorldTokens.Frame.gutter)
+                    .padding(.trailing, MatchMetric.trailingInset)
                     .padding(.top, furnitureTop)
                     .frame(maxWidth: size.width, alignment: .trailing)
                     .background {
@@ -184,7 +184,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 // hazard even when nothing is visually wrong; hiding it outright removes both.
                 if model.staffInterruption == nil {
                     bottomRightCluster
-                        .padding(.trailing, CoachWorldTokens.Frame.gutter)
+                        .padding(.trailing, MatchMetric.trailingInset)
                         .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
                         .frame(width: size.width, height: size.height, alignment: .bottomTrailing)
                 }
@@ -192,7 +192,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 if let interruption = model.staffInterruption {
                     staffCallInPanel(interruption)
                         .frame(width: MatchMetric.callInWidth)
-                        .padding(.trailing, CoachWorldTokens.Frame.gutter)
+                        .padding(.trailing, MatchMetric.trailingInset)
                         // Below the persistent top-right furniture, never over it — MATCH-DAY.md
                         // section 5 states this panel starts at "top 122" specifically so the
                         // budget bug, control depth and halftime chip stay visible above it.
@@ -244,21 +244,16 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
     /// now sit in the bottom-right cluster instead, which is both closer to the thumb and closer to
     /// what the design draws.
     private var topRightStack: some View {
-        VStack(alignment: .trailing, spacing: CoachWorldTokens.Gap.lg) {
-            if let budget = model.callInBudget {
-                CallInBudgetBug(budget: budget)
-            }
-            ControlDepthSelector(depth: model.controlDepth) {
-                onControl(model.controlDepthIntentID)
-            }
+        MatchDayTopRightPlate(
+            budget: model.callInBudget,
+            depth: model.controlDepth,
+            onSelectDepth: { onControl(model.controlDepthIntentID) }
+        ) {
             furnitureControlButton(.tactics, wide: true, label: "HALFTIME · PLAN EDIT")
         }
-        // One column, at the reference's plate width. A `frame` does not clip in SwiftUI, so the
-        // depth selector's three segments were laying themselves out wider than the 140 they were
-        // given and running "LEVERAGE" off the trailing edge of the frame.
-        .frame(width: MatchMetric.topRightPlateWidth, alignment: .trailing)
         .accessibilitySortPriority(85)
     }
+
 
     private var bottomRightCluster: some View {
         HStack(spacing: CoachWorldTokens.Gap.xs) {
@@ -343,18 +338,17 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 }
             }
             .frame(
-                minWidth: wide ? MatchMetric.topRightPlateWidth : CoachWorldTokens.Shape.minimumTarget,
+                maxWidth: wide ? .infinity : nil,
                 minHeight: CoachWorldTokens.Shape.minimumTarget
             )
+            .frame(minWidth: wide ? nil : CoachWorldTokens.Shape.minimumTarget)
         }
         .foregroundStyle(control?.isSelected == true
             ? palette.actionPrimary.color : palette.contentPrimary.color)
-        .coachWorldFloodlitPanel(
-            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
-            border: Color.white.opacity(CoachWorldTokens.Glass.line),
-            depth: .glass,
-            shape: CoachWorldCutCorner.actionSmall
-        )
+        // `wide` is a row inside the top-right plate, which already supplies the ground, the
+        // border and the elevation. Clearing the panel's colours is not enough -- the modifier
+        // still draws its shape and shadow, which read as a card inside a card.
+        .modifier(FurniturePanel(isBare: wide))
         .disabled(control?.isEnabled == false)
         .opacity(control?.isEnabled == false ? CoachWorldTokens.Motion.disabledOpacity : 1)
         .accessibilityLabel(label ?? presentation.title)
@@ -1026,6 +1020,25 @@ private struct MatchControlButtonStyle: ButtonStyle {
     }
 }
 
+/// The floating-furniture ground, or nothing at all for a row that sits inside a plate that
+/// already has one.
+private struct FurniturePanel: ViewModifier {
+    let isBare: Bool
+
+    func body(content: Content) -> some View {
+        if isBare {
+            content
+        } else {
+            content.coachWorldFloodlitPanel(
+                fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
+                border: Color.white.opacity(CoachWorldTokens.Glass.line),
+                depth: .glass,
+                shape: CoachWorldCutCorner.actionSmall
+            )
+        }
+    }
+}
+
 private enum MatchMetric {
     static let fieldAspect: CGFloat = 120 / 53.3
     /// The install floor's own aspect, so `standardLayout` scales as one frame rather than
@@ -1041,6 +1054,11 @@ private enum MatchMetric {
     /// and the plan-edit action into one plate with internal seams; this column adopts its width
     /// and containment while those remain three cards.
     static let topRightPlateWidth: CGFloat = 172
+    /// 1a insets its trailing furniture 16, where the management shell's gutter is 20. The trailing
+    /// edge carries no sensor housing, and `04` section 7 records the 17e insets as "unsourced --
+    /// measure before relying on either", so there is no measured value this contradicts. Match
+    /// Day only: the shared `Frame.gutter` still governs every management surface.
+    static let trailingInset: CGFloat = 16
     static let speedPillWidth: CGFloat = 44
     static let losWidth: CGFloat = 2
     static let firstDownWidth: CGFloat = 2

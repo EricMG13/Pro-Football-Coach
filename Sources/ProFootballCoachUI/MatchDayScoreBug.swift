@@ -245,7 +245,9 @@ private enum Bug {
     static let subline: CGFloat = 10
     static let bandTitle: CGFloat = 9
     static let railWidth: CGFloat = 3
-    static let groundAlpha = 0.88
+    /// 1a's plate grounds are a ramp, not one value: scorebug .90, top-right plate .88, lower
+    /// third .86. The nearest furniture to the eye sits densest.
+    static let groundAlpha = 0.90
     static let shadowAlpha = 0.72
     static let shadowRadius: CGFloat = 20
     static let hairline: CGFloat = 1
@@ -259,119 +261,137 @@ private enum Bug {
 // MARK: - Top-right stack
 
 /// "18 OF 25", the three marks, and the rate note beneath.
-struct CallInBudgetBug: View {
-    let budget: MatchDayReadModel.CallInBudget
+/// 1a's top-right plate: one surface at 172 points, with internal seams where three separate cards
+/// used to sit. The reference's own note is "Three top-right cards became one plate with internal
+/// seams".
+///
+/// Two rows deviate from 1a deliberately. Its depth segments are 32 points tall and its plan-edit
+/// row 24; both are tappable, and `CLAUDE.md` keeps the stricter HIG 44-point touch floor, so both
+/// take `Shape.minimumTarget` here and the plate is correspondingly taller than the mock.
+struct MatchDayTopRightPlate<PlanEdit: View>: View {
+    let budget: MatchDayReadModel.CallInBudget?
+    let depth: MatchControlDepth
+    let onSelectDepth: () -> Void
+    @ViewBuilder var planEdit: PlanEdit
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: CoachWorldTokens.Gap.xxs) {
-            HStack(spacing: CoachWorldTokens.Gap.xxs) {
-                Text("CALL-INS")
-                    .font(CoachWorldTokens.display(Budget.label, weight: .bold))
-                    .tracking(CoachWorldTokens.DisplaySize.tracking(0.18, at: Budget.label))
-                    .foregroundStyle(CoachWorldTokens.dark.contentSecondary.color)
-                Spacer(minLength: CoachWorldTokens.Gap.sm)
-                HStack(spacing: CoachWorldTokens.Gap.hair) {
-                    ForEach(0..<3, id: \.self) { index in
-                        RoundedRectangle(cornerRadius: Budget.markCorner)
-                            .fill(index < budget.marks
-                                ? CoachWorldTokens.dark.actionPrimary.color
-                                : CoachWorldTokens.dark.actionPrimary.color.opacity(0.12))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: Budget.markCorner).stroke(
-                                    CoachWorldTokens.dark.actionPrimary.color.opacity(0.55),
-                                    lineWidth: CoachWorldTokens.Shape.hairline
-                                )
-                            }
-                            .frame(width: Budget.markWidth, height: Budget.markHeight)
-                    }
-                }
-                .accessibilityHidden(true)
-                Text("\(budget.used) OF \(budget.total)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.lead, weight: .bold))
-                    .foregroundStyle(CoachWorldTokens.dark.actionPrimary.color)
+        VStack(alignment: .leading, spacing: .zero) {
+            if let budget {
+                budgetSection(budget)
+                seam
             }
-            Text(budget.rateNote.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
-                .tracking(CoachWorldTokens.DisplaySize.tracking(0.12, at: CoachWorldTokens.DisplaySize.flag))
-                .foregroundStyle(CoachWorldTokens.dark.contentQuiet.color)
+            depthStrip
+            seam
+            planEdit
         }
-        // Hugs its content. Without this the `Spacer` above is greedy: the bug stretched to the
-        // full frame width and, drawn after the scorebug in the ZStack, painted straight over it —
-        // the whole top-left scorebug vanished. The spacer collapses to its `minLength` here, which
-        // is the gap the design actually asks for between the label and the marks.
-        .fixedSize(horizontal: true, vertical: false)
-        .padding(.vertical, CoachWorldTokens.Pad.card.v)
-        .padding(.horizontal, CoachWorldTokens.Pad.card.h)
+        .frame(width: Plate.width)
         .coachWorldFloodlitPanel(
-            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
+            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(Plate.ground),
             border: Color.white.opacity(CoachWorldTokens.Glass.line),
             depth: .deep,
             shape: CoachWorldCutCorner.card
         )
+    }
+
+    private var seam: some View {
+        Rectangle()
+            .fill(Color.white.opacity(Plate.seam))
+            .frame(height: CoachWorldTokens.Shape.hairline)
+    }
+
+    private func budgetSection(_ budget: MatchDayReadModel.CallInBudget) -> some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+            HStack(spacing: CoachWorldTokens.Gap.xxs) {
+                Text("CALL-INS")
+                    .font(CoachWorldTokens.display(Plate.label, weight: .bold))
+                    .tracking(CoachWorldTokens.DisplaySize.tracking(0.16, at: Plate.label))
+                    .foregroundStyle(CoachWorldTokens.dark.contentSecondary.color)
+                Spacer(minLength: CoachWorldTokens.Gap.xs)
+                HStack(spacing: CoachWorldTokens.Gap.hair) {
+                    ForEach(0..<3, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: Plate.markCorner)
+                            .fill(index < budget.marks
+                                ? CoachWorldTokens.dark.actionPrimary.color.opacity(Plate.markSpent)
+                                : .clear)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: Plate.markCorner).stroke(
+                                    CoachWorldTokens.dark.actionPrimary.color.opacity(Plate.markRule),
+                                    lineWidth: CoachWorldTokens.Shape.hairline
+                                )
+                            }
+                            .frame(width: Plate.markWidth, height: Plate.markHeight)
+                    }
+                }
+                .accessibilityHidden(true)
+                Text("\(budget.used)/\(budget.total)")
+                    .font(CoachWorldTokens.figure(Plate.figure, weight: .bold))
+                    .foregroundStyle(CoachWorldTokens.dark.contentPrimary.color)
+            }
+            // The model's own line, in 1a's slot and type. The reference prints "2 LEFT THIS
+            // DRIVE" here; that is mock copy, and the presentation contract says the reference
+            // creates no facts -- so the form is 1a's and the words stay the model's.
+            Text(budget.rateNote.uppercased())
+                .font(CoachWorldTokens.display(Plate.label, weight: .medium))
+                .tracking(CoachWorldTokens.DisplaySize.tracking(0.10, at: Plate.label))
+                .foregroundStyle(CoachWorldTokens.dark.contentQuiet.color)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, Plate.inset)
+        .padding(.vertical, CoachWorldTokens.Pad.card.v)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Call-ins, \(budget.used) of \(budget.total). \(budget.rateNote)")
     }
 
-    private enum Budget {
-        static let label: CGFloat = 10
-        static let markWidth: CGFloat = 9
-        static let markHeight: CGFloat = 15
-        static let markCorner: CGFloat = 1
-    }
-}
-
-/// The three-cell selector that sets `MatchControlDepth`.
-///
-/// `onSelect` fires the same signal regardless of which cell was tapped, matching the convention
-/// every other Match Day control already follows: one intent per control, with the provider
-/// deciding what it means. Which exact value a tap should choose is provider wiring the handoff
-/// does not specify.
-struct ControlDepthSelector: View {
-    let depth: MatchControlDepth
-    let onSelect: () -> Void
-
-    var body: some View {
+    private var depthStrip: some View {
         HStack(spacing: .zero) {
             ForEach(MatchControlDepth.allCases, id: \.self) { candidate in
-                Button(action: onSelect) {
-                    Text(title(candidate))
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
-                        .tracking(
-                            CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
-                        )
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                }
-                .foregroundStyle(depth == candidate
-                    ? CoachWorldTokens.dark.contentPrimary.color
-                    : CoachWorldTokens.dark.contentSecondary.color)
-                .overlay {
-                    if depth == candidate {
-                        Rectangle().stroke(
-                            CoachWorldTokens.dark.actionPrimary.color,
-                            lineWidth: CoachWorldTokens.Shape.hairline
-                        )
+                Button(action: onSelectDepth) {
+                    VStack(spacing: CoachWorldTokens.Gap.hair) {
+                        Text(Self.title(candidate))
+                            .font(CoachWorldTokens.display(Plate.label, weight: .bold))
+                            .tracking(CoachWorldTokens.DisplaySize.tracking(0.08, at: Plate.label))
+                            .foregroundStyle(depth == candidate
+                                ? CoachWorldTokens.dark.contentPrimary.color
+                                : CoachWorldTokens.dark.contentSecondary.color)
+                        Text(Self.subtitle(candidate))
+                            .font(CoachWorldTokens.display(Plate.sub, weight: .medium))
+                            .foregroundStyle(depth == candidate
+                                ? CoachWorldTokens.dark.contentSecondary.color
+                                : CoachWorldTokens.dark.contentQuiet.color)
                     }
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    .background(depth == candidate
+                        ? CoachWorldTokens.dark.contentPrimary.color.opacity(Plate.selected)
+                        : .clear)
                 }
-                .accessibilityLabel(title(candidate))
+                .accessibilityLabel(Self.title(candidate))
                 .accessibilityAddTraits(depth == candidate ? .isSelected : [])
             }
         }
-        .coachWorldFloodlitPanel(
-            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
-            border: Color.white.opacity(CoachWorldTokens.Glass.line),
-            depth: .deep,
-            shape: CoachWorldCutCorner.card
-        )
     }
 
-    private func title(_ depth: MatchControlDepth) -> String {
+    /// What each depth is called, and what it means. Both are authored labels for an existing
+    /// enum case, the same kind this file already owns -- no new state and no new control.
+    static func title(_ depth: MatchControlDepth) -> String {
         switch depth {
         case .everySnap: "EVERY SNAP"
         case .coordinator: "COORD"
         case .leverage: "LEVERAGE"
         }
     }
+
+    static func subtitle(_ depth: MatchControlDepth) -> String {
+        switch depth {
+        case .everySnap: "you call"
+        case .coordinator: "calls set"
+        case .leverage: "big downs"
+        }
+    }
+
 }
+
 
 // MARK: - Lower third
 
@@ -444,7 +464,7 @@ struct MatchLowerThird: View {
         .padding(.horizontal, CoachWorldTokens.Pad.panel.h)
         .frame(maxWidth: .infinity, alignment: .leading)
         .coachWorldFloodlitPanel(
-            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.80),
+            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(LowerThird.ground),
             border: Color.white.opacity(CoachWorldTokens.Glass.line),
             depth: .deep,
             shape: CoachWorldCutCorner.card
@@ -496,4 +516,25 @@ struct CommittingAction: View {
         )
         .accessibilityLabel(title)
     }
+}
+
+private enum Plate {
+    static let width: CGFloat = 172
+    static let ground = 0.88
+    static let seam = 0.08
+    static let inset: CGFloat = 10
+    static let label: CGFloat = 8
+    static let sub: CGFloat = 7
+    static let figure: CGFloat = 13
+    static let markWidth: CGFloat = 6
+    static let markHeight: CGFloat = 11
+    static let markCorner: CGFloat = 1
+    static let markSpent = 0.85
+    static let markRule = 0.55
+    static let selected = 0.07
+}
+
+private enum LowerThird {
+    /// The third step of 1a's plate ramp -- see `Bug.groundAlpha`.
+    static let ground = 0.86
 }
