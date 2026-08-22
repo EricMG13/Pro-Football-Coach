@@ -198,6 +198,10 @@ private struct SurfaceRegistryOverlay: View {
                 .frame(maxWidth: 720, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .top)
             }
+            // The index runs to every available task, so most of it is below the fold on open and
+            // reaching a row means scrolling. Named so a proof can address this list rather than
+            // guessing which scroll view it found.
+            .accessibilityIdentifier("surface-registry")
         }
         .accessibilitySortPriority(200)
     }
