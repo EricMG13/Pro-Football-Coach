@@ -221,7 +221,6 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
             )
         }
         .aspectRatio(MatchMetric.frameAspect, contentMode: .fit)
-        .accessibilityIdentifier("match-day-standard")
     }
 
     private var scoreBug: some View {
@@ -283,7 +282,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
         .coachWorldFloodlitPanel(
             fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
             border: Color.white.opacity(CoachWorldTokens.Glass.line),
-            depth: .deep,
+            depth: .glass,
             shape: CoachWorldCutCorner.actionSmall
         )
         .disabled(control?.isEnabled == false)
@@ -350,7 +349,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
         .coachWorldFloodlitPanel(
             fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
             border: Color.white.opacity(CoachWorldTokens.Glass.line),
-            depth: .deep,
+            depth: .glass,
             shape: CoachWorldCutCorner.actionSmall
         )
         .disabled(control?.isEnabled == false)
@@ -379,6 +378,13 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 )
                 .padding(.horizontal, CoachWorldTokens.Space.sm)
                 .padding(.top, CoachWorldTokens.Space.sm)
+                VStack(spacing: .zero) {
+                    ForEach(orderedControls, id: \.id) { control in
+                        controlButton(control)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .accessibilitySortPriority(60)
                 if let interruption = model.staffInterruption {
                     interruptionRail(interruption)
                 }
@@ -389,13 +395,6 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                         .background(palette.raised.color)
                         .accessibilitySortPriority(65)
                 }
-                VStack(spacing: .zero) {
-                    ForEach(orderedControls, id: \.id) { control in
-                        controlButton(control)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .accessibilitySortPriority(60)
             }
         }
     }
@@ -461,6 +460,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                     glow: false,
                     label: "Line of scrimmage"
                 )
+                .accessibilityIdentifier("weekly-command-dominant")
                 fieldMarker(
                     x: size.width * CGFloat(drawnLines.firstDown / 120),
                     height: size.height,
@@ -468,6 +468,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                     glow: true,
                     label: "First-down line"
                 )
+                .accessibilityIdentifier("weekly-command-screen-14")
 
                 if let playback = model.playback, !reduceMotion {
                     TimelineView(
@@ -698,6 +699,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 radius: glow ? MatchMetric.firstDownGlow : .zero
             )
             .offset(x: x - (glow ? MatchMetric.firstDownWidth : MatchMetric.losWidth) / 2)
+            .accessibilityElement()
             .accessibilityLabel(label)
     }
 
@@ -768,7 +770,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
         .coachWorldFloodlitPanel(
             fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.90),
             border: Color.white.opacity(CoachWorldTokens.Glass.line),
-            depth: .deep,
+            depth: .glass,
             shape: CoachWorldCutCorner.card
         )
         .overlay(alignment: .top) {

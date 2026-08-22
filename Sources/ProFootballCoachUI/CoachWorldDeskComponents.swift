@@ -168,6 +168,7 @@ public struct CoachWorldFloodlitStage<Content: View>: View {
                     CoachWorldFloodlitComposition(
                         model: chrome,
                         palette: palette,
+                        viewportWidth: geometry.size.width,
                         onNavigate: onNavigate ?? { _ in },
                         content: content
                     )
@@ -188,7 +189,6 @@ public struct CoachWorldFloodlitStage<Content: View>: View {
         .foregroundStyle(palette.contentPrimary.color)
         .preferredColorScheme(.dark)
         .environment(\.coachWorldTeamIdentity, resolvedTeamIdentity)
-        .accessibilityIdentifier("floodlit-stage")
     }
 }
 

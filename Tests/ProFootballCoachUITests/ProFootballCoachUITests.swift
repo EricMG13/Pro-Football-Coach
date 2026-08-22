@@ -11,8 +11,15 @@ final class ProFootballCoachUITests: XCTestCase {
         app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "8"
         app.launch()
 
-        XCTAssertTrue(app.otherElements["coaching-hq-screen"].waitForExistence(timeout: 20))
-        XCTAssertTrue(app.otherElements["top-navigator"].waitForExistence(timeout: 20))
+        XCTAssertTrue(
+            app.descendants(matching: .any)["coaching-hq-screen"]
+                .waitForExistence(timeout: 20)
+        )
+        XCTAssertGreaterThan(
+            app.descendants(matching: .any)
+                .matching(identifier: "top-navigator").count,
+            0
+        )
         XCTAssertEqual(
             app.descendants(matching: .any)
                 .matching(NSPredicate(format: "label == %@", "Sections")).count,
@@ -58,6 +65,310 @@ final class ProFootballCoachUITests: XCTestCase {
             .firstMatch
         XCTAssertTrue(scoreBug.waitForExistence(timeout: 20))
         XCTAssertLessThan(scoreBug.frame.minY, 30)
+    }
+
+    func testWeeklyCommandScreensExposeOneDominantSurfaceAtDefault() {
+        assertWeeklyCommandScreens(usesAX5: false)
+    }
+
+    func testWeeklyCommandScreensExposeOneDominantSurfaceAtAX5() {
+        assertWeeklyCommandScreens(usesAX5: true)
+    }
+
+    private func assertWeeklyCommandScreens(usesAX5: Bool) {
+        let screenIDs = Array(8...15) + [47]
+        for screenID in screenIDs {
+            let app = XCUIApplication()
+            if screenID == 14 {
+                app.launchEnvironment["PROOF_SCREEN"] = "match"
+            } else {
+                app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+                app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(screenID)"
+            }
+            app.launch()
+
+            if screenID == 15 || screenID == 47 {
+                let title = screenID == 15 ? "Aftermath" : "Game Detail / Box Score"
+                let unavailable = app.staticTexts.matching(
+                    NSPredicate(format: "label BEGINSWITH %@", "\(title) unavailable.")
+                ).firstMatch
+                guard unavailable.waitForExistence(timeout: 20) else {
+                    XCTFail("Missing honest unavailable state for screen \(screenID), AX5: \(usesAX5)")
+                    return
+                }
+                let attachment = XCTAttachment(screenshot: app.screenshot())
+                attachment.name = "Weekly command \(screenID) — \(usesAX5 ? "AX5" : "default") — unavailable"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+                app.terminate()
+                continue
+            }
+
+            let rootIdentifier = "weekly-command-screen-\(screenID)"
+            let roots = app.descendants(matching: .any)
+                .matching(identifier: rootIdentifier)
+            guard roots.firstMatch.waitForExistence(timeout: 20) else {
+                XCTFail("Missing weekly-command root for screen \(screenID), AX5: \(usesAX5)")
+                return
+            }
+            guard roots.count == 1 else {
+                XCTFail("Expected one weekly-command root for screen \(screenID), AX5: \(usesAX5)")
+                return
+            }
+            let dominants = app.descendants(matching: .any)
+                .matching(identifier: "weekly-command-dominant")
+            guard dominants.count == 1 else {
+                XCTFail("Expected one dominant surface for screen \(screenID), AX5: \(usesAX5)")
+                return
+            }
+            XCTAssertEqual(app.buttons.matching(identifier: rootIdentifier).count, 0)
+            XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-dominant").count, 0)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "Weekly command \(screenID) — \(usesAX5 ? "AX5" : "default")"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            app.terminate()
+        }
+    }
+
+    func testCoachingHQSelectsBeforeExplicitCommitAtDefault() {
+        assertCoachingHQSelectsBeforeExplicitCommit()
+    }
+
+    func testCoachingHQSelectsBeforeExplicitCommitAtAX5() {
+        assertCoachingHQSelectsBeforeExplicitCommit()
+    }
+
+    private func assertCoachingHQSelectsBeforeExplicitCommit() {
+        let app = XCUIApplication()
+        app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+        app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "8"
+        app.launch()
+
+        let choice = app.buttons
+            .matching(NSPredicate(format: "identifier BEGINSWITH %@", "hq-choice-"))
+            .firstMatch
+        let commit = app.buttons["hq-commit-decision"]
+        XCTAssertTrue(choice.waitForExistence(timeout: 20))
+        XCTAssertTrue(commit.exists)
+        XCTAssertFalse(commit.isEnabled)
+        choice.tap()
+        XCTAssertTrue(commit.isEnabled)
+        commit.tap()
+        XCTAssertEqual(
+            app.descendants(matching: .any)
+                .matching(identifier: "weekly-command-screen-8").count,
+            1
+        )
+        XCTAssertEqual(
+            app.descendants(matching: .any)
+                .matching(identifier: "weekly-command-dominant").count,
+            1
+        )
+        XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-dominant").count, 0)
+        app.terminate()
+    }
+
+    func testWeeklyPlanReceiptDoesNotCoverChoicesAtDefault() {
+        assertWeeklyPlanReceiptDoesNotCoverChoices()
+    }
+
+    func testWeeklyPlanReceiptDoesNotCoverChoicesAtAX5() {
+        assertWeeklyPlanReceiptDoesNotCoverChoices()
+    }
+
+    func testWeeklyCommandContentStaysInsideTheViewportAtDefault() {
+        assertWeeklyCommandContentStaysInsideTheViewport(usesAX5: false)
+    }
+
+    func testWeeklyCommandContentStaysInsideTheViewportAtAX5() {
+        assertWeeklyCommandContentStaysInsideTheViewport(usesAX5: true)
+    }
+
+    func testTeamHealthEmptyStateDoesNotHideBehindFooterAtAX5() {
+        let app = XCUIApplication()
+        app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+        app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "13"
+        app.launch()
+
+        let emptyState = app.staticTexts.matching(
+            NSPredicate(
+                format: "label == %@",
+                "No readiness exceptions are recorded for this squad."
+            )
+        ).firstMatch
+        let footer = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH[c] %@", "Advance week")
+        ).firstMatch
+        XCTAssertTrue(emptyState.waitForExistence(timeout: 20))
+        XCTAssertTrue(footer.exists)
+        XCTAssertFalse(emptyState.frame.intersects(footer.frame))
+        app.terminate()
+    }
+
+    private func assertWeeklyCommandContentStaysInsideTheViewport(usesAX5: Bool) {
+        let fixtures: [(screenID: Int, labels: [String], choicePrefixes: [String])] = [
+            (9, ["6 unanswered"], []),
+            (10, ["Stale"], []),
+            (11, ["You decide"], [
+                "Balanced control.", "Pressure the quarterback.", "Play with pace.",
+            ]),
+            (12, ["You decide"], [
+                "Balanced week.", "Install and sharpen.", "Recover and condition.",
+            ]),
+            (13, ["Condition 100%"], []),
+        ]
+
+        for fixture in fixtures {
+            let app = XCUIApplication()
+            app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+            app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(fixture.screenID)"
+            app.launch()
+
+            let viewport = app.windows.firstMatch
+            XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+            let root = app.descendants(matching: .any)[
+                "weekly-command-screen-\(fixture.screenID)"
+            ]
+            XCTAssertTrue(root.waitForExistence(timeout: 20))
+            if usesAX5 {
+                assert(root, staysInside: viewport)
+            } else {
+                XCTAssertEqual(root.frame.minX, 63, accuracy: 0.5)
+            }
+            for label in fixture.labels {
+                let element = app.staticTexts[label].firstMatch
+                XCTAssertTrue(element.waitForExistence(timeout: 20))
+                assert(element, staysInside: viewport)
+            }
+            for choicePrefix in fixture.choicePrefixes {
+                let choice = app.buttons.matching(
+                    NSPredicate(format: "label BEGINSWITH[c] %@", choicePrefix)
+                ).firstMatch
+                XCTAssertTrue(choice.exists)
+                assert(choice, staysInside: viewport)
+            }
+            if fixture.screenID == 9 {
+                let lastVisibleItem = app.buttons.matching(
+                    NSPredicate(format: "label BEGINSWITH[c] %@", "Game plan required")
+                ).firstMatch
+                let footer = app.buttons.matching(
+                    NSPredicate(format: "label BEGINSWITH[c] %@", "Advance week")
+                ).firstMatch
+                XCTAssertTrue(lastVisibleItem.exists)
+                XCTAssertTrue(footer.exists)
+                XCTAssertFalse(lastVisibleItem.frame.intersects(footer.frame))
+            }
+            app.terminate()
+        }
+    }
+
+    private func assert(
+        _ element: XCUIElement,
+        staysInside viewport: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertGreaterThanOrEqual(element.frame.minX, viewport.frame.minX, file: file, line: line)
+        XCTAssertLessThanOrEqual(element.frame.maxX, viewport.frame.maxX, file: file, line: line)
+    }
+
+    private func assertWeeklyPlanReceiptDoesNotCoverChoices() {
+        let fixtures = [
+            (
+                screenID: 11,
+                consequence: "Keeps tempo, run/pass balance, and pressure near the staff baseline.",
+                commit: "Set Balanced Control",
+                selectedChoice: "Balanced control.",
+                choices: ["Balanced control.", "Pressure the quarterback.", "Play with pace."]
+            ),
+            (
+                screenID: 12,
+                consequence: "Splits the 60 minutes across install, conditioning, recovery, and focus.",
+                commit: "Set Balanced Week",
+                selectedChoice: "Balanced week.",
+                choices: ["Balanced week.", "Install and sharpen.", "Recover and condition."]
+            ),
+        ]
+
+        for fixture in fixtures {
+            let app = XCUIApplication()
+            app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+            app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(fixture.screenID)"
+            app.launch()
+
+            let consequence = app.staticTexts[fixture.consequence]
+            let commit = app.buttons.matching(
+                NSPredicate(format: "label BEGINSWITH[c] %@", fixture.commit)
+            ).firstMatch
+            XCTAssertTrue(consequence.waitForExistence(timeout: 20))
+            XCTAssertTrue(commit.exists)
+            let selectedChoice = app.buttons.matching(
+                NSPredicate(format: "label BEGINSWITH[c] %@", fixture.selectedChoice)
+            ).firstMatch
+            XCTAssertTrue(selectedChoice.exists)
+            XCTAssertTrue(selectedChoice.isSelected)
+            XCTAssertTrue(
+                commit.label.localizedCaseInsensitiveContains(
+                    String(fixture.selectedChoice.dropLast())
+                )
+            )
+            for choicePrefix in fixture.choices {
+                let choice = app.buttons.matching(
+                    NSPredicate(format: "label BEGINSWITH[c] %@", choicePrefix)
+                ).firstMatch
+                XCTAssertTrue(choice.exists)
+                XCTAssertFalse(consequence.frame.intersects(choice.frame))
+                XCTAssertFalse(commit.frame.intersects(choice.frame))
+            }
+            XCTAssertFalse(consequence.frame.intersects(commit.frame))
+            commit.tap()
+            XCTAssertFalse(commit.exists)
+            app.terminate()
+        }
+    }
+
+    func testMatchDayExportsDistinctFieldLandmarksAtDefault() {
+        assertMatchDayExportsDistinctFieldLandmarks(usesAX5: false)
+    }
+
+    func testMatchDayExportsDistinctFieldLandmarksAtAX5() {
+        assertMatchDayExportsDistinctFieldLandmarks(usesAX5: true)
+    }
+
+    private func assertMatchDayExportsDistinctFieldLandmarks(usesAX5: Bool) {
+        let app = XCUIApplication()
+        app.launchEnvironment["PROOF_SCREEN"] = "match"
+        app.launch()
+
+            let root = app.descendants(matching: .any)["weekly-command-screen-14"]
+            let dominant = app.descendants(matching: .any)["weekly-command-dominant"]
+            XCTAssertTrue(root.waitForExistence(timeout: 20))
+            XCTAssertTrue(dominant.exists)
+            XCTAssertEqual(root.label, "First-down line")
+            XCTAssertEqual(dominant.label, "Line of scrimmage")
+            XCTAssertEqual(
+                app.descendants(matching: .any).matching(
+                    NSPredicate(
+                        format: "label IN %@",
+                        ["First-down line", "Line of scrimmage"]
+                    )
+                ).count,
+                2
+            )
+            XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-screen-14").count, 0)
+            XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-dominant").count, 0)
+
+            if usesAX5 {
+                let labels = app.buttons.allElementsBoundByIndex.map(\.label)
+                let canonical = ["Speed", "Pause", "Key Moments", "Take Over", "Tactics"]
+                let positions = canonical.compactMap { title in
+                    labels.firstIndex { $0 == title || $0.hasPrefix("\(title), ") }
+                }
+                XCTAssertEqual(positions.count, canonical.count)
+                XCTAssertEqual(positions, positions.sorted())
+            }
+        app.terminate()
     }
 
     func testRedesignedJobBoardProofFlow() {

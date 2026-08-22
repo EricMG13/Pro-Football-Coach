@@ -78,13 +78,21 @@ public struct AftermathView: View, CoachWorldChromedSurface {
             ? [model.home, model.away]
             : [model.away, model.home]
         let isDraw = model.home.score == model.away.score
-        return VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
-            FloodlitLabel3(
-                "Final \u{00B7} \(model.venue.name) \u{00B7} \(model.resultLabel)",
-                palette: palette
-            )
-            ForEach(Array(sides.enumerated()), id: \.offset) { index, side in
-                scoreLine(side, isLead: isDraw || index == 0)
+        return FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+                FloodlitLabel3(
+                    "Final \u{00B7} \(model.venue.name) \u{00B7} \(model.resultLabel)",
+                    palette: palette
+                )
+                .accessibilityIdentifier("weekly-command-screen-15")
+                ForEach(Array(sides.enumerated()), id: \.offset) { index, side in
+                    if index == 0 {
+                        scoreLine(side, isLead: true)
+                            .accessibilityIdentifier("weekly-command-dominant")
+                    } else {
+                        scoreLine(side, isLead: isDraw)
+                    }
+                }
             }
         }
     }
@@ -189,7 +197,7 @@ public struct AftermathView: View, CoachWorldChromedSurface {
 
     /// The reference's "What the plan did": what the coach's own decisions turned into.
     private var planPanel: some View {
-        FloodlitCard(palette: palette, depth: .deep) {
+        FloodlitCard(palette: palette, depth: .glass) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 FloodlitLabel3("What the plan did", palette: palette)
                 panelGroup("What the game turned on", model.evidence)
