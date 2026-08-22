@@ -547,6 +547,18 @@ final class ProFootballCoachUITests: XCTestCase {
             XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-screen-14").count, 0)
             XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-dominant").count, 0)
 
+            // All 22 actors, 11 a side, whatever the field is doing. A recorded snap only carries
+            // tracks for the actors that moved -- the proof fixture carries one -- so drawing the
+            // playback's tracks instead of the model's actors empties the formation off the field
+            // and out of VoiceOver at exactly the moment the coach is looking hardest.
+            let marks = app.descendants(matching: .any)
+                .matching(NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@",
+                                      "Offense, ", "Defense, "))
+            XCTAssertEqual(marks.count, 22)
+            let sides = marks.allElementsBoundByIndex.map(\.label)
+            XCTAssertEqual(sides.filter { $0.hasPrefix("Offense, ") }.count, 11)
+            XCTAssertEqual(sides.filter { $0.hasPrefix("Defense, ") }.count, 11)
+
             if usesAX5 {
                 let labels = app.buttons.allElementsBoundByIndex.map(\.label)
                 let canonical = ["Speed", "Pause", "Key Moments", "Take Over", "Tactics"]

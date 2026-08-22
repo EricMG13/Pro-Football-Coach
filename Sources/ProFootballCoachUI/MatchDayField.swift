@@ -647,8 +647,12 @@ struct PlayerToken: View {
         Text(label.uppercased())
             .font(CoachWorldTokens.display(Token.labelSize, weight: .bold))
             .monospacedDigit()
+            // Ours is a pale disc, not a gold one. The reference spends gold exactly twice in this
+            // frame -- the first-down line and the committing action -- and says so on the token
+            // layer itself: "No gold on the field but the first-down line." Twenty-two gold discs
+            // made the one gold line stop reading as the thing that matters.
             .foregroundStyle(isOurs
-                ? CoachWorldTokens.Floodlit.goldInk.color
+                ? CoachWorldTokens.Floodlit.glassFlatDeep.color
                 : CoachWorldTokens.Floodlit.opponentInk.color)
             .lineLimit(1)
             .minimumScaleFactor(Token.labelScaleFloor)
@@ -656,13 +660,13 @@ struct PlayerToken: View {
             .frame(width: Token.diameter, height: Token.diameter)
             .background(
                 Circle().fill(isOurs
-                    ? CoachWorldTokens.dark.actionPrimary.color
+                    ? CoachWorldTokens.dark.contentPrimary.color
                     : CoachWorldTokens.Floodlit.opponentField.color)
             )
             .overlay(
                 Circle().stroke(
                     isOurs
-                        ? CoachWorldTokens.Floodlit.goldLight.color
+                        ? CoachWorldTokens.Floodlit.lamp.color
                         : CoachWorldTokens.Floodlit.opponentAccent.color.opacity(0.7),
                     lineWidth: CoachWorldTokens.Shape.hairline
                 )
@@ -828,8 +832,11 @@ private enum Paint {
     static let goalWidth: CGFloat = 3
     static let hashRow: CGFloat = 6
     static let numberSize: CGFloat = 23
-    static let number = 0.33
-    static let numberShadow = 0.45
+    /// The reference's own contrast repair, which this file was built before: 1a annotates the
+    /// yard numbers "CONTRAST REPAIR: .33 to .66 ink over a 2 pt black drop". At .33 over turf the
+    /// numbers were the least legible paint on the field.
+    static let number = 0.66
+    static let numberShadow = 0.55
     static let numberShadowOffset: CGFloat = 2
     static let numberTopRow: CGFloat = 0.20
     static let numberBottomRow: CGFloat = 0.80
