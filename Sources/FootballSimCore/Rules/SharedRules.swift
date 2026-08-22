@@ -92,7 +92,7 @@ public enum SharedRules {
     /// answer — the 4-3 shape lives only in `DepthChart`'s templates — and it is flagged for the
     /// owner rather than settled here.
     public static let minimumPlayableRosterByPosition: [Position: Int] = [
-        .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
+        .quarterback: 1, .runningBack: 2, .wideReceiver: 3, .tightEnd: 1,
         .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
         .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 3,
         .cornerback: 3, .safety: 2, .kicker: 1, .punter: 1,
