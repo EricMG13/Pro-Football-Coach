@@ -97,14 +97,21 @@ public enum CollegePortalPolicyV1 {
     static let postseasonCalendarWeek = 21
     static let springCalendarWeek = 1
     static let maximumGamesPerSeason = 16
-    static let rosterLimit = 105
+    // A frozen, deliberately coarse ceiling on an *archived* position-room count -- not a copy of
+    // `CollegeRules.rosterLimit`, and never to be read as one. No live computation may use it:
+    // roster and scholarship openings are live readings and take `CollegeRules`.
+    // Residual hazard, unfixed here because it is a different surface: the three
+    // `CollegePortalState` room-count checks that use this ceiling are shared between decode and
+    // live construction, so raising `CollegeRules.rosterLimit` past 105 would let a live room
+    // exceed it and trap. Split those the way `CollegePortalCapacitySnapshot` now is when that
+    // becomes possible.
+    static let maximumPositionRoomSize = 105
     static let minimumPlayableRosterByPosition: [Position: Int] = [
         .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
         .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
         .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 2,
         .cornerback: 3, .safety: 2, .kicker: 1, .punter: 1,
     ]
-    static let scholarshipLimit = 85
     static let eligibilityClockYears = 5
     static let maximumNILBudget = 9_900
     static let nilBandUnit = 100

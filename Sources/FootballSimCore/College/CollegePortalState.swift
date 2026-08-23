@@ -147,7 +147,7 @@ public struct CollegePortalIntentEvidence: Codable, Sendable, Equatable {
         (0...CollegePortalPolicyV1.maximumGamesPerSeason).contains(starts)
             && starts <= appearances
             && (0...CollegePortalPolicyV1.maximumGamesPerSeason).contains(appearances)
-            && (1...CollegePortalPolicyV1.rosterLimit).contains(sourcePositionRoomSize)
+            && (1...CollegePortalPolicyV1.maximumPositionRoomSize).contains(sourcePositionRoomSize)
             && (0...CollegePortalPolicyV1.eligibilityClockYears).contains(seasonsAtSource)
             && (1...CollegePortalPolicyV1.programmeCount).contains(sourceFinalRankingPosition)
             && (0...CollegePortalPolicyV1.maximumNILBudget).contains(sourceRosterNIL)
@@ -541,7 +541,7 @@ public struct CollegePortalDestinationEvidence: Codable, Sendable, Equatable {
             && CollegePortalPolicyV1.positionTargetCount(for: candidatePosition)
                 == positionTargetCount
             && Set(priorityWeights.keys) == Set(CollegePortalPolicyV1.pitchOrder)
-            && (0...CollegePortalPolicyV1.rosterLimit).contains(
+            && (0...CollegePortalPolicyV1.maximumPositionRoomSize).contains(
                 destinationPositionRoomCount
             )
             && (1...CollegePortalPolicyV1.programmeCount).contains(
@@ -757,7 +757,7 @@ public struct CollegePortalAdmissionEvidence: Codable, Sendable, Equatable {
     ) -> Bool {
         CollegePortalPolicyV1.positionTargetCount(for: position) != nil
             && (0...CollegePortalPolicyV1.maximumGamesPerSeason).contains(appearances)
-            && (0...CollegePortalPolicyV1.rosterLimit).contains(fixedPositionRoomCount)
+            && (0...CollegePortalPolicyV1.maximumPositionRoomSize).contains(fixedPositionRoomCount)
             && (0...CollegePortalPolicyV1.maximumKnowledgeConfidence).contains(confidence)
     }
 }
@@ -883,6 +883,12 @@ public struct CollegePortalCapacitySnapshot: Codable, Sendable, Equatable {
             minimumCoverageDeficits: minimumCoverageDeficits,
             nilRemaining: nilRemaining
         ))
+        // A snapshot built here is a reading of a roster taken now, so it must be legal under the
+        // rules in force now. `init(from:)` deliberately does not repeat this: it decodes readings
+        // taken under rules that may since have changed, and the ceiling that was true then is not
+        // recorded anywhere.
+        precondition(rosterOpenings <= CollegeRules.rosterLimit)
+        precondition(scholarshipOpenings <= CollegeRules.scholarshipLimit)
         self.programmeID = programmeID
         self.targetSeason = targetSeason
         self.window = window
@@ -930,6 +936,10 @@ public struct CollegePortalCapacitySnapshot: Codable, Sendable, Equatable {
         nilRemaining = decodedNIL
     }
 
+    private static var worldRosterSlots: Int {
+        CollegeRules.programmeCount * CollegeRules.rosterLimit
+    }
+
     private static func isValid(
         targetSeason: Int,
         window: CollegePortalWindow,
@@ -939,9 +949,23 @@ public struct CollegePortalCapacitySnapshot: Codable, Sendable, Equatable {
         minimumCoverageDeficits: [Position: Int],
         nilRemaining: Int
     ) -> Bool {
+        // The openings bound here is deliberately not the roster limit. Openings were measured
+        // against whatever the limits were when the snapshot was taken, and this predicate is
+        // shared with `init(from:)`, so a limit-sized ceiling breaks in one direction whichever
+        // copy it reads: a frozen one rejects a live snapshot once the live limit is raised, a
+        // live one rejects an archived snapshot once the live limit is lowered -- and rejecting an
+        // archived snapshot is the undecodable career record the frozen policy exists to prevent.
+        // The limit-sized ceiling therefore belongs to the live path alone and sits on the
+        // memberwise initializer above.
+        //
+        // What stands here instead is a bound too slack for any balance pass to make it bind: one
+        // programme's openings cannot exceed every roster slot in the college world. It survives a
+        // raise (the bound rises with the limit) and a lowering (an archived 105 clears 134 x any
+        // limit down to 1), and it still refuses garbage -- a decoded opening count feeds a
+        // multiplication in `WorldIntegrity`, and refusing the save is the graceful failure.
         window.expectedCalendar(targetSeason: targetSeason) == capturedAt
-            && (0...CollegePortalPolicyV1.rosterLimit).contains(rosterOpenings)
-            && (0...CollegePortalPolicyV1.scholarshipLimit).contains(scholarshipOpenings)
+            && (0...worldRosterSlots).contains(rosterOpenings)
+            && (0...worldRosterSlots).contains(scholarshipOpenings)
             && minimumCoverageDeficits.allSatisfy { position, deficit in
                 deficit > 0
                     && deficit <= (CollegePortalPolicyV1
