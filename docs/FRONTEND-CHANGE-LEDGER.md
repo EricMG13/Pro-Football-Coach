@@ -190,7 +190,7 @@ Verified against the standard and matching:
 
 ## Part B — per surface
 
-**Coverage as of 2026-08-23: 19 of 47 canonical destinations drawn.** The live count is
+**Coverage as of 2026-08-23: 23 of 47 canonical destinations drawn.** Two families complete. The live count is
 `guidelines/coverage.card.html`, which fails on a stale mapping rather than printing it as coverage.
 
 ### B1 · This Week — complete, 9/9, and every one re-sourced
@@ -251,14 +251,23 @@ compute. Two options, and this is a design call rather than an engineering one:
 `Unseen` is unaffected and stays: a value the model does not hold is still drawn as not held, and
 `Versus` still refuses to mark a lead against it.
 
-### B3 · Not yet drawn — 28 canonical
+### B1b · Personnel — complete, 5/5
+
+| ID | Surface | Required change |
+|---:|---|---|
+| 16 | Roster | **REMOVE the ceiling column and the sort caret** — see B2-C. Development and its delta replace the projection. |
+| 17 | Depth chart | **REMOVE any ranking of occupants.** The model records *occupancy*, not order — named roles, one player each, no second string. **No invented vacancy**: a hurt player still occupies his role; what changes is availability. Spatial, not a table. Plan options are a **fork** — zero gold. **Hosts alias 23**, so its tab carries the host caret. |
+| 18 | Player profile | **REMOVE projection, comparison and any derived grade** — all omitted by name. A Dossier: one gold on the seam, no commit bar. The development link is a route, drawn in ink. |
+| 19 | Development plan | **REMOVE the editable allocation and the projected trajectory.** There is no action here at all beyond closing — and the surface must **say so in words**, or a player will assume the control is hidden rather than absent. Zero gold. |
+| 20 | Staff profiles | **REMOVE any delegation chip, ranking, hire or fire.** The only surface of the 62 with no reference drawing, so composition is new; every column is a `StaffRow` field. Age was dropped to keep ROLE readable — measured, not guessed. Zero gold. |
+
+### B3 · Not yet drawn — 24 canonical
 
 Undrawn here means no Press Box composition exists yet, **not** that the Swift view is missing —
 all 62 have a view on `main`. These are queued in the order below.
 
 | Family | Remaining | Note |
 |---|---|---|
-| **personnel** 1/5 | 7a Depth chart · 7f Player profile · 7c Development plan · 7d Staff profiles | Heaviest reuse of the existing plate. **7d has no reference drawing at all** — the only one of the 62 without one. |
 | **recruiting** 3/7 | 8c Shortlist · 8d Contact & visit planner · 8e Class overview · 8j College offseason | |
 | **pro** 1/5 | 9a Cap & contracts · 9b Contract negotiation · 9c Roster cuts · 9h Pro front office | Money surfaces; integer dollars only, no floating-point currency |
 | **career** 4/9 | 11k Opportunities · 11d Record book · 11e Rivalries · 11c Career line · 11f Coaching tree | |
