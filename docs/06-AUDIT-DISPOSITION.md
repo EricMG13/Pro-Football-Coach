@@ -41,12 +41,23 @@ codebase is "structurally sound and idiomatic". It measures craft. The engagemen
 
 **Named is not built, and the difference is checkable.** Every test name in this document was swept
 against the source tree on 2026-08-23 — the whole document, by regular expression, not a spot-check.
-Thirteen of the fifteen exist. **Two do not: `DestructiveActionPlacementTest` (row 18) and
-`SmallestDeviceLayoutTest` (row 23, also named in `04` §7).** Neither is registered in
-`SuiteCatalog`, so neither is a gate any lane runs, and no `PRODUCT.md` commitment names them —
-which is why `CommitmentCoverageTest` stays green with them missing. They are outstanding work, not
-coverage. Re-run the sweep rather than trusting this paragraph: a name with nothing behind it is the
-exact failure `08` §"the two things this project has failed at before" describes.
+Twelve of the fifteen exist. **Three do not: `DestructiveActionPlacementTest` (row 18),
+`SmallestDeviceLayoutTest` (row 23, also named in `04` §7), and `OrientationPolicyTest` (row 17,
+also claimed by `CLAUDE.md` since 2026-08-10).** None is registered in `SuiteCatalog`, so none is a
+gate any lane runs, and no `PRODUCT.md` commitment names them — which is why `CommitmentCoverageTest`
+stays green with them missing. They are outstanding work, not coverage.
+
+**The first version of this paragraph said two, and the third is how it was wrong.** That sweep
+matched the raw file text, so `OrientationPolicyTest` "existed" on the strength of a comment in
+`DesignContractTests.swift` — the comment that records the test never having been written. A scan
+that reads comments as code is the same defect as a scan that skips a line because it carries a
+comment, which is how five determinism leaks survived a green suite (`03b` §1). Strip comments
+before sweeping, and re-run it rather than trusting this paragraph: a name with nothing behind it is
+the exact failure `08` §"the two things this project has failed at before" describes.
+
+What does assert the orientation is the `Orientation policy` suite in
+`Tests/SimTests/Suites/DesignContractTests.swift`, which reads `App/project.yml`. It records G-09
+against itself: the declaration was real for two days while the test named as asserting it was not.
 
 | # | Finding | Disposition |
 |---|---|---|
