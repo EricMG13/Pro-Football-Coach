@@ -1,0 +1,376 @@
+# Frontend change ledger — Press Box
+
+**A living record, not canon.** `docs/DOC-MANIFEST.md` governs what is canon; nothing here amends a
+canon document. Opened 2026-08-23.
+
+**Standard:** Press Box, Claude Design project `3e8bedda-4c56-4be1-8f3a-98f9c2e82d9d`, owner-approved
+2026-08-23 as the design standard. Its own `AUTHORITY.md` states what that overrides and — more
+importantly — what it does not.
+
+**Purpose:** every change the SwiftUI frontend needs to meet that standard, with enough detail to
+act on without re-deriving it. One row per change. Nothing here is speculative: each entry names a
+file or symbol that exists, or states plainly that the thing does not exist yet.
+
+---
+
+## Status legend
+
+| | Meaning |
+|---|---|
+| **CHANGE** | The thing exists and is wrong. Adapt it. |
+| **ADD** | The thing does not exist and must be built. |
+| **REMOVE** | The thing exists and should not. |
+| **ASK** | Blocked on the engine or on an owner decision. Do not invent around it. |
+
+---
+
+## The one rule that governs the whole rebuild
+
+**The standard decides how a thing is drawn. It does not license drawing a thing that does not
+exist.**
+
+`docs/reviews/2026-08-22-all-screen-presentation-contract.md` states what each screen's read model
+holds, what its callbacks are, and what it must omit. That contract is untouched by the standard and
+binds in full. Where this ledger asks for a composition the read model cannot feed, it is filed as
+**ASK** rather than drawn — see Part D.
+
+This matters because the reference package would have led the other way. All 21 `*.dc.html` sheets
+carry one mtime (2026-08-21 14:19); the contract is a day newer and forbids, by name, seven things
+those sheets draw. Details in `docs/briefs/2026-08-23-surface-coverage.md` §1a.
+
+---
+
+## Part A — the shared layer
+
+**Do this part first.** Six of these files are read by every surface, so each fix here removes the
+same defect from dozens of views at once. Nothing in Part B should start before A1–A4 land.
+
+### A1 · `DesignTokens.swift` — `Stage`: the rail is gone
+
+**CHANGE.** `Stage` still describes the 44 pt icon rail that direction 3a removed, and derives the
+content column from it.
+
+| Symbol | Now | Required |
+|---|---|---|
+| `Stage.railLeading` `railWidth` `railTop` `railGap` | 59 / 44 / 46 / 2 | **REMOVE** — there is no rail |
+| `Stage.contentLeading` | `115` | `63` |
+| `Stage.contentWidth` | `844 - 115 - 20` = **709** | `844 - 63 - 20` = **761** |
+| `Stage.contentTop` | `46` | `54` |
+| `Stage.railFreeLeading` | `63` | **REMOVE** — every surface is now rail-free |
+
+Confirmed from two directions: the repository's own all-screen reconciliation states *"top chrome
+starts at x = 63, y = 12, spans 761 points, and is approximately 34 points high; content begins at
+y = 54"*, derived independently and identical. `63 + 761 + 20 = 844` exactly.
+
+This is the highest-leverage change in the document: it is +4.6% content area on all 47 canonical
+destinations, and it is a precondition for every plate width in Part B.
+
+### A2 · `DesignTokens.swift` — `Heat`: three bands must become five
+
+**CHANGE.** `Heat` implements *"red below 70, amber from 70–84 and green from 85 upward"* — three
+bands, with amber as the ordinary starter's colour.
+
+Required: **five bands around a neutral centre**, warm band *below* the median.
+
+| Band | Range | Role |
+|---|---|---|
+| well below | 40–59 | `stateNegative` |
+| below | 60–69 | `stateWarning` |
+| **average** | **70–79** | **`contentSecondary` — neutral ink, not a colour** |
+| above | 80–84 | `#7FCB9E` — **ADD**, no existing role holds it |
+| well above | 85–99 | `statePositive` |
+
+Two defects in the three-band version, and the second is the serious one:
+
+1. An ordinary starter at 74 reads as a caution.
+2. In the retired scale the middle band was gold — spending the commit colour on every average
+   rating in every dense table. `Heat.color(for:palette:)` no longer returns gold, but the shape that
+   allowed it is still there.
+
+`04` §6.4 was amended to the five-band scale on 2026-08-22. This code is behind its own canon.
+
+### A3 · `DesignTokens.swift` — `stateWarning` is a refused value
+
+**CHANGE.** `stateWarning: 0xFFB03A`.
+
+Measured **6.1° from gold** at the same saturation. At 11 pt under a thumb a caution and a commit are
+the same colour. Required: **`0xC9704A`** — 24.1° from gold, 5.57:1 on page.
+
+`04` §6.1a retired `#FFB03A` on 2026-08-22, and `codex/integrate-mock-reconciliation` carries the
+canon amendment. This file did not follow.
+
+Note the same file already refuses `#65788F` for `contentQuiet` and says so in a comment — the
+identical reasoning, applied to one value and not the other.
+
+### A4 · `DesignTokens.swift` — the translucent-surfacing scales are missing
+
+**ADD.** Press Box carries four named scales that no Swift token holds. Without them every view
+writes its own opacity, which is how the design system got 75 hard-coded colours in its own
+components before this was fixed there.
+
+| Scale | Steps | What it is |
+|---|---|---|
+| `wash` | 1 / 7 / 10 / 13 / 20 % of `contentPrimary` | a surface lifted off its ground |
+| `recess` | 34 / 70 % of `page` | a surface pushed behind |
+| `plate` | 96 % of `glassFlat` / `glassFlatDeep` | an opaque-enough working plate |
+| `select` | 30 / 72 / 82 % of `raised` | selection and focus on a working surface |
+
+Also missing, and each currently has no home:
+
+- `ruleStructural` / `ruleLegible` / `ruleStrong` / `ruleGlass` / `ruleRow` — the hairline family
+- `unseenInk` + `unseenOpacity` — an unobserved rating's treatment
+- `inkOnGoldQuiet` — the sub-label under a commit's verb
+- `bannerInfo/Good/Bad` × `from`/`to`/`edge` — **nine values, and they are load-bearing**: they are
+  three grounds the four-ground palette does not cover, and `contentQuiet` measures 3.21 and 4.25 on
+  two of them. Only `contentPrimary` and `contentSecondary` are legal on a banner.
+- `maskTrailing` — the fade on a strip with more content than room
+
+### A5 · Accessibility — `prefers-contrast` has no branch
+
+**ADD.** Reduce Motion, Reduce Transparency and forced colours are handled. **Increase Contrast is
+not**, while `SettingsAccessibilityView` reports it to the user — a promise about behaviour with
+nothing behind it.
+
+Required, per `tokens/a11y.css`: every hairline steps up one stop, the material drops, and **the inks
+do not move** — they already clear 4.5:1 on all four grounds, and lightening passing ink flattens the
+three-step hierarchy that distinguishes a figure from a label.
+
+`codex/integrate-mock-reconciliation` carries a commit recording Increase Contrast as unimplemented,
+so this is known and unfixed rather than unnoticed.
+
+### A6 · `FloodlitChrome.swift` — the band is three controls short
+
+**CHANGE + ADD.** The band is the whole of navigation now that the rail is gone, and three of its
+controls do not exist.
+
+| Control | State | Required |
+|---|---|---|
+| **Family switcher** | **ADD** | The family name is a button opening the five families a seat holds, each with its task count. Two taps to any of 41 tasks, no index screen. The pro seat swaps Recruiting for Pro management, and **the family you do not hold is not drawn at all — not greyed**. |
+| **Back control** | **ADD** | Three exclusive states: `plain` (a wedge), `up` (the host's name — *"this surface folds into that task"*), `none` (the wedge at a sixth ink, disabled). The dead state is **drawn, not omitted**, or the leading edge moves 25 pt between screens. Which state a surface takes is a routing fact — do not default it. |
+| **Alias host panel** | **ADD** | A host tab carries a caret and a count and opens the registry numbers folding into it. **Without it, 15 of the 62 identities are reachable by saved route and by nothing on screen.** Six hosts: 52 Opportunities (3, 4, 5, 53, 56), 61 College offseason (30–33), 62 Pro front office (37, 38, 40), 20 Staff profiles (21), 11 Game plan (22), 17 Depth chart (23). |
+
+**And the band needs a yielding rule.** When it runs out of room: the sibling strip shrinks and fades
+to a floor that always keeps the current screen and the sign that more exists; only then does the
+deadline swap to a **shorter form**; the strip then recovers what that freed; nothing is ever cut
+mid-glyph. This requires a `contextShort` alongside `context` on the chrome read model — **ASK D4**.
+
+The reference register specifies the opposite priority and collapses the deadline to `W…`, then
+abandons that itself: *"a date cut to one letter is not a better answer than a shorter date."* The
+standard overrides it (`AUTHORITY.md`).
+
+### A7 · Gold is counted, per register
+
+**CHANGE.** Gold means one thing: *this moves the game forward*. Per-surface budget:
+
+| Register | Gold |
+|---|---|
+| Broadcast | once — the commit |
+| Desk | at most once, often zero |
+| Dossier | once — **the seam spends it**, so no commit bar |
+| Match Day | twice — line to gain, and the snap |
+| **Fork** | **zero** |
+
+Position is marked in **ink** — never gold, and never the club accent either, because a generated
+secondary can itself be gold-adjacent (the placeholder's is `#F2D864`). Audit every view for gold on
+a family chip, a sorted column, a selected row or a possession marker; all four are position, not
+commitment.
+
+### A8 · What is already correct — do not change it
+
+Verified against the standard and matching:
+
+- `Frame` — 844×390, leadingInset 63, bottomInset 25, topInset 12, gutter 20
+- `Gap` — the full 2/3/4/6/7/8/9/11/12/14/18/20 ladder
+- `Motion` — all five durations, `pressDim`, `disabledOpacity`; **press dims rather than scales**, already stated in the comment
+- `contentQuiet` `#7A8A9E`, with `#65788F` refused in a comment for the right reason
+- `fieldAnnotation` `#FFCE6A` — legal on turf only, and that is where it is
+- The `DisplaySize` ladder and the `Glass` alphas
+
+---
+
+## Part B — per surface
+
+**Coverage as of 2026-08-23: 19 of 47 canonical destinations drawn.** The live count is
+`guidelines/coverage.card.html`, which fails on a stale mapping rather than printing it as coverage.
+
+### B1 · This Week — complete, 9/9, and every one re-sourced
+
+Drawn in `guidelines/this-week.card.html`. **These seven were re-sourced from the presentation
+contract after the reference sheets proved wrong on facts** — the sheet version of each would have
+shipped controls no read model supports.
+
+| ID | Surface | Required change |
+|---:|---|---|
+| 8 | Coaching HQ | Match `ThisWeekDemo`. One 34 pt band, one opaque plate, one side column. One gold on the commit, naming where it goes. |
+| 9 | Inbox | **REMOVE the reply action and the undo** — the contract forbids both. Actions are open, read, continue. A deadline is a **date, not a countdown**. One gold on continue, disabled *with its reason stated* (`canContinue`/`continueReason` are one pair). |
+| 10 | Film room | **REMOVE the tendency table.** The model holds two rates, a confidence, a sample and an `unavailableReason`. Make the confidence the subject. **ADD the unavailable state as a drawn composition** — it is the common case, and an undrawn empty state becomes "No data". |
+| 11 | Game plan | **REMOVE the emphasis budget and the sliders.** It is a **fork**: choose between complete options, so **zero gold** and no LOCK bar. Each option carries its three dimensions and its **consequence** — the contract omits cost, so consequence is what replaces it. Three panels is the ceiling (246 pt each at 761). |
+| 12 | Practice plan | Same archetype as 11, drawn the same way. **REMOVE the remaining-minutes field and the day sliders.** Each option is already a complete allocation. |
+| 13 | Team health | **REMOVE diagnosis, return date, treatment and re-injury percentage.** Retained: condition, fatigue, availability, detail. **Routine available rows stay neutral** — colouring them green makes availability look like a score. Four rows plus a foot is the ceiling. |
+| 15 | Aftermath | **REMOVE every delta** (`#19 → #12`, `78 → 81 +3`). No trend, no prior-grade delta — the model holds the result and the grades, not last week's. **Broadcast register at Desk scale**: 40 pt hero, no flood, because this happens 12–15 times a season against a ceremony budget of five. |
+| 47 | Box score | **REMOVE the opponent column.** No opposed team totals, no quarter scoring, no play-by-play. Answer its own question instead — what was called, where it came from, what it did, and the grades with their evidence. **Zero gold**; the only action is close, and it takes the `up` back state. |
+| 14 | Match Day | The one surface where the reference wins over the general shell, by owner amendment. Gold spent **twice** and no more — line to gain, and the snap. Possession is `stateLive`, not gold. |
+
+### B2 · Drawn elsewhere — 10 more
+
+| ID | Surface | Press Box demo |
+|---:|---|---|
+| 16 | Roster | `PersonnelDemo` — 8 columns × 6 rows = 48 cells, the working budget exactly |
+| 24 | Recruiting board | `RecruitingDemo` — every row names your position in the race |
+| 25 | Prospect profile | `DossierDemo` — the seam spends the gold, so no commit bar |
+| 29 | Signing day | `BroadcastDemo` |
+| 39 | Draft room | `DraftRoomDemo` — **no pick clock**: no timed state exists, so it would be a countdown to nothing |
+| 49 | Awards | `AwardsDemo` — `JerseyLockup` is the portrait substitute; no likeness exists |
+| 55 | Promotion decision | `CareerDemo` — **zero gold**, the one register exception, symmetry is the argument |
+| 6 | Settings & accessibility | `AppearanceDemo` — mostly readouts; the OS owns text size, transparency, motion, contrast |
+| 54 | Stakeholders | `SeasonExpectationsDemo` — **partial**: draws the board's demands, not the wider cast |
+| 1 | Title / Continue | `ContinuityDemo` — **partial**: draws the save list, not the entry ceremony |
+
+### B3 · Not yet drawn — 28 canonical
+
+Undrawn here means no Press Box composition exists yet, **not** that the Swift view is missing —
+all 62 have a view on `main`. These are queued in the order below.
+
+| Family | Remaining | Note |
+|---|---|---|
+| **personnel** 1/5 | 7a Depth chart · 7f Player profile · 7c Development plan · 7d Staff profiles | Heaviest reuse of the existing plate. **7d has no reference drawing at all** — the only one of the 62 without one. |
+| **recruiting** 3/7 | 8c Shortlist · 8d Contact & visit planner · 8e Class overview · 8j College offseason | |
+| **pro** 1/5 | 9a Cap & contracts · 9b Contract negotiation · 9c Roster cuts · 9h Pro front office | Money surfaces; integer dollars only, no floating-point currency |
+| **career** 4/9 | 11k Opportunities · 11d Record book · 11e Rivalries · 11c Career line · 11f Coaching tree | |
+| **entry** 0/1 | 11i New career & coach identity | **Riskiest omission for its size** — the first thing a player ever sees, never drawn against the register model |
+| **league** 1/11 | 10i Map · 10h Team profile · 10a Standings · 10b Schedule · 10c Rankings · 10d Bracket · 10e Statistics · 10f News · 10j Realignment · 10k World search | Last, deliberately — see C3 |
+
+---
+
+## Part C — components that must be built
+
+Press Box components with no Swift equivalent. Each was forced by a surface, not invented ahead of
+one.
+
+### C1 · `Versus` — the opposed comparison
+
+**ADD.** Two subjects, attribute against attribute, label between the values so the eye reads the
+gap. The leading side takes a **wedge, never colour alone** — a comparison is exactly where someone
+reaches for red-and-green first.
+
+**It is not a fork and must never be collapsed into one.** A fork draws its sides identically because
+weighting one would be the interface recommending; a comparison exists *to* show which side leads.
+Same geometry, opposite obligation.
+
+**And it must decline to mark a lead where either side is unobserved.** A comparison against an
+unobserved value is not a narrow win — it is not a comparison. Depends on **ASK D1**.
+
+Compare is a core verb of the genre and **no registry screen performs it** — see D5.
+
+### C2 · `FamilySwitcher`, `BackControl`, `HostPanel`
+
+**ADD.** Specified in A6.
+
+### C3 · League table shapes — expect two or three more
+
+**ASK / ADD.** Ten of League's eleven are shapes nothing in the system has drawn: a map, a bracket, a
+standings grid, a statistics leaderboard. `WorkPlate` is built for a roster — eight spans, six rows —
+and a twelve-team standings table with nine numeric columns plus a prose "what is left" column does
+not fit it.
+
+Do not force them into the plate. Draw the family first, let the shapes declare themselves, then
+build against ten known cases rather than one guessed one. This is how `Versus` arrived, and how
+`ForkPanel`'s ledger got generalised.
+
+### C4 · `ForkPanel`'s ledger must be per-fork
+
+**CHANGE.** The ledger's rows were hard-coded to CLOCK and EXPOSURE — the two axes a *career* fork
+weighs. A tactical fork weighs tempo, pressure and front; a practice fork weighs the days. It takes
+its rows as data now.
+
+---
+
+## Part D — asks: blocked on the engine or on a decision
+
+**Nothing in this section may be worked around by inventing data.**
+
+### D1 · No scouting-confidence model exists
+
+**ASK.** Ratings are point values. The range and its `Unseen` state ship anyway, because drawing them
+is what makes the gap visible — but `Versus` needs it to decide which comparisons a screen may
+*call*.
+
+For every rated attribute the engine must supply:
+
+1. **`low` and `high`** in the same 40–99 space. Their **width is the confidence** and is the only
+   thing the range draws; a point value is the degenerate case where `low == high`.
+2. **An observation count**, so `Unseen` is a fact rather than a guess. Zero observations must render
+   `Unseen` and **must never render a number — including a midpoint**, which is the tempting and
+   wrong answer.
+3. **Monotonic narrowing.** Watching a player may move the midpoint but must never widen the band,
+   or the interface shows a coach un-learning something they watched.
+
+Note `OpponentFilmReadModel` already carries a `confidence` field — the concept exists in one place
+and needs generalising, not inventing.
+
+### D2 · Screen transitions are unspecified
+
+**ASK.** One easing curve and named durations exist in `CoachWorldMotion.swift`, but **nothing names
+a move between two surfaces** — the reference package's own register says so, and says the mock cuts
+instantly.
+
+With family-then-sibling navigation there are only **two moves** to specify: sibling within a family,
+and family switch. Small, and unstarted. Reduce Motion must reduce both to a cut.
+
+### D3 · Commits do not propagate
+
+**ASK.** Per the reference register: 36 committing controls run commit → loading → success → undo
+inside their own screen and nothing propagates. Money spent on 9b does not move 9a's cap line;
+holding a player out on 6f does not change 7a's depth chart.
+
+This is a simulation gap, not a design one, but it decides whether a commit's `sub` — the line naming
+where it goes — is true. **A commit that names a consequence which does not happen is worse than one
+that names nothing.**
+
+### D4 · The chrome read model needs `contextShort`
+
+**ASK.** The band's yielding rule (A6) requires a shorter form of the deadline, authored rather than
+truncated. `FloodlitChromeReadModel` supplies one context string. Adding a second is a small model
+change and the alternative is cutting a date mid-glyph.
+
+### D5 · Five drawn surfaces have no registry entry
+
+**ASK — owner decision.** Each was found by drawing rather than by reading, and adding any to
+`ScreenRegistry.swift` forces a family assignment at compile time, which is the registry working as
+designed.
+
+| Surface | Why it exists |
+|---|---|
+| **Compare** | Two players, attribute against attribute. A core verb of the genre that no registry screen performs. |
+| **Responsibilities** | Where delegation is *configured*, as against exercised. Without it every ownership line in the product is unbacked — the game says an assistant handled something, you never said he could, and you cannot take it back. |
+| **While You Were Away** | Automation halts on a threshold and hands control back; nothing renders the gap. Invisible delegation is indistinguishable from a bug. |
+| **Season Review** | A *season* has no ending. Aftermath is per-match. In a game whose arc is college to pro, that is the arc's missing last page. |
+| **Championship Result** | The fifth sanctioned ceremony. Bracket / postseason is a table, not a verdict. |
+
+### D6 · Canon has not been amended
+
+**ASK — owner decision.** The standard does not automatically amend the repository's canon, and two
+documents now describe a different system:
+
+- **`docs/04-UX-AND-DESIGN-SYSTEM.md`** — predates the register model, the measured palette, the gold
+  budget and the token-enforced accessibility contract.
+- **`docs/04b-AUDIT-RUBRIC.md`** — scores against `04`, so it moves when `04` moves.
+
+`CLAUDE.md`'s doc-first rule says canon is amended before implementation. Naming these is the
+escalation; neither has been edited.
+
+---
+
+## Keeping this current
+
+One row per change, and a change is done when the Swift matches the standard **and** a check proves
+it — not when it looks right. Press Box's own verification is worth copying:
+
+- **Six rules scanned across every component source**, in `guidelines/checks.card.html`. Not a
+  checklist: a scan that fails the build of the claim. It is how `--press-dim` was found with no
+  consumer anywhere, and how 75 hard-coded colours were found while the colour rule read PASS.
+- **A geometry sweep over every surface at once.** Fixing the instance in front of you is not fixing
+  the class — the sibling strip was clipping on four of five screens and only a full sweep showed it.
+- **The check must be ancestor-aware on both axes.** An element clipped by its own container is not
+  overflowing the frame; one cut off *inside* a plate leaves the frame measuring perfectly while the
+  content is gone. Both directions caught real defects, and both took a corrected check to see.
