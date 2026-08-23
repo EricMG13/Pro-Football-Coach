@@ -209,6 +209,24 @@ private let pinnedArchivedLedgerFingerprint: UInt64 = 9_134_642_366_837_657_455
 /// doing its job, not an accident of one hash seed.
 private let pinnedScoutingStoreFingerprint: UInt64 = 11_975_195_598_958_932_610
 
+/// `GameState.pending` is the mandatory-decision queue every college career runs its agency
+/// through, and it is empty in all six pins above. `bootstrap` builds `PendingQueues()` with
+/// nothing in it, and the only two producers -- `CareerMandatoryDecisionSystem.refresh`'s redshirt
+/// checkpoint and its spring-portal retention branch -- both require `state.career.college`, which
+/// no pin above ever sets: `advanceWeek` runs on a careerless world, and the match-session pin
+/// starts a career but hashes the prepared session rather than the queue. So `state.career.college`
+/// is unpinned for the same reason, and this pin closes both.
+///
+/// What it asserts is the queue's canonical order and its payload encoding. `PendingQueues.enqueue`
+/// re-sorts by `id.uuidString` on every insert, and a `MandatoryDecision` carries three enums with
+/// associated values (`subject`, `action`, and the reason codes) whose synthesised `Codable` is
+/// exactly the kind of shape a schema change silently reorders. Unlike the scouting pin, this
+/// fixture is a real world: it starts a career through `CareerControlSystem.startCollegeCareer` and
+/// then calls the production producer, so the hashed root is one `WorldIntegrity` would accept.
+///
+/// Added 2026-08-23. Reproduced in three independent release processes before being written here.
+private let pinnedMandatoryDecisionQueueFingerprint: UInt64 = 9_280_445_865_652_794_762
+
 /// Hashes the canonical JSON body, not the save envelope.
 ///
 /// It hashed the envelope until 2026-08-12, when the body became zlib-compressed. That would have
@@ -439,6 +457,43 @@ func runArchitectureTests() {
             expectEqual(
                 try architectureFingerprint(state),
                 pinnedArchivedLedgerFingerprint
+            )
+        }
+
+        test("the mandatory-decision queue is pinned across processes") {
+            let source = GameState.bootstrap(seed: 20_260_824)
+            // The redshirt checkpoint only fires for a programme that is deep enough at some
+            // position and whose first reserve there still has a full eligibility clock, so the
+            // first programme in the world need not produce one. Walking `programmes.ids` -- which
+            // `EntityStore` keeps in `uuidString` order -- and taking the first that does is
+            // deterministic, and asserting the queue is non-empty is what stops this pin from
+            // silently hashing an empty one if the guards ever tighten.
+            var queued: GameState?
+            for programmeID in source.programmes.ids {
+                guard let started = try? CareerControlSystem.startCollegeCareer(
+                    at: programmeID,
+                    in: source
+                ).state else { continue }
+                let refreshed = CareerMandatoryDecisionSystem.refresh(in: started)
+                if !refreshed.pending.mandatoryDecisions.isEmpty {
+                    queued = refreshed
+                    break
+                }
+            }
+            guard let state = queued else {
+                expect(false, "no programme in the generated world produced a mandatory decision")
+                return
+            }
+
+            expect(state.career.college != nil, "the fixture never started a college career")
+            expect(!state.pending.mandatoryDecisions.isEmpty)
+            expectEqual(
+                state.pending.mandatoryDecisions.map(\.id.uuidString),
+                state.pending.mandatoryDecisions.map(\.id.uuidString).sorted()
+            )
+            expectEqual(
+                try architectureFingerprint(state),
+                pinnedMandatoryDecisionQueueFingerprint
             )
         }
 

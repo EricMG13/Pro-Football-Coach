@@ -2147,11 +2147,49 @@ snapshots have no matching entrant record or portal target season, so `WorldInte
 reject this root and the pin never decodes it. What the pin asserts is exactly the property in
 question — one `ScoutingState`, built through the real recorder from a hash-ordered batch, encodes
 to the same bytes in every process. Decodability of a populated scouting store is a separate
-property that `WorldIntegrity`'s own suite owns, and it is still not pinned. The value was reproduced in three independent direct
+property that `WorldIntegrity`'s own suite owns, and it is still not pinned.
+
+The value was reproduced in three independent direct
 release-process invocations before it was written into the file, and `./scripts/verify.sh --lane
 determinism` was then run twice as two separate processes, each with its own scratch build: both
 `2 passed, 0 failed`. No engine divergence was found, so no engine change was needed and no existing
 pinned literal was touched.
+
+### 2026-08-23 — determinism coverage widened: the mandatory-decision queue
+
+`GameState.pending` is the queue every college career runs its agency through, and it was empty in
+all six pins that existed before today. `bootstrap` builds `PendingQueues()` with nothing in it, and
+the only two producers — `CareerMandatoryDecisionSystem.refresh`'s redshirt checkpoint and its
+spring-portal retention branch — both require `state.career.college`, which no pin ever set:
+`WorldScheduler.advanceWeek` runs on a careerless world, and the match-session pin does start a
+career but hashes the prepared session rather than the queue. `state.career.college` was therefore
+unpinned for the same reason, and this pin closes both surfaces at once.
+
+What it asserts is the queue's canonical order and its payload encoding. `PendingQueues.enqueue`
+re-sorts by `id.uuidString` on every insert, and a `MandatoryDecision` carries three enums with
+associated values — `subject`, `action`, and the reason codes — whose synthesised `Codable` is
+exactly the shape a schema change reorders without anything noticing.
+
+Added `"the mandatory-decision queue is pinned across processes"` to `ArchitectureTests.swift`.
+Unlike the scouting pin above, this fixture is a real world rather than a store-shape one: it
+bootstraps seed `20_260_824`, walks `programmes.ids` (which `EntityStore` keeps in `uuidString`
+order) until a programme starts a college career through `CareerControlSystem.startCollegeCareer`
+and produces a non-empty queue from the production `refresh`, then hashes that root — one
+`WorldIntegrity` would accept. The walk is needed because the redshirt checkpoint only fires for a
+programme deep enough at some position whose first reserve still has a full eligibility clock, so
+the first programme in the world need not produce one; the test asserts the queue is non-empty so
+the pin cannot silently start hashing an empty one if those guards ever tighten.
+
+Value `9_280_445_865_652_794_762`, identical in three independent direct release-process invocations
+before it was written into the file. `./scripts/verify.sh --lane determinism` was then run twice as
+two separate processes, each with its own scratch build: both `2 passed, 0 failed`. No engine
+divergence was found, so no engine change was needed and no existing pinned literal was touched.
+
+That is the second consecutive widening pass to add coverage and find nothing wrong, which is where
+this sweep was set to stop. Six surfaces have been closed since 2026-08-19. The candidates named and
+not taken are the professional draft and free-agency scheduler state, `CollegePortalState`'s window
+records and NIL reservations, and `PeopleState.departedPlayers` — each needs a populated fixture
+that costs more than a bootstrap-and-mutate, which is why none was attempted here.
 
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
