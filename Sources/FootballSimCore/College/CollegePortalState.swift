@@ -149,7 +149,7 @@ public struct CollegePortalIntentEvidence: Codable, Sendable, Equatable {
             && (0...CollegePortalPolicyV1.maximumGamesPerSeason).contains(appearances)
             && (1...CollegePortalPolicyV1.maximumPositionRoomSize).contains(sourcePositionRoomSize)
             && (0...CollegePortalPolicyV1.eligibilityClockYears).contains(seasonsAtSource)
-            && (1...CollegePortalPolicyV1.programmeCount).contains(sourceFinalRankingPosition)
+            && (1...CollegePortalPolicyV1.frozenProgrammeCount).contains(sourceFinalRankingPosition)
             && (0...CollegePortalPolicyV1.maximumNILBudget).contains(sourceRosterNIL)
             && (relationshipScore.map { (0...100).contains($0) } ?? true)
     }
@@ -544,7 +544,7 @@ public struct CollegePortalDestinationEvidence: Codable, Sendable, Equatable {
             && (0...CollegePortalPolicyV1.maximumPositionRoomSize).contains(
                 destinationPositionRoomCount
             )
-            && (1...CollegePortalPolicyV1.programmeCount).contains(
+            && (1...CollegePortalPolicyV1.frozenProgrammeCount).contains(
                 archivedFinalRankingPosition
             )
     }

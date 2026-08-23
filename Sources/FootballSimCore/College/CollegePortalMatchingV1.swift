@@ -141,7 +141,7 @@ extension CollegePortalPolicyV1 {
             targetSeason: targetSeason,
             window: window,
             in: state
-        ), state.programmes.count == programmeCount else { return nil }
+        ), state.programmes.count == CollegeRules.programmeCount else { return nil }
 
         var citiesByID: [UUID: MapCity] = [:]
         for city in state.map.cities {

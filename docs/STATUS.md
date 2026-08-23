@@ -47,15 +47,17 @@ The honest picture: what exists, what is verified, what is not.
 > live limits still decodes* is a real regression test that fails on the unfixed code: restoring the
 > frozen ceiling to `isValid` gives `expected Optional(112), got nil`.
 >
-> **Verified on this tree, release mode, from one build.** `--portal-matching` **19 tests / 145
-> checks** (the two new ones included), `--portal-transaction` **17 / 133**, `--portal-policy`
-> **12 / 715**, `--architecture-only` **29 / 245** so every pinned cross-process fingerprint still
-> holds and none needed re-deriving, and `--portal-scheduler` **13 / 27,861** in 529.9 s. That last
-> lane also prints the portal characterization, and it is byte-identical to the figure `d5400e1`
-> recorded for a detached build at `2de6268`: `entrantWindows=431 retained=99 transferred=224
-> returned=108 transferNILTotal=6400 transferNILMin=0 transferNILMax=500`. Behaviour neutrality is
-> otherwise argued from numeric identity — 105 is 105 and 85 is 85 — rather than from a fresh
-> detached baseline, which is a weaker claim than `d5400e1`'s and is stated as such.
+> **Verified on this tree, release mode.** After the `programmeCount` change: `--portal-policy`
+> **13 tests / 716 checks** (the cross-check included) and `--portal-matching` **19 / 145** (both
+> capacity tests included). Measured on the build immediately before it, with no value moved
+> between the two: `--portal-transaction` **17 / 133**, `--architecture-only` **29 / 245** so every
+> pinned cross-process fingerprint still holds and none needed re-deriving, and `--portal-scheduler`
+> **13 / 27,861** in 529.9 s. That last lane also prints the portal characterization, and it is
+> byte-identical to the figure `d5400e1` recorded for a detached build at `2de6268`:
+> `entrantWindows=431 retained=99 transferred=224 returned=108 transferNILTotal=6400
+> transferNILMin=0 transferNILMax=500`. Behaviour neutrality is otherwise argued from numeric
+> identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a fresh detached baseline, which is
+> a weaker claim than `d5400e1`'s and is stated as such.
 >
 > **One pre-existing failure, proved rather than argued.** `--portal-contracts` traps with exit 133,
 > zero bytes on stdout and stderr and no summary, at `PortalContractTests.swift:869` ("policy-v1
@@ -74,16 +76,49 @@ The honest picture: what exists, what is verified, what is not.
 > order of magnitude above any real room, and the fix when it is needed is the split
 > `CollegePortalCapacitySnapshot` just received.
 >
-> **A second frozen copy is left standing, deliberately, and it is not the same case.**
-> `CollegePortalPolicyV1.programmeCount` is a frozen 134 beside `CollegeRules.programmeCount`, and
-> `makeMarketSnapshot` guards `state.programmes.count <= maximumKnowledgeObservers` against it at
-> `CollegePortalMatchingV1.swift:225` — a live guard on a frozen number, which is what the two
-> guards this change moved to `CollegeRules` were. It is left alone because it reads defensibly as
-> a real policy bound rather than a duplicate: openings are a subtraction that works at any roster
-> limit, but a policy version that models 134 knowledge observers genuinely cannot represent a
-> 150-programme world, and refusing the window is then correct rather than a bug. That reading
-> should be confirmed by the owner, not assumed — if it is wrong, growing `CollegeRules.programmeCount`
-> silently closes the portal.
+> **The second frozen copy was taken to the owner and came back as "fix it the same way" — and
+> reading every site changed the finding.** `CollegePortalPolicyV1.programmeCount` is a frozen 134
+> beside `CollegeRules.programmeCount`, and the earlier revision of this entry guessed it was a real
+> policy bound. It is, and for a stronger reason than was guessed: it is the divisor in the
+> `.teamSuccess` component formulas at `CollegePortalPolicyV1.swift:306` and `:341`, and
+> `CollegePortalIntentExplanation.isValid` requires an archived explanation's stored components to
+> equal what the policy recomputes today. Point that divisor at `CollegeRules` and every career
+> record archived under the old ladder stops rederiving. **This is the freeze rationale actually
+> reaching a live computation** — which is exactly what it did not do for `rosterLimit` and
+> `scholarshipLimit`, and why those two could be deleted and this one cannot.
+>
+> **So the live readings were moved and the constant was not.** Two sites had no business on the
+> frozen copy: `makeSnapshot`'s `state.programmes.count <= maximumKnowledgeObservers` and
+> `makeMarketSnapshot`'s `state.programmes.count == programmeCount` are readings of how big the
+> world is, and now read `CollegeRules.programmeCount`. `makeSnapshot` additionally carries
+> `CollegeRules.programmeCount == frozenProgrammeCount` as an explicit version gate, so the two
+> numbers are compared rather than silently substituted: a world this policy was not frozen against
+> needs a policy v2, and refusing the window is the honest answer. The constant is renamed
+> `frozenProgrammeCount` for the same reason `rosterLimit` was renamed — a frozen copy wearing the
+> live rule's name is what a careful person reaches for.
+>
+> **Two sites deliberately keep the frozen ladder.** `uniqueRank`'s `(1...frozenProgrammeCount)`
+> bound stays frozen because the rank it returns is archived on evidence whose decode bound is the
+> same frozen number; a rank the live world allows and the archive refuses would trap rather than
+> return nil. `ScoutingState`'s three `maximumKnowledgeObservers` bounds stay because they bound the
+> observer table's capacity, not the world's size.
+>
+> **This time the cross-check could be asserted, and that is the whole difference.**
+> `maximumKnowledgeObservers` and `CollegeRules.programmeCount` are both `public`, so
+> `PortalPolicyTests` compares them without `@testable` — the assertion the `internal`
+> roster and scholarship limits made impossible.
+>
+> **How far that test was proved, exactly.** It was made to fail by comparing
+> `maximumKnowledgeObservers` against `CollegeRules.programmeCount + 1`, which gives a clean
+> `expected 135, got 134` at `PortalPolicyTests.swift:154` with the suite completing and exiting 1.
+> That proves the assertion reads both real constants and goes red when they differ. It is a weaker
+> proof than the two capacity tests got, and the reason is worth recording on its own: setting
+> `CollegeRules.programmeCount` to 135 for real does **not** produce a clean red. `--portal-policy`
+> then exits **133** with zero bytes on stdout and no summary, having entered "intent evidence
+> rederives the frozen six-component v1 explanation" last — so a genuine ladder change takes the
+> buffered result of every earlier test in the lane with it, including this one's. The run-time
+> version gate in `makeSnapshot` cannot be falsified from inside one process at all, because
+> `CollegeRules.programmeCount` is a compile-time constant.
 >
 > **This conflicts with `d5400e1` on merge, and should.** Both changes edit
 > `CollegePortalCapacitySnapshot.isValid`, the same constant block in `CollegePortalPolicyV1`, the
