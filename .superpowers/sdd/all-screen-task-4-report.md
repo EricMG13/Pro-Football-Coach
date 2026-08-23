@@ -1609,3 +1609,17 @@ This is also the resolution of a loose end from Task 5. The "empty navy panel" t
 blank Roster was this ribbon, cropped by the faulty `app.screenshot()`. The diagnosis then -- capture
 artefact, not a layout defect -- was right about the artefact and wrong to stop there: the screen
 underneath does have an AX5 problem, and it took a faithful capture to see it.
+
+### A capture script that reported success after writing nothing
+
+The 852 x 393 representative set is missing, and the first explanation written here -- CoreSimulator
+degradation -- was wrong. The real cause: the capture loop was running on the 15 Pro when that device
+was shut down to free the install floor for a test run. Every `simctl io screenshot` then failed, and
+the loop's `|| continue` and `&&` guards swallowed all of it and printed "852 pass finished".
+
+CoreSimulator on this host *was* genuinely degraded during this session -- devices stuck in
+`Booting`, `simctl install` hanging -- which is exactly why the wrong explanation was plausible
+enough to write down without checking. The correction matters more than the missing images: a script
+that reports success after writing zero files is its own defect, and `capture.sh` should assert its
+output count rather than trust its own exit status. The same rule this work applied to tests --
+a proof that cannot fail proves nothing -- applies to the tooling that produces the proofs.

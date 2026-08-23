@@ -162,9 +162,13 @@ The walkthrough script is `docs/proofs/2026-08-23-all-screen-owner-walkthrough.m
   not exist.
 - **956 x 440 representatives are captured; 852 x 393 are not.**
   `family-representatives/screen-NN-956-default.jpg` holds one destination per family -- 8, 16, 24,
-  34, 41, 52 -- at 2868 x 1320, the ceiling window. The 852 set is missing because CoreSimulator on
-  this host degraded repeatedly during the run (`simctl install` and `simctl boot` hanging, devices
-  stuck in `Booting`), not because the layout was not exercised.
+  34, 41, 52 -- at 2868 x 1320, the ceiling window. The 852 set is missing for a duller reason than
+  the one first written here: the capture loop was running on the 15 Pro when that device was shut
+  down to free the install floor for a test run, and the loop's `|| continue` guards swallowed every
+  resulting failure and reported "852 pass finished" having written nothing. CoreSimulator on this
+  host was also genuinely degraded during this session, but that is not what cost this set. A
+  capture script that reports success after writing zero files is its own defect, and the count
+  should be asserted rather than trusted.
 
   A correction worth carrying: **iPhone 17 Pro is 402 x 874, not 393 x 852.** The promise floor
   needs a 15 or 16 Pro; `PFC Task 6 iPhone 15 Pro` measures 1179 x 2556, which is the right device.
