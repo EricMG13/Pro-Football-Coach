@@ -50,15 +50,16 @@ The honest picture: what exists, what is verified, what is not.
 > **Verified on the merged tree, release mode, from one build.** `--portal-contracts`
 > **28 tests / 138 checks**, `--portal-policy` **13 / 716** (the cross-check included),
 > `--portal-matching` **19 / 145** (both capacity tests included), `--portal-transaction`
-> **17 / 133**, and `--architecture-only` **29 / 245** — so every pinned cross-process fingerprint
-> still holds and none needed re-deriving, which is the number to read twice, because the merge
-> brought in `56d2911`'s re-brief of the 52 marks the earlier re-key stranded. Before the merge the
-> same five lanes (less `--portal-contracts`) held the same figures, and `--portal-scheduler` ran
-> **13 / 27,861** with a characterization byte-identical to the figure `d5400e1` recorded for a
-> detached build at `2de6268`: `entrantWindows=431 retained=99 transferred=224 returned=108
-> transferNILTotal=6400 transferNILMin=0 transferNILMax=500`. Behaviour neutrality is otherwise
-> argued from numeric identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a fresh
-> detached baseline, which is a weaker claim than `d5400e1`'s and is stated as such.
+> **17 / 133**, `--architecture-only` **29 / 245** — so every pinned cross-process fingerprint still
+> holds and none needed re-deriving, which is the number to read twice, because the merge brought in
+> `56d2911`'s re-brief of the 52 marks the earlier re-key stranded — and `--portal-scheduler`
+> **13 / 27,861**. That last lane prints the portal characterization, and on the merged tree it is
+> byte-identical to the pre-merge build, to the run before these changes, and to the figure
+> `d5400e1` recorded for a detached build at `2de6268`: `entrantWindows=431 retained=99
+> transferred=224 returned=108 transferNILTotal=6400 transferNILMin=0 transferNILMax=500`. So
+> neither change nor the merge moved portal behaviour on the covered seeds. Behaviour neutrality is
+> otherwise argued from numeric identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a
+> fresh detached baseline, which is a weaker claim than `d5400e1`'s and is stated as such.
 >
 > **The one failure was pre-existing, and it is now gone — the branch was simply based too far
 > back.** `--portal-contracts` trapped here with exit 133, zero bytes on stdout and stderr and no
