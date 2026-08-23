@@ -40,6 +40,7 @@ func runProMovementProbe() {
         var poolDepths: [Int] = []
         var drafted = 0
         var phaseWeeks: [ProMarketPhase: Int] = [:]
+        var midSeasonActive = -1
 
         while state.calendar.season < targetSeason {
             let transition: WorldTransition
@@ -56,6 +57,13 @@ func runProMovementProbe() {
                 poolDepths.append(before.proMarket.freeAgentIDs.count)
             }
             phaseWeeks[before.proMarket.phase, default: 0] += 1
+            // Mid-season, well clear of both ends: the boundary week is the league at its emptiest
+            // — expiry has run and the market has not reopened — and every per-season figure below
+            // is taken there. This is the same population a week later in the calendar and a whole
+            // offseason later in the market's life.
+            if state.calendar.week == 12 {
+                midSeasonActive = state.proTeams.values.reduce(0) { $0 + $1.rosterIDs.count }
+            }
 
             for event in transition.emittedEvents {
                 switch event.payload {
@@ -108,6 +116,7 @@ func runProMovementProbe() {
         unaccounted=\(retiredOrGone) poolLeft=\(state.proMarket.freeAgentIDs.count) \
         freeAgency \(poolSummary)
         PROBE season \(targetSeason): active=\(active)/\(32 * ProRules.activeRosterLimit) \
+        midSeasonActive=\(midSeasonActive) \
         practiceSquad=\(squad) shortTeams=\(shortfalls.count) \
         shortBy min=\(shortfalls.min() ?? 0) max=\(shortfalls.max() ?? 0) \
         weeks \(phases)
