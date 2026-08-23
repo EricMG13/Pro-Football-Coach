@@ -790,3 +790,30 @@ HEAD, covering all nine commits. Generated for the fresh reviewer the process re
 the author of the change is not the independent review the gate asks for, and this session does not
 claim to have performed one.
 
+## Final verification (2026-08-23)
+
+Re-run after the last production change, to the same standard as every earlier gate.
+
+| Gate | Result |
+|---|---|
+| Full UI suite, pass A at `large` | 14 tests, 0 failures, 315.1s |
+| Full UI suite, pass B at genuine AX5 | 7 tests, 0 failures, 267.5s |
+| Coverage | 21 declared, 21 run, passes disjoint |
+| `swift run SimTests --design-contracts` | 58 tests / 857 checks |
+| `swift run SimTests --core-contracts` | 238 tests / 3,243 checks |
+| `git diff --check` | clean |
+| Content size | restored to `large` and read back |
+
+## Where Task 4 stands
+
+Everything in the agent's power is done and evidenced. Two gates remain, and neither is the agent's
+to close:
+
+1. the manual device and assistive-technology matrix, which `CLAUDE.md` makes an owner action --
+   script handed off at `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md`;
+2. a fresh independent review -- package at `.superpowers/sdd/review-6ed8433..723af3f.diff`. A review
+   by the author of the change is not the independent review the gate asks for.
+
+`.superpowers/sdd/progress.md` stays `All-screen Task 4: pending`. Marking it complete before those
+two land would be the exact failure the process exists to prevent: a claimed gate nobody ran.
+
