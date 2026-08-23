@@ -1,9 +1,9 @@
 # Claude handoff — all-screen UI migration
 
-Updated: 2026-08-22  
-Repository: `/Users/ericguei/Documents/Pro-Football-Coach`  
-Active worktree: `/Users/ericguei/Documents/Pro-Football-Coach/.worktrees/mock-reconciliation-vertical-slice`  
-Branch: `codex/mock-reconciliation-vertical-slice`  
+Updated: 2026-08-22
+Repository: `/Users/ericguei/Documents/Pro-Football-Coach`
+Active worktree: `/Users/ericguei/Documents/Pro-Football-Coach/.worktrees/mock-reconciliation-vertical-slice`
+Branch: `codex/mock-reconciliation-vertical-slice`
 Committed HEAD when written: `83452c15cfa6698cc3f5ab888f96820c958e8eb4`
 
 ## Status update — 2026-08-23
