@@ -312,9 +312,9 @@ shipped controls no read model supports.
 | 39 | Draft room | `DraftRoomDemo` — **no pick clock**: no timed state exists, so it would be a countdown to nothing |
 | 49 | Awards | `AwardsDemo` — `JerseyLockup` is the portrait substitute; no likeness exists |
 | 55 | Promotion decision | `CareerDemo` — **zero gold**, the one register exception, symmetry is the argument |
-| 6 | Settings & accessibility | `AppearanceDemo` — mostly readouts; the OS owns text size, transparency, motion, contrast |
+| 6 | Settings & accessibility | `SettingsDemo` — mostly readouts; the OS owns text size, transparency, motion, contrast, and it needs **both** states because it is reachable before a career and during one |
 | 54 | Stakeholders | `SeasonExpectationsDemo` — **partial**: draws the board's demands, not the wider cast |
-| 1 | Title / Continue | `ContinuityDemo` — **partial**: draws the save list, not the entry ceremony |
+| 1 | Title / Continue | `TitleContinueDemo` — **no band**: the one screen reached before a club, a record or a week exists |
 
 ### B0 · Three surfaces carry no band at all
 
