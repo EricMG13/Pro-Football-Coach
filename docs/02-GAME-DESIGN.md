@@ -211,45 +211,49 @@ first one:
 2. **Money is enforced by the cap-compliance date — beat 2.** Cuts happen when the cap binds. A
    team at 48 players and over the cap still cuts; a team at 53 and comfortably under does not.
 
-**Free agency reserves the draft's seats — measured 2026-08-20.** Beat 1 frees headcount "for free
-agency *and* the draft", and that conjunction is a rule rather than a description: free agency runs
-first, and if it signs to the active-roster limit there is no seat left when the draft opens. That is
-exactly what happened. `--pro-draft-stall-probe` reports the live scheduler's first pick throwing
-`activeRosterFull` at `roster=53/53` in every season, with `committedCap` at 170M of 272M — the
-draft was blocked on headcount while money was nowhere near binding, so beat 2 would not have
-unblocked it. An AI club therefore signs only up to `activeRosterLimit - draftRounds`, holding one
-seat per round it is entitled to pick in. Expiry frees about eleven a roster against seven rounds, so
-the reservation fits inside what beat 1 already produces and does not need cuts to make room. A club
-may still exceed that ceiling by other routes — a trade, a waiver claim, a promotion from the
-practice squad — because the reservation is a policy about what the AI *chooses* to sign, not a new
-roster bound; `activeRosterLimit` remains the only hard one.
+**A draft pick enters on the practice squad — owner decision 2026-08-23.** Two constants in this
+document could not both be right, and the second one was never stated as a constraint at all. The
+draft supplies **224 entrants a season** and, until this entry, every one of them took a 53-man seat.
+Thirty-two rosters of 53 is 1,696 seats, so 224 entrants force a mean career of **7.6 seasons**;
+entering at 22 or 23, the average professional therefore left the league at about **30**, which is
+where `SharedRules.declineAgeByPosition` begins. Most professionals never reached their decline age
+at all, and the measured mean roster age sat at 25.1-25.8 — inside its band, at the bottom of it.
 
-**A pick a club cannot seat is passed, and the draft carries on — 2026-08-23.** The reservation
-above is stated against an average: "expiry frees about eleven a roster against seven rounds". The
-average holds and the *distribution* does not. Measured over five seasons at seed 96,001, expiry
-leaves clubs between **six and seventeen** seats short, so a club that lost only six cannot seat the
-seven picks it is entitled to however early free agency stops signing for it — it fills up on its
-own sixth pick and has nowhere to put the seventh.
+The past-decline band in `PeopleLifecycleTests` assumes the opposite: a career of `D - 22`
+pre-decline seasons plus the 3.05 the retirement hazard yields, about **11.4 seasons**, which 1,696
+seats support at roughly **149 entrants a season**. The gap between 149 and 224 is the whole of the
+band's failure. Retention is not the defect: measured on 2026-08-23, retirement is 42-48% of the
+exits a declining professional takes and the market only 6-14%, and `SeasonLifecycleSystem.retires`
+matches its stated hazard exactly.
 
-Until this entry the draft treated that as fatal: `ProRosterAISystem.makeDraftPicks` stopped the
-whole run on any thrown error, so one club with no seat ended the round for the other thirty-one,
-and the next week began at the same stuck pick and stopped again. The market never reached
-`.rosterBuild` in any season, sat in `.draft` for fifteen to seventeen weeks until the week-21 close
-took it, and **the draft lost 4, 27, 94 and 89 of its 224 prospects in seasons 1 through 4** —
-an intake failure that compounds, because a club short this season is shorter next season.
+So a pick no longer consumes an active seat. It enters on the **practice squad**, the 16-man roster
+this document has always defined and which had **never held a single player**. Thirty-two squads of
+16 is 512 further seats, and a league of 2,208 seats absorbing 224 entrants a season supports careers
+long enough for a veteran tail to exist. What follows from that:
 
-A pick that `activeRosterFull` refuses is therefore **passed**: the pick is spent, the club takes
-nobody, and the club behind it is on the clock. Three alternatives were considered and rejected.
-Forcing a release to seat the pick is the alternative this document already rejected two paragraphs
-below — "a pick is not a cut instrument". Deferring the pick to a later week is what the code did
-and it never resolves, because nothing frees a seat mid-draft. Seating the pick on the practice
-squad would keep the player, and is the option to revisit if the lost picks matter, but it makes
-the draft a route into a squad this document does not otherwise put anyone into, and that is a
-design question rather than a defect fix. **Flagged for the owner on those terms.**
+- **All picks enter there**, not only the ones a club has no room for. Seating only the overflow
+  leaves the arithmetic where it was.
+- **A club promotes in `.rosterBuild`**, not mid-season: it fills every active vacancy from its own
+  squad, best-rated first, while legal. In-season promotion needs an injury-replacement rule this
+  document does not have, and the phase itself was dead code until this entry.
+- **Two seasons** is the longest a player waits. 224 a year fits 448 into 512 with headroom, and a
+  club trims from the bottom of its squad to stay inside both the limit and the tenure.
+- **The active roster is refilled by competition.** A returning veteran out of free agency and a
+  developing rookie off the practice squad now compete for the same seat; before, the rookie was
+  guaranteed it and the veteran was not in the running.
+- **A pick still never forces a release.** The 2026-08-12 decision — "a pick is not a cut
+  instrument" — stands untouched, and is in fact easier to hold now that a pick needs no seat.
 
-Passing is a policy about what the AI does with a seat it does not have, in the same sense as the
-reservation: no roster bound moves, and a controlled club is never passed automatically, because its
-pick is the player's decision and the draft stops on it as before.
+**This supersedes two earlier entries.** The seat reservation of 2026-08-20, under which a club signed
+only up to `activeRosterLimit - draftRounds`, is **withdrawn**: there is nothing left to reserve, and
+keeping it would hold seven seats empty for nobody. And the passed pick of 2026-08-23, added because a
+club short by fewer than seven seats could not seat its own last pick, becomes **unreachable** — a
+pick that needs no active seat is never refused for want of one. `ProMarketState.passedPickCount`
+stays, because a save written between those two dates may carry one and the root invariant reads it.
+
+The practice-squad option was the one this document flagged for the owner on 2026-08-23 as "the
+option to revisit if the lost picks matter", against cutting the draft to five rounds and against
+re-deriving the band's floor. The owner chose it on those terms.
 
 **Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
 a contract whose remaining years are drawn deterministically so that **roughly a fifth of each

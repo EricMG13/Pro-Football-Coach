@@ -82,20 +82,44 @@ determinism pin read it.
 
 ### Task 1 — Baseline the arithmetic on an immutable SHA
 
-- [ ] Record `--pro-movement-probe` at `PRO_MOVEMENT_SEASONS=6` and `--people-lifecycle` on the
-      starting SHA, both in release. These are the before-figures every later task is measured against.
-- [ ] Confirm the starting numbers match those in `docs/STATUS.md`; if they do not, stop and reconcile
-      before changing anything.
+Baseline SHA: **`9d77d68`**, release build.
 
-### Task 2 — Amend `02` section 4.2
+- [x] `--pro-movement-probe`, `PRO_MOVEMENT_SEASONS=6`:
 
-- [ ] State that a draft pick enters on the practice squad, and why: the intake arithmetic above,
+      season  expired  drafted  FAsignings  active  midSeason  shortBy    weeks(FA/draft/build)
+      1       293      0        0           1403    1696       6-11       0 / 0 / 0
+      2       257      223      70          1439    1696       6-10       5 / 1 / 15
+      3       200      218      39          1496    1696       3-10       4 / 1 / 16
+      4       170      189      11          1526    1696       2-9        4 / 1 / 16
+      5       354      165      5           1342    1696       7-15       3 / 1 / 17
+      6       263      224      130         1433    1696       5-13       9 / 1 / 11
+
+      Declining professionals a season later — kept / retired / unattached:
+
+      season 2: 353 -> 171 / 161 / 21
+      season 3: 308 -> 118 / 148 / 42
+      season 4: 227 -> 107 /  95 / 25
+      season 5: 199 ->  79 /  72 / 48
+      season 6: 138 ->  51 /  47 / 40
+
+      Two things to hold onto. The practice squad is **0 in every season**, which is the seat pool
+      this plan exists to use. And the declining population itself collapses — 353, 308, 227, 199,
+      138 — while the share of it lost to the market grows from 6% to 29%. Arrival at decline is the
+      failing quantity, not retention once there.
+
+- [ ] `--people-lifecycle` on the same SHA — the past-decline series is the acceptance criterion.
+- [x] Numbers match `docs/STATUS.md`: active seats, the 224 intake, the 0-occupancy practice squad
+      and the retention split all agree with the 2026-08-23 entries.
+
+### Task 2 — Amend `02` section 4.2 — **done**
+
+- [x] State that a draft pick enters on the practice squad, and why: the intake arithmetic above,
       with the measured figures.
-- [ ] **Remove the seat-reservation rule.** It exists so free agency cannot fill all 53 before the
+- [x] **Remove the seat-reservation rule.** It exists so free agency cannot fill all 53 before the
       draft; once picks do not take active seats there is nothing to reserve, and leaving it in place
       would hold 7 seats empty for nobody. Note that this supersedes the 2026-08-20 entry and the
       2026-08-23 passed-pick entry, and say plainly that a passed pick becomes unreachable.
-- [ ] State the promotion rule, the practice-squad tenure limit, and that a pick still never forces a
+- [x] State the promotion rule, the practice-squad tenure limit, and that a pick still never forces a
       release — the 2026-08-12 "a pick is not a cut instrument" decision stands.
 
 ### Task 3 — Acquire onto the practice squad
