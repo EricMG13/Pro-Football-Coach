@@ -102,12 +102,21 @@ they compare scores and stats, not identities.
 
 **The scan's rule, stated precisely so it is implementable:**
 
-- **Forbidden in `Engine/`, `Generation/`, `AI/` and `Abstracted/`:** `UUID()` or `Date()` as an
-  argument or an assignment. Every construction site passes an identity from the seeded stream.
+- **Forbidden everywhere under `Sources/FootballSimCore/` except `Model/`:** `UUID()` or `Date()` as
+  an argument or an assignment. Every construction site passes an identity from the seeded stream.
 - **Permitted in `Model/`:** `id: UUID = UUID()` as a *default parameter value* on an initialiser. A
   source scan cannot distinguish a default from a call, and the prior build's own evidence is that
   twelve of thirteen such sites were legitimate. The guarantee is upheld on the other side instead —
   engine construction passes `rng.uuid()` explicitly, which is exactly what the scan checks.
+
+*The first clause named exactly `Engine/`, `Generation/`, `AI/` and `Abstracted/` until 2026-08-23.
+The shipped scan — the "engine mints no ambient identity, timestamp or randomness" test in
+`Tests/SimTests/Suites/ContractTests.swift` — deliberately does the inverse: it walks the whole of
+`Sources/FootballSimCore/` and exempts `Model/` by name. That is the correct construction and canon
+was wrong, because the engine now holds twenty-three directories rather than five, and a hand list
+of four would give the other eighteen zero coverage while staying green. The scan's own comment
+records an adversarial review catching this file committing `CLAUDE.md`'s coverage-boundary failure;
+the rule above is restated so canon no longer specifies the version that failed.*
 
 **And a defect in the scanner itself, inherited if it is ported verbatim.** The prior build's scan
 (`DynastyTests.swift:605`) matched `line.contains(".hashValue") && !line.contains("//")` — so **any
