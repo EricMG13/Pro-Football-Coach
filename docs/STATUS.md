@@ -47,13 +47,13 @@ The honest picture: what exists, what is verified, what is not.
 > live limits still decodes* is a real regression test that fails on the unfixed code: restoring the
 > frozen ceiling to `isValid` gives `expected Optional(112), got nil`.
 >
-> **Verified on this tree, release mode.** After the `programmeCount` change: `--portal-policy`
-> **13 tests / 716 checks** (the cross-check included) and `--portal-matching` **19 / 145** (both
-> capacity tests included). Measured on the build immediately before it, with no value moved
-> between the two: `--portal-transaction` **17 / 133**, `--architecture-only` **29 / 245** so every
-> pinned cross-process fingerprint still holds and none needed re-deriving, and `--portal-scheduler`
-> **13 / 27,861** in 529.9 s. That last lane also prints the portal characterization, and it is
-> byte-identical to the figure `d5400e1` recorded for a detached build at `2de6268`:
+> **Verified on this tree, release mode, from one build carrying both changes.**
+> `--portal-policy` **13 tests / 716 checks** (the cross-check included), `--portal-matching`
+> **19 / 145** (both capacity tests included), `--portal-transaction` **17 / 133**,
+> `--architecture-only` **29 / 245** so every pinned cross-process fingerprint still holds and none
+> needed re-deriving, and `--portal-scheduler` **13 / 27,861**. That last lane also prints the
+> portal characterization, and it is byte-identical to the figure `d5400e1` recorded for a detached
+> build at `2de6268`, and to the run on this tree before the `programmeCount` change:
 > `entrantWindows=431 retained=99 transferred=224 returned=108 transferNILTotal=6400
 > transferNILMin=0 transferNILMax=500`. Behaviour neutrality is otherwise argued from numeric
 > identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a fresh detached baseline, which is
