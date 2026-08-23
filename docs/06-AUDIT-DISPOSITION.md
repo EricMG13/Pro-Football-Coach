@@ -57,16 +57,27 @@ codebase is "structurally sound and idiomatic". It measures craft. The engagemen
 | 14 | Headline figures painted in raw `.green`/`.red`/`.orange`/`.purple` on a card | **(i)/(ii)** Same. |
 | 15 | `TeamTheme.gradient` translucent stops composite over the page — hero text at 3.31:1 | **(ii)** D12's measured-surface rule tests the *composited* surface, not the idealised one. **Test:** `ContrastByConstructionTest` composites before measuring. |
 | 16 | White labels on `accentColor`/`theme.tint` at 2.65–2.90:1 in dark mode | **(ii)** Same test, run in both appearances. |
-| 17 | Landscape declared supported, but the arcade's fixed-height layout puts play-call controls off-screen | **(i)** **One** orientation and iPhone-only are declared in `App/project.yml`, and there is no arcade. The orientation is landscape as of 2026-08-10 (`04` §5.2); the finding was about a layout that broke under an orientation nothing had declared a policy for, so the disposition is unaffected by which one is named. **Test:** `OrientationPolicyTest` reads the project manifest. |
-| 18 | An irreversible "sim the rest of the game and commit it" action sits in the navigation bar's leading (cancellation) slot | **(ii)** The design system in `04` defines placement for destructive and irreversible actions, and requires confirmation for anything uncommittable. **Test:** `DestructiveActionPlacementTest` over the component set. |
+| 17 | Landscape declared supported, but the arcade's fixed-height layout puts play-call controls off-screen | **(i)** **One** orientation and iPhone-only are declared in `App/project.yml`, and there is no arcade. The orientation is landscape as of 2026-08-10 (`04` §5.2); the finding was about a layout that broke under an orientation nothing had declared a policy for, so the disposition is unaffected by which one is named. **Test:** the "Orientation policy" suite in `Tests/SimTests/Suites/DesignContractTests.swift` reads the project manifest. It was named `OrientationPolicyTest` here until 2026-08-23; no type of that name was ever written. |
+| 18 | An irreversible "sim the rest of the game and commit it" action sits in the navigation bar's leading (cancellation) slot | **(ii)** The design system in `04` defines placement for destructive and irreversible actions, and requires confirmation for anything uncommittable. **Test:** `DestructiveActionPlacementTest` over the component set — **not yet written as of 2026-08-23.** |
 | 19 | Four filter/action bars use a 21pt Chip as the entire tap target, 6pt apart | **(ii)** Same as 7; `TouchTargetTest`. |
 | 20 | Save and load failures captured into `AppState.lastError` and never shown | **(ii)** Every error path must terminate in a presented surface. **Test:** `ErrorSurfaceTest` asserts no error sink is written without a reader. |
 | 21 | App ships with no orientation policy at all | **(i)** As 17. |
 | 22 | "On the Field" — the one landscape screen — loses all controls when rotated | **(i)** As 17; the screen does not exist. |
-| 23 | iPhone SE portrait: field-goal and punt buttons fall off the bottom of the arcade screen | **(ii)** The smallest supported device is a layout target, not an afterthought. **Test:** `SmallestDeviceLayoutTest`, two-tier since D15 (2026-08-12) — every registry surface renders un-clipped with all controls reachable at the **install floor** 844 × 390, and at full budget at the **promise floor** 852 × 393. Fails on off-screen controls at either tier. |
+| 23 | iPhone SE portrait: field-goal and punt buttons fall off the bottom of the arcade screen | **(ii)** The smallest supported device is a layout target, not an afterthought. **Test:** `SmallestDeviceLayoutTest`, two-tier since D15 (2026-08-12) — every registry surface renders un-clipped with all controls reachable at the **install floor** 844 × 390, and at full budget at the **promise floor** 852 × 393. Fails on off-screen controls at either tier. **Not yet written as of 2026-08-23.** |
 | 24 | First-run tutorial clips its own body text at XXXL on a 667pt screen | **(i)** There are no tutorial cards — D9 teaches through the first real week. Whatever replaces them is covered by `DynamicTypeContractTest`. |
 
 **Tally:** 11 structurally impossible, 13 addressed with a named test, 0 retired.
+
+**Which of the 13 tests exist, checked 2026-08-23.** Eleven ship and are registered in
+`Tests/SimTests/SuiteCatalog.swift`, whose own `runner(for:)` assertion fails if a registered gate
+has no dispatched command: `SaveOffMainActorTest`, `SaveCoalescingTest`, `SaveWriteBudgetTest`,
+`SaveOpenIsReadOnlyTest`, `ReduceMotionContractTest`, `DynamicTypeContractTest`,
+`ContrastByConstructionTest`, `VoiceOverLabelTest`, `TouchTargetTest`, `ErrorSurfaceTest`, and the
+orientation assertion under its shipped name. **Two do not exist at all**:
+`DestructiveActionPlacementTest` (row 18) and `SmallestDeviceLayoutTest` (rows 23, and D15's
+falsifier). Neither is registered, neither has a runner, and no `verify.sh` lane runs one — so
+nothing here fails while they are absent, which is the failure mode this document was written
+against. Naming a test is not the same as having one; see `docs/STATUS.md`'s 2026-08-23 entry.
 
 ---
 

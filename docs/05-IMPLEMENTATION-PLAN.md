@@ -29,8 +29,8 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 
 | Gate | Requirement |
 |---|---|
-| **G1 Build green** | `swift build` clean. Asserted only by having run it in the session that claims it — see the D11 note below. |
-| **G2 Tests green** | `swift run -c release SimTests` passes in full. Same rule: run it, or do not claim it. |
+| **G1 Build green** | `swift build -c release -Xswiftc -enable-testing` clean. Asserted only by having run it in the session that claims it — see the D11 note below. |
+| **G2 Tests green** | `swift run -c release -Xswiftc -enable-testing SimTests` passes in full, ending in TestKit's `N tests, M checks` summary — a run that stops short of that line is truncated, not green. Same rule: run it, or do not claim it. |
 | **G3 Surface audit** | Touched surfaces score **≥31/40 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md` — its eight dimensions at 0–5 each, owner-approved 2026-08-11. The older ≥17/20 five-dimension frame (Accessibility, Performance, Appearance & Theming) is superseded and the bars are not equivalent. |
 | **G4 Scope** | The diff contains what the phase specifies and nothing else. No opportunistic refactors. |
 | **G5 Calibration** | All bands in `03` §5 hold under TOST. |
@@ -345,8 +345,10 @@ remainder.
 
 P11's existing scope is unchanged; the following are named as entry conditions it currently assumes
 silently: G-07 (token write-back into `04` §6.1/§6.2 with measured ratios), G-08 (density budget and
-component registry adoption in `04`), G-09's test half (`OrientationPolicyTest` written; two-tier
-`SmallestDeviceLayoutTest` — install floor 844 × 390 no-clipping, promise floor full budget), G-12
+component registry adoption in `04`), G-09's test half (the orientation assertion, **written** — it
+ships as the "Orientation policy" suite in `DesignContractTests.swift`, not as a type named
+`OrientationPolicyTest`; and the two-tier `SmallestDeviceLayoutTest` — install floor 844 × 390
+no-clipping, promise floor full budget — **still unwritten as of 2026-08-23**), G-12
 (AX5 reflow contract test enumerating families from `ScreenRegistry.swift` by construction), G-13
 (failure-set designs).
 
