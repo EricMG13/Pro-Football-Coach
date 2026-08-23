@@ -44,6 +44,11 @@ cannot seat is now passed (`02` section 4.2), leaving the prospect on the board 
 it. Picks landed went 220→223, 197→218, 130→189, 135→165 across seasons 2 to 5, active rosters
 1,436→1,439, 1,474→1,496, 1,456→1,526 and 1,271→1,341, and the weeks stuck in `.draft` 16→1.
 
+**The draft fix did not close the band, and nudged it the other way.** After it, the past-decline
+share reads 0.228, 0.196, 0.134, **0.067**, 0.161 against 0.228, 0.196, 0.146, 0.073, 0.170 before.
+Every figure fell, which is the expected direction: the extra picks are all age-22 intake. It rules
+the draft out as the band's cause and points squarely at the two items below.
+
 **Open, and it is what keeps the league short.** Free agency signs at most one player per club per
 week and stops for a club at `activeRosterLimit - draftRounds` = 46, which is about two signings a
 club a season against seven to eleven expiries, so 1,696 is never regained. Alongside it, `poolLeft`

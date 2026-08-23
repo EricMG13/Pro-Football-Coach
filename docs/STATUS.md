@@ -67,6 +67,14 @@ The honest picture: what exists, what is verified, what is not.
 > seasons 2 to 5, active rosters 1,436→1,439, 1,474→1,496, 1,456→1,526, 1,271→1,341, and the weeks
 > the market spends stuck in `.draft` 16→1, 17→1, 16→1, 15→1.
 >
+> **The draft fix did not close the band, and moved it slightly the wrong way — measured.** Re-run
+> at seed 84,010 after the fix, the past-decline share reads 0.228, 0.196, **0.134**, **0.067**,
+> **0.161** at seasons 0, 1, 3, 6, 10, against 0.228, 0.196, 0.146, 0.073, 0.170 before it. Every
+> figure fell. That is the expected direction and it is confirmation rather than a regression: the
+> picks the draft now lands are all age-22 intake, so seating more of them dilutes the veteran share
+> further. It rules the draft out as the cause of the band and points at the two open items below,
+> which are the ones that decide whether a veteran comes back onto a roster at all.
+>
 > **What is still open, and it is what keeps the league short.** Free agency signs at most one
 > player per club per week and stops for a club once it reaches `activeRosterLimit - draftRounds`,
 > which is 46; across a season that is about two signings a club against seven to eleven expiries,
