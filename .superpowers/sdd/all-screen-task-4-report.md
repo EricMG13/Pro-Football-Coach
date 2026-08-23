@@ -912,3 +912,17 @@ difference between the gate being met and being believed. Core contracts 3,243 t
 Each block asserts `expect(false, ...)` on the construction *succeeding*, so a model that stopped
 validating fails them; they cannot pass vacuously.
 
+## The possession rule, held by a contract (2026-08-23)
+
+`render-recorded-match`'s gate also requires: *"offense and defense are derived only from
+`situation.possession`; the view never guesses from team colour or field direction."*
+
+The code was already right -- offense from `situation.possession`, "ours" from `model.perspective`
+(an away game is still ours), end zones from `offenseDirection`, which is what direction is *for*.
+Nothing held it there. `ContractTests` now checks **every** `let offense` binding in
+`MatchDayView.swift` and requires each to derive from `situation.possession`, so a new binding taken
+from direction or colour fails instead of passing unnoticed.
+
+RED-checked by rewriting one binding as `model.offenseDirection == .leftToRight`, which fails at
+`ContractTests.swift:1135`; production restored. Core contracts 3,247 to 3,249 checks.
+

@@ -1122,6 +1122,19 @@ func runContractTests() {
                        && opponentFilm.contains("else if dynamicTypeSize.isAccessibilitySize")
                        && opponentFilm.contains("HStack(alignment: .top"),
                    "the film-room entry and delegated surface must reflow at accessibility sizes")
+            // `render-recorded-match`'s gate: "offense and defense are derived only from
+            // `situation.possession`; the view never guesses from team colour or field direction."
+            // The code was already right; nothing held it there. Every binding is checked, so a
+            // new one derived from direction or perspective fails rather than passing unnoticed.
+            let matchDayView = uiFiles.first { $0.path.hasSuffix("/MatchDayView.swift") }?.text ?? ""
+            let offenseBindings = matchDayView
+                .split(separator: "\n")
+                .filter { $0.contains("let offense") }
+            expect(!offenseBindings.isEmpty,
+                   "Match Day must derive offense somewhere")
+            expect(offenseBindings.allSatisfy { $0.contains("situation.possession") },
+                   "Match Day must derive offense only from situation.possession, never from "
+                       + "field direction or team colour")
             expect(matchProvider.contains("roleLabel(actor.role)")
                        && matchProvider.contains("staffRoleLabel(staff.role)")
                        && !matchProvider.contains("role: actor.role.rawValue"),
