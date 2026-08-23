@@ -740,6 +740,49 @@ func runGameLoopTests() {
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
 
     suite("Game loop") {
+        test("an alternating-possessions overtime gives both sides the ball") {
+            // The overtime path the suite never constructs, at the scoring boundary that decides
+            // the game. `OvertimeFormat.alternatingPossessions` is canon in `ClockRules`: "Each
+            // team gets a possession from a fixed yard line; repeat until someone leads after both
+            // have had one."
+            //
+            // `MatchReducer` counted possessions into `overtimePossessions`, which `beginOvertime`
+            // resets to empty, and then asked `overtimePossessions.values.allSatisfy { $0 >= 1 }`.
+            // After the first side's drive that dictionary holds exactly one entry, so `allSatisfy`
+            // ran over a single value and passed. The domain was never enumerated -- only whichever
+            // keys happened to be present -- which is the coverage-boundary defect `CLAUDE.md`
+            // names, in one line of engine code. A college overtime therefore closed the period
+            // after one possession, so the trailing side never answered.
+            let rules = Tier.college.clockRules
+            var overtimeGames = 0
+            for seed in UInt64(1)...UInt64(120) {
+                // Tied with 20 seconds left in the fourth: regulation runs out level and the game
+                // falls into overtime without the test having to hand-build a session state.
+                let record = GameEngine.play(
+                    tier: .college, home: home, away: away, seed: seed,
+                    initialSituation: Situation(yardLine: 25, possession: .home, quarter: 4,
+                                                secondsRemainingInQuarter: 20)
+                )
+                let periods = Set(record.drives.compactMap { $0.plays.last?.situation.quarter }
+                    .filter { $0 > rules.quarters })
+                guard !periods.isEmpty else { continue }
+                overtimeGames += 1
+                for quarter in periods.sorted() {
+                    let sides = Set(record.drives.filter {
+                        $0.plays.last?.situation.quarter == quarter
+                    }.map(\.offense))
+                    expectEqual(
+                        sides.count, Side.allCases.count,
+                        "overtime period \(quarter - rules.quarters) at seed \(seed) ended with "
+                            + "\(sides.count) of \(Side.allCases.count) sides having had the ball"
+                    )
+                }
+                if overtimeGames >= 8 { break }
+            }
+            expect(overtimeGames > 0,
+                   "no seed reached overtime, so this test asserted nothing")
+        }
+
         test("a fourth-down stop hands the ball over even when the quarter expires on it") {
             // The down edge the suite never sets against a clock edge. `DriveEngine.step` sets
             // `.downs` when the down counter passes four, then unconditionally overwrites the

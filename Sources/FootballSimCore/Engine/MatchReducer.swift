@@ -759,7 +759,14 @@ public enum MatchReducer {
         switch rules.overtime {
         case .alternatingPossessions:
             state.overtimePossessions[completedDrive.offense, default: 0] += 1
-            guard state.overtimePossessions.values.allSatisfy({ $0 >= 1 }) else {
+            // Enumerate the domain, not the keys that happen to be present. `beginOvertime` resets
+            // `overtimePossessions` to empty, so after the first side's drive the dictionary held
+            // exactly one entry and `values.allSatisfy` ran over a single value and passed. The
+            // period therefore closed after one possession and the trailing side never answered --
+            // sudden death, which is the one thing this format exists to prevent, and which
+            // `OvertimeFormat.alternatingPossessions` rules out in as many words: "repeat until
+            // someone leads after both have had one."
+            guard Side.allCases.allSatisfy({ (state.overtimePossessions[$0] ?? 0) >= 1 }) else {
                 return nil
             }
             if state.situation.homeScore != state.situation.awayScore {
