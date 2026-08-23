@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
 # Run reproducible release lanes with isolated SwiftPM/Xcode scratch directories.
 #
-#   ./scripts/verify.sh                 full package lane
-#   ./scripts/verify.sh --lane core     core contracts
-#   ./scripts/verify.sh --lane app      XcodeGen + generic iOS build
-#   ./scripts/verify.sh --build         full package build only
+#   ./scripts/verify.sh                        full lane: release build + complete SimTests run
+#   ./scripts/verify.sh --build                full package build only
+#   ./scripts/verify.sh --lane <name>          one named lane
+#   ./scripts/verify.sh --keep-scratch         leave the scratch directory for inspection
+#
+# Lanes:
+#   accessibility   design contracts, reduce motion, screen read models
+#   app             XcodeGen + generic iOS build (needs xcodegen and xcodebuild)
+#   archive         history archive and the M7 gate
+#   calibration     the calibration instrument and M3 recruiting calibration
+#   core            core contracts
+#   determinism     architecture and competition determinism
+#   full            the default
+#   release         catalog, commitment coverage, save document
+#   soaks           the M1 college and M2 professional soaks
 #
 # The default lane remains the historical build + complete SimTests run. Named lanes keep their
 # own logs and scratch paths so a failed calibration or archive cannot contaminate another run.
@@ -29,7 +40,9 @@ while [ "$#" -gt 0 ]; do
             ;;
         --keep-scratch) keep_scratch=1; shift ;;
         -h|--help)
-            sed -n '1,18p' "$0"
+            # Print the comment header, whatever length it is. A line range drifts the moment
+            # a lane is added; this cannot.
+            sed -n '/^set -euo/q;p' "$0"
             exit 0
             ;;
         *) printf 'unknown argument: %s\n' "$1" >&2; exit 2 ;;
