@@ -755,3 +755,38 @@ the two inset questions this work deliberately left open, which need a real 17-c
 settle.
 
 Task 4 stays `pending` until that walkthrough carries real results and a fresh reviewer approves.
+
+## Confidence review of this session's work (2026-08-23)
+
+One confirmed defect, self-introduced, found by re-reading the Match Day change rather than by any
+test.
+
+`playbackMark` spoke `at yard \(Int(spot.x))`, where `spot` is the **animated** position. For an
+actor the snap tracks, that rewrites the VoiceOver label on every frame -- up to sixty times a
+second. The `render-recorded-match` skill asks for deterministic actor labels, and the static field
+path it replaced spoke the recorded yard. It now speaks `actor.xYardsFromLeftGoalLine`, so the dot
+travels while the sentence stays the one the field states. The 22-actor count assertion could not
+have caught this: it counts labels, it does not watch them change.
+
+Verified fine, with how:
+
+- the plate preserves the old components' behaviour -- every depth segment still emits
+  `controlDepthIntentID`, the selected trait still follows `model.controlDepth`, and the budget's
+  spoken sentence is unchanged. The original `CallInBudgetBug` needed `fixedSize` to stop a greedy
+  `Spacer` painting over the scorebug; inside a fixed 172-point plate the spacer is bounded, and the
+  real-route capture shows the scorebug intact;
+- `furnitureControlButton`'s non-wide path still draws its own panel and 44-point target -- the
+  speed, pause and take-over controls are correct in the real capture;
+- `scroll(_:toReveal:)` drags with `dx: .zero`, so it cannot pan the horizontal navigator.
+
+Open, and deliberately not chased: `bannerDrop` is 42, derived as 1a's `top: 54` minus the
+scorebug's own 12-point inset, so it would drift if `Frame.topInset` changed. It is documented at
+the constant.
+
+## Review package
+
+`.superpowers/sdd/review-6ed8433..723af3f.diff` -- 3,846 lines, 23 files, Task 4 base `6ed8433` to
+HEAD, covering all nine commits. Generated for the fresh reviewer the process requires; a review by
+the author of the change is not the independent review the gate asks for, and this session does not
+claim to have performed one.
+

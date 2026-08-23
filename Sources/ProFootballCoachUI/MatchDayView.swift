@@ -610,9 +610,12 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
             y: screenY(spot.y, height: size.height, banded: banded)
         )
         .accessibilityElement()
+        // The recorded yard, not the animated one. `spot.x` moves every frame for a tracked actor,
+        // and a label that rewrites itself sixty times a second is not a label -- the skill asks
+        // for deterministic actor labels, and this is the same sentence the static field speaks.
         .accessibilityLabel(
             "\(offense ? "Offense" : "Defense"), \(actor.position) "
-                + "number \(actor.uniformNumber), at yard \(Int(spot.x))"
+                + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
         )
     }
 
