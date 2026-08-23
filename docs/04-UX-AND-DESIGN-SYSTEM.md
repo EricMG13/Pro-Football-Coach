@@ -896,8 +896,14 @@ the test, not for the list.
 priced its symbol spend locally and then asserted global compliance, which no sheet can know.*
 **This section is the one place the totals are held.** A symbol drawn anywhere in the product must
 appear below; one that does not is a finding under §4.5, not a licence. The enforcing contract test
-is gap G-08, and it walks `Sources/ProFootballCoachUI/ScreenRegistry.swift` by construction rather
-than from a hand list.
+is G-08, and it **ships** — the "Symbol register" suite in
+`Tests/SimTests/Suites/DesignContractTests.swift`, which parses the table below at run time rather
+than restating it. This paragraph called G-08 a gap, and said the test walks
+`Sources/ProFootballCoachUI/ScreenRegistry.swift`, until 2026-08-23; the shipped scan enumerates
+**every file that imports the UI framework** instead. It walked that one directory until
+2026-08-13, when the composition layer added a second target containing a view — outside a
+directory walk's reach, and exactly the coverage boundary `CLAUDE.md` forbids becoming a quality
+boundary.
 
 Symbols are capped **per class**, because the classes are separate learning surfaces: a coach reads
 a status chip on a roster row, a direction mark beside an attribute, and a session type on a week
