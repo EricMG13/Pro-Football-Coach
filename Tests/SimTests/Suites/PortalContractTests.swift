@@ -1701,5 +1701,67 @@ func runPortalContractTests() {
                 )
             }
         }
+
+        test("a knowledge snapshot decodes under either version's attribute set") {
+            let openedAt = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            func snapshot(
+                _ attributes: [Attribute],
+                position: Position
+            ) -> CollegePortalKnowledgeSnapshot {
+                CollegePortalKnowledgeSnapshot(
+                    observerProgrammeID: portalContractUUID(70),
+                    playerID: portalContractUUID(71),
+                    sourceProgrammeID: portalContractUUID(72),
+                    targetSeason: 1,
+                    window: .postseason,
+                    position: position,
+                    estimatedOverall: Rating(70),
+                    estimatedAttributes: Dictionary(uniqueKeysWithValues:
+                        attributes.map { ($0, Rating(70)) }
+                    ),
+                    estimatedPotential: Rating(75),
+                    confidence: 25,
+                    lastUpdated: openedAt,
+                    evidenceCount: 1
+                )
+            }
+
+            // Version one: what an existing save holds. Must stay decodable forever.
+            let stored = snapshot(
+                CollegePortalPolicyV1.ratedAttributes(for: .wideReceiver),
+                position: .wideReceiver
+            )
+            expectEqual(stored.estimatedAttributes.count, 12)
+            let storedData = try JSONEncoder.stable().encode(stored)
+            expectEqual(try JSONDecoder.stable().decode(
+                CollegePortalKnowledgeSnapshot.self, from: storedData
+            ), stored)
+
+            // Version two: what production writes after Task 4.
+            let fresh = snapshot(
+                CollegePortalPolicyV1.currentRatedAttributes(for: .wideReceiver),
+                position: .wideReceiver
+            )
+            expectEqual(fresh.estimatedAttributes.count, 14)
+            let freshData = try JSONEncoder.stable().encode(fresh)
+            expectEqual(try JSONDecoder.stable().decode(
+                CollegePortalKnowledgeSnapshot.self, from: freshData
+            ), fresh)
+
+            // Neither set: still rejected. Widening must not become "accept anything".
+            var partial = try JSONSerialization.jsonObject(with: freshData) as! [String: Any]
+            var attributes = partial["estimatedAttributes"] as! [String: Any]
+            attributes.removeValue(forKey: Attribute.vision.rawValue)
+            partial["estimatedAttributes"] = attributes
+            do {
+                _ = try JSONDecoder.stable().decode(
+                    CollegePortalKnowledgeSnapshot.self,
+                    from: JSONSerialization.data(withJSONObject: partial)
+                )
+                expect(false, "a snapshot matching neither version's set decoded")
+            } catch {
+                expect(true)
+            }
+        }
     }
 }

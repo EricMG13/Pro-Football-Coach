@@ -402,9 +402,18 @@ public struct CollegePortalKnowledgeSnapshot: Codable, Sendable, Equatable {
         evidenceCount: Int
     ) -> Bool {
         guard let openedAt = window.expectedCalendar(targetSeason: targetSeason) else { return false }
-        let ratedAttributes = CollegePortalPolicyV1.ratedAttributes(for: position)
-        guard !ratedAttributes.isEmpty,
-              Set(estimatedAttributes.keys) == Set(ratedAttributes) else { return false }
+        // 02 section 4.3a: a stored estimate keeps the set it was taken with. The two versions
+        // differ only at wideReceiver and tightEnd, so the key set names its own version and
+        // nothing has to be written into the save to tell them apart -- which matters, because
+        // ScoutingState persists up to maximumKnowledgeObservers x
+        // maximumKnowledgePerObserverWindow x portalWindowCount of these and a version field
+        // would cost roughly 20 bytes each against D7's 8 MB ceiling.
+        let versionOneAttributes = CollegePortalPolicyV1.ratedAttributes(for: position)
+        let currentAttributes = CollegePortalPolicyV1.currentRatedAttributes(for: position)
+        let keys = Set(estimatedAttributes.keys)
+        guard !versionOneAttributes.isEmpty,
+              keys == Set(versionOneAttributes) || keys == Set(currentAttributes)
+        else { return false }
         let mean = estimatedAttributes.values.reduce(0) { $0 + $1.value }
             / estimatedAttributes.count
         return estimatedOverall.value == mean
