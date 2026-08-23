@@ -26,8 +26,10 @@ for a row inside the scroll content but below the viewport, so the tap was synth
 two pre-existing red UI tests that were failing at `83452c1`; two more logo reds; and the Match Day
 1a reconciliation including the 22-actor defect.
 
-No known red test remains on any surface run so far. The full UI suite has **not** been run end to
-end in one pass -- tests were run in batches at the content size each is written for.
+The **full UI suite is green**: all 21 tests, 0 failures. It runs as two passes because content
+size is external to the tests -- 14 at `large`, the 7 `AtAX5` tests at genuine
+`accessibility-extra-extra-extra-large` -- and the two sets were checked to be disjoint and to cover
+every declared test exactly once. Content size restored to `large` afterwards.
 
 Still outstanding for Task 4: the manual device and assistive-technology matrix, a real
 retained-game Match Day capture inside the production navigator rather than the `PROOF_SCREEN=match`

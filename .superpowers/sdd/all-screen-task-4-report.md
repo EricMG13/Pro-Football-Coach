@@ -683,3 +683,27 @@ to a query. What makes either identifier resolvable is the presence of unhidden 
 the logos are decorative and hide themselves. Both the comments and the proof now say that, and the
 proof asserts the names rather than the marking. It asserts the property, not a team name, so it
 stays off the generated catalogue, which has been re-keyed before.
+
+## Full UI suite (2026-08-23)
+
+All 21 declared tests, 0 failures, on iPhone 17e `7082DFE5-3BFB-4073-859B-83E95B35531B`.
+
+The suite cannot run in a single pass: the `AtDefault` / `AtAX5` split exists because the content
+size is set externally with `xcrun simctl ui ... content_size`, not by the test, so one pass would
+run half the suite at the wrong size and prove nothing about it.
+
+| Pass | Content size | Selection | Result |
+|---|---|---|---|
+| A | `large` | whole bundle, `-skip-testing` the seven `AtAX5` tests | 14 tests, 0 failures, 315.7s |
+| B | `accessibility-extra-extra-extra-large` | the seven `AtAX5` tests | 7 tests, 0 failures, 264.1s |
+
+Pass A selects the bundle and skips, rather than listing 14 names, so a test added later joins pass
+A by construction instead of being silently uncovered.
+
+Coverage was checked rather than assumed: the passed-test names were extracted from both logs and
+compared against the `func test` declarations in the source. 21 declared, 21 run, the two passes
+disjoint, nothing declared-but-unrun. The first extraction reported seven tests missing because its
+regex excluded digits and so could not match a name ending `AtAX5`; the counts only reconciled after
+that was fixed.
+
+Content size restored to `large` and read back.
