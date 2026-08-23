@@ -30,11 +30,13 @@ The honest picture: what exists, what is verified, what is not.
 > 30 / 193, `--reduce-motion` and `--match-reducer` — all green, and the app builds and runs on the
 > simulator. The full `./scripts/verify.sh` lane is red in four suites — portal scheduler lifecycle,
 > M5 career arc, M4 tactical state, and the lifecycle distribution bands. **All four are
-> pre-existing**: M4 tactical state and M5 career arc were reproduced red on `main` at the same
-> check counts, and the other two are unreachable from this diff by construction — `SnapAnchors` and
-> `AnchorRules` are referenced only from `CoachWorldMatchProvider` and `MatchDayView`, never from
-> the simulation loop, and the one `SnapResolver` edit is a proven no-op (`tackler` and `defender`
-> are the same object on attempt zero).
+> pre-existing, and all four were reproduced red on `main` itself** (the last two in a detached
+> `main` worktree so this branch was never disturbed), at identical failed-check counts: 2, 1, 1, 1.
+> A structural argument pointed the same way and is worth keeping, because it is what makes the
+> result unsurprising rather than lucky — `SnapAnchors` and `AnchorRules` are referenced only from
+> `CoachWorldMatchProvider` and `MatchDayView`, never from the simulation loop, and the one
+> `SnapResolver` edit is a proven no-op (`tackler` and `defender` are the same object on attempt
+> zero) — but the reproductions are the evidence, not the reasoning.
 >
 > **ESCALATED, not fixed — the recorded tackler.** `Assignment.assign` builds `pursuit` as
 > `ranked(defense)`, best-first and blind to the play, and `yardsAfterContact` always starts its
