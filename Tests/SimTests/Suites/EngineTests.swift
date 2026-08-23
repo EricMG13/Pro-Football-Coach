@@ -11,8 +11,25 @@ import FootballSimCore
 /// through `2aab277` and further uncommitted changes before reaching that commit. Re-pinning was
 /// held until that work reached a real commit rather than chasing values still moving underneath
 /// it. Reproduced in three independent release processes in a clean worktree at `0a2b641`.
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 11_206_707_792_088_495_442
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 15_235_203_604_702_228_493
+/// Moved a third time on 2026-08-23, fixing the pursuit-order defect. `Assignment.assign` built
+/// `pursuit` as `ranked(defense)` -- best-overall-first, and blind to the call -- and
+/// `yardsAfterContact` always starts its break-tackle chain at index zero, so the highest-rated
+/// defender on the field was the recorded tackler on every snap of a game. Whoever leads that list
+/// is whose `tackling` the leverage reads and how many draws the chain takes, so reordering it
+/// necessarily moves the stream and everything downstream of it. That is the change, not a side
+/// effect of it.
+///
+/// The college value then moved a *second* time in the same commit, when `breakTackleThreshold`
+/// was recalibrated from 0.46 to 0.60 to absorb the same effect. The pro value did not, and that is
+/// worth stating rather than glossing: the threshold governs the run chain only, the window it
+/// moved through is (0.46, 0.60], and no carry in the pro game at seed 12,345 happened to land in
+/// it. A pin that moves for one tier and not the other is what a sensitive-but-not-universal hash
+/// looks like, not a sign that half the change failed to apply -- the constant was verified in the
+/// built binary and the suite rebuilt from clean before this was concluded.
+///
+/// Both values reproduced across three independent debug processes and a release build.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 16_554_055_926_532_891_433
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 9_227_341_757_813_793_374
 
 func runEngineTests() {
     suite("Leverage") {
@@ -291,6 +308,82 @@ func runSnapResolverTests() {
     let even = testPersonnel(offenseSkill: 70, defenseSkill: 70)
 
     suite("Snap resolution") {
+        test("the man who makes the tackle depends on the play, not on the depth chart") {
+            // The defect: `pursuit` was `ranked(defense)` -- best-overall-first and blind to the
+            // call -- and `yardsAfterContact` always starts its chain at index zero, so the
+            // highest-rated defender on the field was the recorded tackler on EVERY snap of a
+            // game. Measured over 200 resolved snaps on 2026-08-22, all 200 went to one position.
+            //
+            // Ratings are deliberately varied here. With a flat roster the old code's tie-break
+            // (identifier bytes) hid the problem behind a stable but arbitrary order; the bug is
+            // about rank beating relevance, so the fixture has a rank to beat.
+            var personnel = testPersonnel(offenseSkill: 70, defenseSkill: 62)
+            personnel = SnapPersonnel(
+                offense: personnel.offense,
+                defense: personnel.defense.enumerated().map { index, player in
+                    var attributes = player.attributes
+                    // One clearly best defender, so "best man every time" is visible if it happens.
+                    attributes[.tackling] = Rating(index == 0 ? 95 : 60 + index)
+                    return Player(
+                        id: player.id, firstName: player.firstName, lastName: player.lastName,
+                        position: player.position, age: player.age,
+                        attributes: attributes, potential: player.potential
+                    )
+                }
+            )
+
+            var positions: Set<Position> = []
+            var identities: Set<UUID> = []
+            for seed in UInt64(0)..<400 {
+                var rng = SeededRandom(seed: seed)
+                let gaps = RunGap.allCases
+                let call = seed % 2 == 0
+                    ? OffensiveCall(playType: .run, runGap: gaps[Int(seed) % gaps.count])
+                    : OffensiveCall(playType: .pass)
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: call,
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: personnel,
+                    situation: Situation(),
+                    rules: rules,
+                    rng: &rng
+                )
+                for matchup in outcome.matchups where matchup.kind == .carrierVersusPursuit {
+                    identities.insert(matchup.defenderID)
+                    if let man = personnel.defense.first(where: { $0.id == matchup.defenderID }) {
+                        positions.insert(man.position)
+                    }
+                }
+            }
+
+            expect(positions.count > 1,
+                   "every recorded tackle came from one position: \(positions)")
+            expect(identities.count > 2,
+                   "only \(identities.count) defender(s) ever made a tackle across 400 snaps")
+            // And the front seven, not the secondary, is what meets a run. A cornerback leading the
+            // pursuit on a run up the middle would be the same class of error in the other
+            // direction -- relevance replaced by a different arbitrary rule.
+            var runTacklerGroups: Set<PositionGroup> = []
+            for seed in UInt64(1_000)..<1_200 {
+                var rng = SeededRandom(seed: seed)
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .run, runGap: .insideLeft),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: personnel,
+                    situation: Situation(),
+                    rules: rules,
+                    rng: &rng
+                )
+                for matchup in outcome.matchups where matchup.kind == .carrierVersusPursuit {
+                    if let man = personnel.defense.first(where: { $0.id == matchup.defenderID }) {
+                        runTacklerGroups.insert(man.position.group)
+                    }
+                }
+            }
+            expect(runTacklerGroups.isSubset(of: [.defensiveLine, .linebackers]),
+                   "an inside run was met first by \(runTacklerGroups), not by the front seven")
+        }
+
         test("running backs are eligible pass targets") {
             let assignment = Assignment.assign(
                 offensiveCall: OffensiveCall(playType: .pass),

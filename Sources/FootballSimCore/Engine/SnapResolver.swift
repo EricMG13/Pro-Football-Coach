@@ -192,9 +192,20 @@ public enum SnapResolver {
         }
 
         // 6. Yards after the catch, from the receiver against the nearest pursuit.
+        //
+        // The man covering him leads it. `assignment.pursuit` is already ordered secondary-first
+        // for a pass, but the assignment cannot know *which* receiver would win -- the resolver
+        // does, and the defender it beat is by definition the one standing at the catch. Hoisting
+        // him is reading the record rather than guessing at it, and it is what makes the recorded
+        // tackler vary with the route that actually won.
         let air = offensiveCall.passDepth.airYards
+        // `routes[target.offset].defender`, the same indexing the `.throwing` matchup above
+        // already uses for exactly this reason: the target is the argmax over `weightedTarget` and
+        // is frequently not the first read.
+        let covering = assignment.routes[target.offset].defender
+        let atTheCatch = [covering] + assignment.pursuit.filter { $0.id != covering.id }
         let (afterCatch, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
-            carrier: target.element.receiver, pursuit: assignment.pursuit,
+            carrier: target.element.receiver, pursuit: atTheCatch,
             aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage,
             threshold: MatchupRules.catchBreakTackleThreshold, rng: &rng
         )

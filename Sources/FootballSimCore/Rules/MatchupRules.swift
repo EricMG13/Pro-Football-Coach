@@ -213,7 +213,22 @@ public enum MatchupRules {
     /// 0.171 with nothing in between. Break *probability* moves continuously with the threshold.
     public static let collegeBreakTackleRelief = 0.05
     /// Leverage above which the carrier breaks a tackle.
-    public static let breakTackleThreshold = 0.46
+    ///
+    /// **0.46 until 2026-08-23, when the pursuit-order defect was fixed.** `Assignment.assign` used
+    /// to hand `yardsAfterContact` the defence ranked best-first, so the carrier ran at the single
+    /// best tackler on the field on every snap. That is not a neutral simplification: it is a
+    /// systematic overestimate of the defence at exactly the moment that decides the yardage, and
+    /// this constant had been fitted on top of it. Ordering pursuit by the play instead put the
+    /// right man there, the carrier started beating him more often, and rushing inflated -- pro
+    /// rush yards 111 to 128 per team-game, pro explosive runs 0.119 to 0.152 against a 0.130
+    /// ceiling, and college points and combined totals through their upper edges with them.
+    ///
+    /// 0.60 is the minimum of a bracketed grid (0.54 / 0.60 / 0.66) measured on the **tuning**
+    /// ladder, per `01` §6.6 clause 2. Reported against the holdout ladder afterwards, the failing
+    /// set is identical to the pre-change one -- the same seven bands on the same edges -- so the
+    /// correctness fix costs no band. The model moved and the constant followed it; no band was
+    /// touched, which `01` §6.6 and `03` §5.2 both forbid.
+    public static let breakTackleThreshold = 0.60
     /// Yards for the first break. Each successive one is worth a multiple of this, which is what
     /// gives a run distribution its right tail.
     public static let brokenTackleYards = 4
