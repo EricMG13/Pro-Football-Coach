@@ -111,6 +111,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | `Tests/ProFootballCoachTests/`, `Tests/ProFootballCoachUITests/` | The two XCTest bundles the Xcode project builds; not part of the SwiftPM package |
 | `App/` | Thin `@main` iOS shell + `project.yml` for Xcode project generation |
 | `Tools/` | Development tooling: the surface-reference renderer and the team-mark pipeline. Never linked into the app |
+| `output/`, `exports/`, `artifacts/` | Working output of the team-mark pipeline and its reviews. Not shipped; the packaged marks live in `Sources/ProFootballCoachUI/Resources/` |
 | `scripts/verify.sh` | Runs the machine gates and prints a pasteable result |
 
 The previous build was removed by P0; what is under `Sources/`, `Tests/` and `App/` now is the
