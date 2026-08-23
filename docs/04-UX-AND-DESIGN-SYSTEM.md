@@ -380,10 +380,15 @@ Measured constraints, binding on every consumer:
 | light-primary | `#E9E0C9` | `#6E3038` | `#18202B` | 12.47 | 7.45 |
 | low-chroma | `#555B66` | `#D9DDE4` | `#FFFFFF` | 6.83 | 5.01 |
 
-- **`field.turfBand` is a mow band, never an information channel.** Added 2026-08-12: the match view
-  draws twelve 8.333% bands across the 120-yard field, giving a 10-yard distance gauge that survives
-  a delete test. Its contrast against `field.turf` is deliberately near-invisible (1.10 dark, 1.08
-  light) — it must read as ground texture, not as data, and nothing may be encoded in which band a
+- **`field.turfBand` is a mow band, never an information channel.** Added 2026-08-12, and stated
+  here as twelve 8.333% bands giving a 10-yard distance gauge, until 2026-08-23 — the shipped grid
+  is **24** bands (`Turf.mowBands` in `Sources/ProFootballCoachUI/MatchDayField.swift:775`), which
+  the file's own comment calls "five-yard stripes", a 5-yard gauge rather than 10. There is also no
+  `fieldTurfBand` (or equivalent) property on `DesignTokens.swift`'s palette: the bands are drawn
+  from private opacity literals (`Turf.mowLight` 0.03, `Turf.mowDark` 0.07), not the named role this
+  row states, so the ratios below describe a token that is not the one the view actually paints
+  with, and recomputing them against the shipped literals is a design-review task this pass does not
+  attempt. It must read as ground texture, not as data, and nothing may be encoded in which band a
   mark falls on. Everything drawn over it keeps its own floor: `field.line` measures 10.11 dark /
   13.75 light on the band, `field.annotation` 6.43 / 5.07, `field.live` 8.37 / 4.31.
 - **Team fills against the work surfaces (measured 2026-08-12):** dark-primary on dark `work` 1.41,
