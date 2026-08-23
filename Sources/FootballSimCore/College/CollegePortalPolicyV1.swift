@@ -178,6 +178,23 @@ public enum CollegePortalPolicyV1 {
         .punter: sharedKnowledgeAttributes + [.legStrength, .kickAccuracy],
     ]
 
+    /// Version two adds the carrier attributes receivers gained in `3bba7c9`, recorded as a delta
+    /// over version one rather than as a second full table.
+    ///
+    /// A second full table would repeat thirteen identical positions, and two tables that repeat
+    /// each other drift when somebody edits one -- which is precisely the defect this versioning
+    /// exists to prevent, and precisely how the version-one table came to disagree with the rating
+    /// model in the first place. A delta cannot drift: it names only what changed.
+    ///
+    /// Appended, never inserted. `knowledgeSnapshot` draws one `rng.int` per element in array
+    /// order, so appending leaves version one's draws bit-identical and moves only the two new
+    /// draws and the trailing potential draw. Inserting would silently rewrite every estimate for
+    /// the position.
+    private static let knowledgeAttributeAdditionsV2: [Position: [Attribute]] = [
+        .wideReceiver: [.vision, .elusiveness],
+        .tightEnd: [.vision, .elusiveness],
+    ]
+
     static func supports(_ policyVersion: Int) -> Bool {
         policyVersion == version
     }
@@ -375,6 +392,15 @@ public enum CollegePortalPolicyV1 {
 
     package static func ratedAttributes(for position: Position) -> [Attribute] {
         knowledgeAttributesByPosition[position] ?? []
+    }
+
+    /// The attribute set portal scouting estimates today -- `02` section 4.3a's "every attribute
+    /// the match engine rates for that position, and no others".
+    ///
+    /// `ratedAttributes(for:)` remains the version-one set and stays frozen: an estimate persisted
+    /// before this version keeps its own set and stays decodable.
+    package static func currentRatedAttributes(for position: Position) -> [Attribute] {
+        ratedAttributes(for: position) + (knowledgeAttributeAdditionsV2[position] ?? [])
     }
 
     private static func canonicalSelection<S: Sequence>(

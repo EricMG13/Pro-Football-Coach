@@ -1646,10 +1646,13 @@ func runPortalContractTests() {
             // sides are enumerated here by construction over Position.allCases: a new position, or
             // a new divergence at an existing one, fails this test naming the position rather than
             // tripping CollegePortalKnowledgeSnapshot's precondition and killing the process.
-            let knownAttributeDivergence: [Position: Set<Attribute>] = [
+            //
+            // Version one keeps its recorded divergence forever -- that is what makes an existing
+            // save readable. Version two is what production writes, and 02 section 4.3a requires
+            // it to equal the rated set exactly, in order.
+            let versionOneDivergence: [Position: Set<Attribute>] = [
                 // 3bba7c9 gave receivers vision and elusiveness because a receiver with the ball is
-                // a carrier. Portal scouting therefore estimates them on 12 of the 14 attributes
-                // the match engine rates them on; closing that needs a knowledge schema bump.
+                // a carrier. Version one was already frozen and cannot gain them.
                 .wideReceiver: [.vision, .elusiveness],
                 .tightEnd: [.vision, .elusiveness],
             ]
@@ -1663,18 +1666,32 @@ func runPortalContractTests() {
                 .linebacker: 2,
             ]
             for position in Position.allCases {
-                let frozen = Set(CollegePortalPolicyV1.ratedAttributes(for: position))
-                let live = Set(position.ratedAttributes)
-                expect(!frozen.isEmpty, "\(position) has no frozen portal knowledge attributes")
+                let versionOne = CollegePortalPolicyV1.ratedAttributes(for: position)
+                let current = CollegePortalPolicyV1.currentRatedAttributes(for: position)
+                let live = position.ratedAttributes
+                expect(!versionOne.isEmpty, "\(position) has no frozen knowledge attributes")
                 expectEqual(
-                    frozen.subtracting(live),
+                    Set(versionOne).subtracting(live),
                     [],
-                    "\(position) scouts an attribute the match engine does not rate"
+                    "\(position) version one scouts an attribute the engine does not rate"
                 )
                 expectEqual(
-                    live.subtracting(frozen),
-                    knownAttributeDivergence[position] ?? [],
-                    "\(position) rates an attribute portal scouting cannot see"
+                    Set(live).subtracting(Set(versionOne)),
+                    versionOneDivergence[position] ?? [],
+                    "\(position) version-one divergence from the rated set changed"
+                )
+                // 02 section 4.3a: the current set is the rated set, exactly and in order.
+                // Array equality rather than set equality, because knowledgeSnapshot draws one
+                // rng.int per element in order -- reordering silently rewrites every estimate.
+                expectEqual(
+                    current,
+                    live,
+                    "\(position) current knowledge set drifted from the rated set"
+                )
+                // The append is what keeps version one's draws unchanged.
+                expect(
+                    current.starts(with: versionOne),
+                    "\(position) current set is not version one's order plus additions"
                 )
                 expectEqual(
                     CollegePortalPolicyV1.minimumPlayableRosterByPosition[position],
