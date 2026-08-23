@@ -1,0 +1,95 @@
+[
+  {
+    "assetName": "TeamLogo_613F7CE6DAB84D80ABBEDCD2C886A10C",
+    "decision": "replace",
+    "newFamily": "celestialPhenomenon",
+    "proposedName": "Camden Shale Novas",
+    "notes": "Replaces the palisade with a compact four-arm nova whose offset diamond counter creates a new football silhouette.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_6E0B4A63CA6848CD8F9D61626462A2B8",
+    "decision": "replace",
+    "newFamily": "extremeWeather",
+    "proposedName": "Davenport Agricultural Gale Tornadoes",
+    "notes": "Replaces the palisade with three broad tornado bands and an open rotating eye built for helmet-scale recognition.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_2DF9A813792342959AD954DBC61EC67C",
+    "decision": "replace",
+    "newFamily": "predator",
+    "proposedName": "Lakeview Regional River Gars",
+    "notes": "Replaces the palisade with a top-down alligator gar whose S-turn body and striking snout form the complete mark.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_95192BA1E5B645A494ED5D44E395EA15",
+    "decision": "replace",
+    "newFamily": "mythicalCreature",
+    "proposedName": "Millinocket Coastal Flint Sea Serpents",
+    "notes": "Replaces the square-on tool motif with a heavy open-coil sea serpent and one oversized negative-space turn.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_80E65D18532E4D94839D9F2E6DBB81DB",
+    "decision": "replace",
+    "newFamily": "celestialPhenomenon",
+    "proposedName": "Ogallala Coastal Obsidian Solar Flares",
+    "notes": "Replaces the square-on tool motif with an offset solar core and one broad forward-driving flare hook.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_954025C43FE546BAAC1F62CF09765A0F",
+    "decision": "replace",
+    "newFamily": "letterform",
+    "notes": "Replaces the square-on tool motif with an interlocked WEB construction whose shared strokes form one football wedge.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_612FD3E74D0142E9A010EF4B485965F7",
+    "decision": "replace",
+    "newFamily": "mythicalCreature",
+    "proposedName": "Abingdon Tidal Kelpies",
+    "notes": "Replaces the shield boss with a full-body kelpie built from one leaping S-curve, hooked foreleg, and fin-like tail.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_1046C3255F27488E8D1FEFF7F0D1AD41",
+    "decision": "replace",
+    "newFamily": "letterform",
+    "notes": "Replaces the shield boss with a custom GOS monogram using a hooked G, open O, and forward-slashing S.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_E8D76C2DF87A4503A1B5B80193FC4F5B",
+    "decision": "replace",
+    "newFamily": "predator",
+    "proposedName": "Ketchikan Meridian Orcas",
+    "notes": "Replaces the shield boss with a full-body crescent-breach orca whose fin opening creates the dominant negative space.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_911BB08E62454715A15EA6851AD2F303",
+    "decision": "replace",
+    "newFamily": "letterform",
+    "notes": "Replaces the square-on tool motif with a rising LAP monogram that shares one foundation, counter, and forward hook.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_C0A6908AFD4D408AB0BE70A2298C0B70",
+    "decision": "replace",
+    "newFamily": "extremeWeather",
+    "proposedName": "Moberly Thunder Supercells",
+    "notes": "Replaces the shield boss with three broad staggered supercell shelves split by one lightning-shaped negative rupture.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  },
+  {
+    "assetName": "TeamLogo_4D2BD12BF3B746FE8863CD6973A66EB1",
+    "decision": "replace",
+    "newFamily": "predator",
+    "proposedName": "Red Wing State Cobalt Crocodiles",
+    "notes": "Replaces the shield boss with a three-quarter crocodile lunge using a hooked tail, three broad scutes, and open jaw.",
+    "changes": ["silhouette", "small-size clarity", "distinctiveness"]
+  }
+]

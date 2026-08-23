@@ -8,6 +8,9 @@ xcuserdata/
 .swiftpm/
 .worktrees/
 exports/Claude-Design-Team-Logo-Handoff-2026-08-20.zip
+artifacts/team-mark-review/tournament-catalog.json
+artifacts/team-mark-review/tournament-assets/
+artifacts/team-mark-review/chatgpt-shared/assets/
 
 # Xcode build products. These were committed once (70 MB) and went stale:
 # the last compiled module predates Sources/FootballSimCore/Arcade/ entirely.
@@ -20,3 +23,7 @@ Pro-Football-Coach/
 # Owner-supplied competitor reference screenshots. Third-party copyright:
 # research material only, never redistributed. See CLAUDE.md legal guardrail.
 FM Screenshots/
+
+# Python bytecode from the Tools/ generators.
+__pycache__/
+*.pyc

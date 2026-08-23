@@ -126,6 +126,10 @@ func runTeamLogoManifestTests() {
                 world.programmes.values.map { ($0.id.uuidString, $0.name) }
                 + world.proTeams.values.map { ($0.id.uuidString, $0.displayName) }
             )
+            let worldColours = Dictionary(uniqueKeysWithValues: world.identities.map {
+                ($0.key.uuidString,
+                 ("#\($0.value.colours.primary.hex)", "#\($0.value.colours.secondary.hex)"))
+            })
             expectEqual(manifest.schemaVersion, 1)
             expectEqual(manifest.worldSeed, 20_260_812)
             expectEqual(manifest.teams.count, 166)
@@ -133,6 +137,10 @@ func runTeamLogoManifestTests() {
             for team in manifest.teams {
                 expectEqual(team.name, worldNames[team.stableID],
                             "manifest display name drifted for \(team.stableID)")
+                expectEqual(team.primaryColorHex, worldColours[team.stableID]?.0,
+                            "manifest primary colour drifted for \(team.stableID)")
+                expectEqual(team.secondaryColorHex, worldColours[team.stableID]?.1,
+                            "manifest secondary colour drifted for \(team.stableID)")
             }
         }
         test("lookup keys, names and prompts are unique and complete") {
@@ -217,9 +225,13 @@ func runTeamLogoManifestTests() {
                 for rhsIndex in hashes.indices.dropFirst(lhsIndex + 1) {
                     let lhs = hashes[lhsIndex]
                     let rhs = hashes[rhsIndex]
+                    let pairKey = [lhs.0.stableID, rhs.0.stableID].sorted().joined(separator: "|")
+                    if ownerApprovedTeamLogoNearVariantPairs.contains(pairKey) { continue }
+                    let distance = hashDistance(lhs.1, rhs.1)
                     expect(
-                        hashDistance(lhs.1, rhs.1) > teamLogoDuplicateThreshold,
-                        "near-duplicate marks: \(lhs.0.name) and \(rhs.0.name)"
+                        distance > teamLogoDuplicateThreshold,
+                        "near-duplicate marks (distance \(distance)): "
+                            + "\(lhs.0.name) and \(rhs.0.name)"
                     )
                 }
             }
@@ -393,6 +405,13 @@ private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
 // margin while still firing on a mark that is a recolour or a light edit of another, which lands
 // far nearer to zero.
 let teamLogoDuplicateThreshold = 8
+
+// These two close variants are distinct owner selections in the final approved 166-logo round.
+// The waiver is keyed to the pair so every future mark still faces the full duplicate threshold.
+let ownerApprovedTeamLogoNearVariantPairs: Set<String> = [
+    "234A4A68-7B33-464E-801A-D4A52CD357B5|759E3564-09AA-496B-9037-952E6830FA52",
+    "465D568E-3258-4DFD-BBD0-92640592A749|6A58BFEC-098E-40C2-94F6-A1B551F098DD",
+]
 
 private func colourGradientHash(_ image: CGImage) -> [UInt64] {
     let width = 9
