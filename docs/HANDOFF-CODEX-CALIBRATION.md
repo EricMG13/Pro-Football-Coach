@@ -5,6 +5,14 @@ Checkpoint from a Claude session, 2026-08-20, merged to main as PR [#44](https:/
 entries under "P4 — calibration harness and bands" carry every measurement. This is a separate item
 from `docs/HANDOFF-CODEX.md` (PR #9's re-pin), which is still open and unrelated.
 
+> **Stale as of 2026-08-23: the count below is 21 of 25 and the live gate reports 18 of 25.**
+> A `--calibration-gate` run on `aaf1285` adds three red rows this file does not list — college home
+> win rate (0.6580, CI90 [0.6333, 0.6827], band 0.60–0.68), pro interceptions per team-game (1.1925,
+> CI90 [1.1388, 1.2462], band 0.6–1.1) and pro safeties per game (0.0680, CI90 [0.0530, 0.0830],
+> band 0.005–0.05). Whether that is a regression on `main` or a difference in how the two runs were
+> built is not established: nobody has run both on the same tree. `docs/STATUS.md`'s dated
+> 2026-08-23 P4 entry carries the full table. The two questions below are unaffected and still open.
+
 ## Fresh continuation result — 2026-08-20
 
 `./scripts/verify.sh --lane calibration` now passes from a fresh isolated release build:

@@ -3259,6 +3259,55 @@ run because the diagnostic runner used its own deterministic game-seed derivatio
 
 Neither is a justified model fix. No source or canon-band changes were retained.
 
+#### 2026-08-23 — holdout re-measurement: 18 of 25, and three red rows the 2026-08-20 entry does not list
+
+Measured on `claude/match-engine-calibration-57e46e` at `aaf1285` (a merge of `main`) with
+`swift run -c release -Xswiftc -enable-testing SimTests --calibration-gate`, holdout ladder, 1,000
+games per tier. **The result is 18 of 25 bands holding, not the 21 of 25 the entry above reports.**
+`docs/HANDOFF-CODEX-CALIBRATION.md` still states 21 of 25 and is stale by the same three rows.
+
+Every red row from the TOST confidence interval, never a point estimate:
+
+| Band | theta | CI90 | Band | Grade | New since 2026-08-20 |
+|---|---|---|---|---|---|
+| college home win rate | 0.6580 | [0.6333, 0.6827] | 0.60–0.68 | [C] | **yes** |
+| college favourite win rate | 0.8078 | [0.7862, 0.8294] | 0.70–0.78 | [C] | no |
+| pro interceptions per team-game | 1.1925 | [1.1388, 1.2462] | 0.6–1.1 | provisional [U] | **yes** |
+| pro favourite win rate | 0.8744 | [0.8563, 0.8926] | 0.62–0.72 | [C] | no |
+| pro blowout rate | 0.7000 | [0.6762, 0.7238] | 0.17–0.26 | [Q] | no |
+| pro safeties per game | 0.0680 | [0.0530, 0.0830] | 0.005–0.05 | provisional [U] | **yes** |
+| pro points per drive | 2.0285 | [1.9959, 2.0611] | 1.60–1.95 | [Q] | no |
+
+The four carried-over rows all moved *towards* their bands without reaching them (pro favourite win
+0.8800 → 0.8744, blowout 0.6960 → 0.7000 up slightly, points per drive 2.1454 → 2.0285, college
+favourite win 0.8189 → 0.8078). Whether the three new rows are a regression on `main` or a
+difference in how the 2026-08-20 run was built is **not established here** — that entry records a
+core-only run in an isolated scratch path, this one is the registered `--calibration-gate` suite, and
+nobody has run both on the same tree. Do not treat either count as superseding the other until they
+have been.
+
+**No band was tightened and no band was widened.** The loosest band in the table by relative
+half-width is pro `safeties per game`, 0.005–0.05 — a ten-fold range at ±81.8% of its midpoint,
+and its floor was invented when `01` §6.5 made the original one-sided `<= 0.05` two-sided. (Pro
+`tie rate`, 0.000–0.020, scores wider still on that ratio, but its floor is zero because a tie
+count cannot be negative, so relative width does not measure anything there.) Safeties cannot be
+tightened, because it is already failing high: tightening a red band only makes it redder, and
+`03` §5.2's rule cuts the other way too. The loosest band that *holds* is pro `sacks per team-game`, 2.0–3.1 (±21.6% of its midpoint,
+provisional [U]), measured 2.7920, CI90 [2.6169, 2.9671]; tightening it is a canon amendment to `01`
+§6.5 and needs a sourced real-world figure rather than "the model happens to fit", which is fitting
+the band to its own test.
+
+**Verification note.** `SimTests --calibration` (the instrument suite) is green: 25 tests, 181
+checks. `SimTests --m3-recruiting-calibration` **did not complete** and is therefore unverified, not
+green, by `scripts/verify.sh`'s own truncation rule. Under `TRACE_TESTS=1` it is visibly healthy —
+it clears 21 of its 22 tests in about four minutes and then sits in the last one, `one generated
+season measures deterministic recruiting and rollover`, for over twenty minutes without finishing.
+Four attempts on a host at load average 400+ all ended there. That is a resource observation about
+this host, not a diagnosis of the suite: nobody has yet run it to completion on an idle machine, and
+until someone does, "slow" and "hung" are not distinguished. `./scripts/verify.sh --lane calibration`
+was likewise killed mid-lane after a 683-second release build under the same load.
+
+
 ### P3 — match engine core
 
 D2's hybrid assignment/leverage resolution, per tier, with the clock, the drive loop and the game
