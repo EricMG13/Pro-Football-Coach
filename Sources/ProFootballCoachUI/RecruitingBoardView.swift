@@ -83,6 +83,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                 secondaryButton: .cancel()
             )
         }
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 24) }
     }
 
     /// Withdraw is the one destructive choice a prospect's action desk offers, so it alone routes
@@ -90,8 +91,8 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
     /// `id` is the prospect's own `stableID` -- `RecruitingBoardReadModel.Prospect` is `Equatable`
     /// but not `Identifiable`, and `.alert(item:)` needs an identity to key its presentation on.
     private struct PendingWithdrawal: Identifiable {
-        let id: String
-        let name: String
+            let id: String
+            let name: String
     }
 
     private var worldStrip: some View {

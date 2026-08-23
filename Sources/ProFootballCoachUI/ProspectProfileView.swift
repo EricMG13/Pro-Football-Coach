@@ -62,6 +62,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
             )
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 25) }
     }
 
     private var scrollContent: some View {

@@ -1143,3 +1143,58 @@ new branching.
 Simulator demonstration remains an owner action. Nothing here was demonstrated on a device; the
 walkthrough in `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md` carries the two Personnel
 rows this task added to its proof ledger.
+
+## Task 6 -- Recruiting family, canonical destinations 24-29 and 61
+
+Seven surfaces stamped: Recruiting Board 24, Prospect Profile 25, Shortlist 26, Contact & Visit
+Planner 27, Class Overview 28, Signing Day 29, College Offseason 61.
+
+### Signing Day is canonical and delegates, which the Task 5 assertion would have caught
+
+`SigningDayView` renders `CollegeOffseasonView` for its open phase. Stamping both would have given
+screen 29 two canonical identities -- exactly what Task 5's strengthened assertion forbids. It is
+not an alias: the contract lists 29 with its own row, while Portal Hub, Retention Decisions, Portal
+Market and NIL Allocation (30-33) *are* aliases and correctly inherit 61 with no identity of their
+own.
+
+Resolved by giving `CollegeOffseasonView` a `canonicalID: Int = 61`. The four aliases pass nothing
+and stamp 61; Signing Day passes 29. Its closed branch carries 29 too -- a destination that says it
+is closed is still that destination, and leaving the stamp to the open branch would make the screen
+unenumerable in precisely the phase its honest empty state exists for.
+
+The family proof was generalised to `assertCanonicalFamily(_:ids:usesAX5:)` so Personnel, Recruiting
+and the families still to come share one enumerator rather than a copy each.
+
+### A proof that could pass while proving nothing, fixed
+
+Both branches of the family proof are legitimate -- a stamp, or an honest unavailable state -- so a
+green run said nothing about which branch each screen took. A family that had quietly gone all
+"unavailable" would have passed while testing none of the stamps. The branch is now recorded in each
+attachment name, and the run reads: 16-20 and 24-29 and 61, all `stamped`.
+
+### `--career-portal-decisions` is red, and Task 6 did not cause it and does not fix it
+
+The lane the plan names as a Task 6 gate fails on "spring retention choices pause a user-owned
+portal responsibility". `CareerControlTests.swift` imports only `Foundation` and `FootballSimCore`,
+and this task's diff touches no engine file, so the lane's inputs are unchanged: the red is
+pre-existing.
+
+Two defects in the test were fixed because they were hiding the real one:
+
+1. It threw `missingWeeklyPreparation` at `session.resolve(.advanceWeek)` and never reached a single
+   assertion. A controlled programme with an unplayed game and no authored preparation refuses to
+   advance -- deliberately, as the "Weekly preparation authority" suite proves. The test now authors
+   the week first; the advance was only ever how it reached its save round trip.
+2. It looked the record up under `restored.calendar.season` rather than the season the snapshot
+   targeted, so a season roll would have reported "no record" instead of the mismatch. Now keyed on
+   `snapshot.targetSeason`, with a message that prints both.
+
+With those out of the way the test runs all 8 checks and fails on something real. The player's career
+is not ended, and the only portal record is `(season 1, .postseason, .transferred)`. The spring
+release wrote **no spring window record at all**. Whether releasing inside the spring window should
+record a spring window is an engine and design question, not a UI one, and a UI migration task is
+the wrong place to answer it. Escalated, not patched.
+
+`PlayerCareerRecord.append(_:)` is worth the owner's attention alongside it: it is
+`@discardableResult` and returns `false` silently on four separate guards, so a refused record leaves
+no trace at the call site.

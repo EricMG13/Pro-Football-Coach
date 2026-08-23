@@ -10,6 +10,15 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
 
     public let model: CollegeOffseasonReadModel
     public let title: String
+    /// The canonical destination this rendering *is*.
+    ///
+    /// Defaulted to 61, so the four aliases that inherit College Offseason -- Portal Hub,
+    /// Retention Decisions, Portal Market, NIL Allocation -- stamp 61 without passing anything,
+    /// which is what the contract's alias rule requires: an alias resolves to its canonical
+    /// destination and holds no identity of its own. Signing Day is different. It is canonical
+    /// destination 29 in its own right and delegates its open phase here, so it passes 29 and the
+    /// screen carries one stamp rather than its own plus this one.
+    public let canonicalID: Int
     public let statusMessage: String?
     public let onCommit: (CoachWorldIntentID) -> Void
     public let onContinue: () -> Void
@@ -30,6 +39,7 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
     public init(
         model: CollegeOffseasonReadModel,
         title: String = "COLLEGE OFFSEASON",
+        canonicalID: Int = 61,
         statusMessage: String? = nil,
         onCommit: @escaping (CoachWorldIntentID) -> Void,
         onContinue: @escaping () -> Void,
@@ -37,6 +47,7 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
     ) {
         self.model = model
         self.title = title
+        self.canonicalID = canonicalID
         self.statusMessage = statusMessage
         self.onCommit = onCommit
         self.onContinue = onContinue
@@ -64,6 +75,7 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
             )
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: canonicalID) }
     }
 
     private var scrollContent: some View {

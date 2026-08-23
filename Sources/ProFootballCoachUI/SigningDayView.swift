@@ -40,6 +40,10 @@ public struct SigningDayView: View, CoachWorldChromedSurface {
                 CollegeOffseasonView(
                     model: model,
                     title: "SIGNING DAY",
+                    // 29, not the delegate's default 61. Signing Day is a canonical destination
+                    // that happens to delegate its open phase, not an alias of College Offseason,
+                    // and a screen carries exactly one canonical identity.
+                    canonicalID: 29,
                     statusMessage: statusMessage,
                     onCommit: onCommit,
                     onContinue: onContinue,
@@ -58,6 +62,10 @@ public struct SigningDayView: View, CoachWorldChromedSurface {
                         palette: palette
                     )
                 }
+                // Stamped on the closed branch too. A destination that says it is closed is still
+                // that destination; leaving the stamp to the open branch alone would make the
+                // screen unenumerable in exactly the phase the honest empty state exists for.
+                .background(alignment: .topLeading) { CanonicalScreenStamp(id: 29) }
             }
         }
         .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)

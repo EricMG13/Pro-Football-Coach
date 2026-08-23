@@ -47,6 +47,7 @@ public struct ShortlistView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 26) }
     }
 
     private var scrollContent: some View {
