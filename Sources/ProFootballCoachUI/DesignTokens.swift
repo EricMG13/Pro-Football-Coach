@@ -97,21 +97,54 @@ public enum CoachWorldTokens {
         // requiring an exemption on the file that also holds every other view's numbers.
     }
 
-    /// The 40-99 rating scale's three bands. Always a *second* reading of a printed figure — the
-    /// colour never replaces the number, per `04` section 4.4.
+    /// The 40-99 rating scale's five bands (`04` section 6.4, amended 2026-08-22). Always a
+    /// *second* reading of a printed figure — the colour never replaces the number, per `04`
+    /// section 4.4.
+    ///
+    /// Five bands diverging around a neutral centre, not the three-band red/amber/green they
+    /// replaced, under which an average starter read as a caution. The middle band is
+    /// `content.secondary` — deliberately neutral, and canon says of it "never amber".
+    ///
+    /// This is the one definition of the banding: every surface that colours a rating resolves
+    /// through `color(for:palette:)` rather than carrying a switch of its own — nine files as this
+    /// is written, including `CoachWorldRatingRing`, which `RosterView` draws — and that is what
+    /// makes them agree by construction rather than by three people keeping three copies in sync.
+    /// Do not re-derive a band anywhere else; call this. `DesignContractTests` reads section 6.4's
+    /// table and checks every rating from `scaleFloor` to `scaleCeiling` against it.
     public enum Heat {
         public static let scaleFloor = 40
         public static let scaleCeiling = 99
-        public static let strongFloor = 85
-        /// `04` section 6.4: "red below 70, amber from 70-84 and green from 85 upward."
+        /// Well below · 40-59 · `state.negative`.
+        public static let cautionFloor = 60
+        /// Below · 60-69 · `state.warning`, which left the yellow-orange band in section 6.1a(ii)
+        /// so that a caution can never be mistaken for the committing action's gold.
         public static let steadyFloor = 70
+        /// Average · 70-79 · `content.secondary`. The band the amendment exists for.
+        public static let aboveFloor = 80
+        /// Well above · 85-99 · `state.positive`.
+        public static let strongFloor = 85
+
+        /// Above · 80-84 · "`state.positive`, lightened" — section 6.4's own words, and derived
+        /// rather than given a hex of its own so that re-valuing the positive role moves this band
+        /// with it. `#81DDAE` as it resolves today: 12.16 on `world.page`, 107.2 degrees off gold.
+        public static func lightenedPositive(_ palette: Palette) -> ColorValue {
+            palette.statePositive.mixed(with: palette.contentPrimary, amount: 0.30)
+        }
+
+        /// The band value for a rating, as a `ColorValue` so a test can compare it without going
+        /// through `Color`, which is opaque.
+        public static func value(for rating: Int, palette: Palette) -> ColorValue {
+            switch rating {
+            case strongFloor...: palette.statePositive
+            case aboveFloor..<strongFloor: lightenedPositive(palette)
+            case steadyFloor..<aboveFloor: palette.contentSecondary
+            case cautionFloor..<steadyFloor: palette.stateWarning
+            default: palette.stateNegative
+            }
+        }
 
         public static func color(for rating: Int, palette: Palette) -> Color {
-            switch rating {
-            case strongFloor...: palette.statePositive.color
-            case steadyFloor..<strongFloor: palette.stateWarning.color
-            default: palette.stateNegative.color
-            }
+            value(for: rating, palette: palette).color
         }
     }
 
@@ -275,21 +308,53 @@ public enum CoachWorldTokens {
         public let fieldLive: ColorValue
     }
 
+    /// Every value `04` section 6.1a's table states, each declared exactly once.
+    ///
+    /// Section 6.1a(ii) (2026-08-22) requires that where two roles share a value they are
+    /// **declared aliases, not repeated literals**, "so a future divergence is a deliberate edit
+    /// and not an accident". Repeating `0xFF3B54` under both `stateNegative` and
+    /// `actionDestructive` is how a palette drifts silently: someone re-values one of them, the
+    /// other keeps the old number, and nothing anywhere says the two were ever meant to agree.
+    ///
+    /// So each shared value gets one name here, named for what it *is* rather than for whichever
+    /// role reached it first — no role owns a colour another role also uses. `DesignContractTests`
+    /// asserts no colour literal appears twice in this file, which is what keeps this true by
+    /// construction rather than by memory. Diverging a pair is then exactly what canon wants it to
+    /// be: deleting an alias and writing a new value, with a canon row to match.
+    private enum FloodlitValue {
+        /// `content.primary`, `field.line`.
+        static let ink = ColorValue(hex: 0xF6FAFF)
+        /// `content.secondary`, `action.secondary`.
+        static let inkMuted = ColorValue(hex: 0xA9BACE)
+        /// `state.negative`, `action.destructive` — the pair section 6.1a(ii) names as the example.
+        static let alarm = ColorValue(hex: 0xFF3B54)
+        /// `state.positive`, `state.live`, `field.live`.
+        ///
+        /// `state.live` shipped `#37E08A` until 2026-08-23, 1.1 degrees from `state.positive` —
+        /// section 6.1a(ii)'s fourth collision, and indistinguishable at any size. It is now the
+        /// declared alias that section permits. This also settles an incoherence the collision
+        /// table did not reach: `field.live` already carried `#4FD08C` while `state.live` carried
+        /// `#37E08A`, so the two roles that both mean "in play" disagreed with each other.
+        static let go = ColorValue(hex: 0x4FD08C)
+        /// `state.info`, `pro.identity`.
+        static let sky = ColorValue(hex: 0x6FA8DC)
+    }
+
     /// The single Floodlit palette (`04` section 6.1a, 2026-08-16). Dark-only: there is no
     /// production light palette and no user-facing appearance switch. Role names are unchanged from
     /// the retired v3 palette; only the hex each role resolves to changed, so every call site that
     /// read `.dark` keeps compiling and keeps its meaning.
     public static let dark = Palette(
         page: .init(hex: 0x060A12), work: .init(hex: 0x100E16), raised: .init(hex: 0x12203A),
-        contentPrimary: .init(hex: 0xF6FAFF), contentSecondary: .init(hex: 0xA9BACE),
+        contentPrimary: FloodlitValue.ink, contentSecondary: FloodlitValue.inkMuted,
         contentQuiet: .init(hex: 0x7A8A9E), actionPrimary: .init(hex: 0xFFC53D),
-        actionSecondary: .init(hex: 0xA9BACE),
-        actionDestructive: .init(hex: 0xFF3B54), stateLive: .init(hex: 0x37E08A),
-        statePositive: .init(hex: 0x4FD08C), stateWarning: .init(hex: 0xFFB03A),
-        stateNegative: .init(hex: 0xFF3B54), stateInfo: .init(hex: 0x6FA8DC),
-        collegeIdentity: .init(hex: 0xB07BD6), proIdentity: .init(hex: 0x6FA8DC),
-        fieldTurf: .init(hex: 0x072616), fieldLine: .init(hex: 0xF6FAFF),
-        fieldAnnotation: .init(hex: 0xFFCE6A), fieldLive: .init(hex: 0x4FD08C)
+        actionSecondary: FloodlitValue.inkMuted,
+        actionDestructive: FloodlitValue.alarm, stateLive: FloodlitValue.go,
+        statePositive: FloodlitValue.go, stateWarning: .init(hex: 0xC9704A),
+        stateNegative: FloodlitValue.alarm, stateInfo: FloodlitValue.sky,
+        collegeIdentity: .init(hex: 0xB07BD6), proIdentity: FloodlitValue.sky,
+        fieldTurf: .init(hex: 0x072616), fieldLine: FloodlitValue.ink,
+        fieldAnnotation: .init(hex: 0xFFCE6A), fieldLive: FloodlitValue.go
     )
 
     /// The Floodlit ramp the 2026-08-18 design handoff ships, over and above `Palette`'s roles
