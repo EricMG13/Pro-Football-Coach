@@ -3476,6 +3476,33 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 > `05`'s G2 gate and P11 entry conditions; `06`'s orientation row; `CLAUDE.md`'s orientation line.
 > The drift worth recording here is what the sweep found that a documentation pass may not fix.
 >
+> **0. `--design-contracts` is red at `origin/main`, and the reason is a canon amendment the code
+> never followed.** Measured on this branch, which does not modify `04`: `50 tests, 853 checks`,
+> one failing check — `"Heat.color's banding matches 04 section 6.4's stated heat scale, across the
+> whole range"`, failing its parser guard with *"could not parse 04 section 6.4's heat-scale
+> sentence — the parser, not the tokens, is what failed"*.
+>
+> `04` §6.4 was **amended 2026-08-22** to a five-band diverging scale, whose whole point is the
+> middle row: `70-79` is `content.secondary`, *"neutral, never amber"*, because under the three-band
+> scale it replaced an average starter read as a caution. `CoachWorldTokens.Heat` at `origin/main`
+> is still three-band — `steadyFloor = 70`, `strongFloor = 85`, so `70...84` draws
+> `state.warning`. The code draws exactly the defect the amendment was written to remove.
+>
+> **The second-order failure is worse than the first.** The sync test parses canon for the literal
+> phrases `red below (\d+)` and `green from (\d+) upward`. The amended table contains neither, so
+> the guard fires and the test returns before asserting anything at all about the tokens. It has not
+> been checking `Heat.color` against canon since the amendment landed — it has been reporting that
+> it *cannot* check, which is a red gate that proves nothing rather than a green one that lies. The
+> test's own message says so, and that candour is the only reason this was diagnosable.
+>
+> Not fixed here, for two reasons: the repair is a token and banding change under `Sources/`, which
+> is outside a documentation pass and needs a release build to verify; and it is already in flight
+> on the unmerged branch `Codex/omar` (`06933386` "Align heat bands with five-level design scale",
+> `f5be0aaa` "docs(04): give 6.1a the amended warning hex and name heat.above"). Duplicating it here
+> would only create a conflict with that work. **Whoever lands it should fix the parser too** — a
+> five-band table needs four floors read out of canon, not two, and leaving the parser matching
+> three-band prose would let the guard keep swallowing the assertion.
+>
 > **1. `SmallestDeviceLayoutTest` does not exist, and four canon documents name it.** `04`, `05`
 > §P11, `06` and `OPEN-DECISIONS` all cite it as the two-tier assertion that every registry surface
 > is un-clipped and reachable at the 844 x 390 install floor and at full budget at the 852 x 393
@@ -3505,8 +3532,12 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 > `FootballSimCore`, `ProFootballCoachUI` and `CoachWorldApp`. A one-line comment fix, left alone
 > only because this pass touched no compiled file.
 >
-> **Verification.** Documentation-only changes; no file under `Sources/` or `Tests/` was touched, so
-> no behaviour can have changed. See the pull request for which lanes ran and which did not.
+> **Verification.** `./scripts/verify.sh --lane accessibility` ran to completion on this branch:
+> **50 tests, 853 checks**, one failed check — item 0 above, pre-existing at `origin/main` and not
+> caused by this pass. The lane stops at that failure, so `--reduce-motion` and `--screen-read-models`
+> did not run. No other lane was attempted. Documentation-only changes; no file under `Sources/` or
+> `Tests/` was touched, and `04` — the one canon file the design-contract suite reads at run time —
+> is byte-identical to `origin/main` here, so no behaviour can have changed.
 
 ---
 
