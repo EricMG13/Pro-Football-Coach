@@ -56,11 +56,30 @@ content column from it.
 | `Stage.contentLeading` | `115` | `63` |
 | `Stage.contentWidth` | `844 - 115 - 20` = **709** | `844 - 63 - 20` = **761** |
 | `Stage.contentTop` | `46` | `54` |
+| `Stage.headerTop` | `3` | `12` — the top inset |
+| `Stage.headerHeight` | *(two rows: 22 + 16)* | `34` — one row |
 | `Stage.railFreeLeading` | `63` | **REMOVE** — every surface is now rail-free |
+| `Stage.headerPrimaryRow` `headerSecondaryRow` | 22 / 16 | **REMOVE** — the header is one row |
 
-Confirmed from two directions: the repository's own all-screen reconciliation states *"top chrome
-starts at x = 63, y = 12, spans 761 points, and is approximately 34 points high; content begins at
-y = 54"*, derived independently and identical. `63 + 761 + 20 = 844` exactly.
+Derive rather than restate, exactly as the reconciliation plan does:
+
+```swift
+contentLeading = Frame.leadingInset                 // 63
+headerTop      = Frame.topInset                     // 12
+headerHeight   = 34
+contentTop     = headerTop + headerHeight + 8       // 54
+contentWidth   = Frame.floorWidth - contentLeading - Frame.gutter   // 761
+```
+
+`63 + 761 + 20 = 844` exactly. **Four of those five matched Press Box and one did not** — Press Box
+had `--header-top: 3`, which put the band *above* the safe top inset its own file declares at 12.
+The 17 pt gap that left below the band looked deliberate enough that nothing flagged it. Press Box
+is corrected; the reconciliation's derivation was right and this is the one place it corrected the
+standard rather than the other way round.
+
+**Add the retired-symbol scan**, which is the part that keeps this fixed: a source test asserting no
+production file contains `FloodlitIconRail`, `RailEntry` or `showsIconRail`. Deleting a symbol is
+not the same as preventing its return.
 
 This is the highest-leverage change in the document: it is +4.6% content area on all 47 canonical
 destinations, and it is a precondition for every plate width in Part B.
@@ -125,6 +144,59 @@ Also missing, and each currently has no home:
   two of them. Only `contentPrimary` and `contentSecondary` are legal on a banner.
 - `maskTrailing` — the fade on a strip with more content than room
 
+### A4b · The type scale — a conflict that needs an owner call
+
+**ASK.** The reconciliation plan sets a single global `DisplaySize` and halves the display end.
+
+| | hero | name | score | situation | screen | title | lead | row |
+|---|---|---|---|---|---|---|---|---|
+| **Reconciled** | 32 | 26 | 32 | 26 | 16 | 16 | 15 | 13 |
+| **Press Box** | 66 | 60 | 54 | 52 | 25 | 20 | 17 | 15 |
+
+The small end agrees exactly — `panel` 16, `action` 14, `actionSmall` 12, `pill` 10.5, `flag` 9 are
+identical in both. The disagreement is entirely in display type.
+
+**Neither is simply wrong, and that is the finding.** A flat `DisplaySize` enum **cannot express a
+per-register budget**. 32 is right for a Desk surface and would be absurd on a ceremony; 66 is right
+for a ceremony and would be absurd on a roster. The reconciled scale is a single value serving 47
+management screens, and it flattens Broadcast into Desk — which is the "product that is neither"
+the register model exists to prevent.
+
+It also collides with the reconciliation's own Match Day amendment, which says the reference wins
+there and reproduces its typography as drawn — while `score: 32` says otherwise.
+
+**Recommended:** make the scale register-aware rather than re-valued. Desk and Dossier take the
+reconciled values; Broadcast keeps the large end, and the ceremony budget (five a season) is what
+licenses it. **Do not resolve this by picking one number.**
+
+### A4c · Team-aware primary actions — a second conflict
+
+**ASK.** The plan makes the primary action take the controlled team's colour when
+`CoachWorldTeamIdentity` resolves 4.5:1 text and 3:1 non-text, falling back to neutral/gold
+otherwise. Press Box says the commit is **always gold**.
+
+Contrast is not the only risk, and the resolver only guards that one. **The real hazard is semantic
+collision:** a club whose primary is green gives every commit the colour of a positive state; one
+whose primary is amber gives it the colour of a caution. Press Box already measured this class —
+the placeholder club's secondary `#F2D864` is gold-adjacent, which is why *position* is marked in
+ink rather than in the club accent.
+
+Gold means one thing in this system: *this moves the game forward*. A team-coloured commit means a
+different thing per save.
+
+**Recommended:** keep gold for the commit; let team colour own identity and selection, which is
+what it already does in the band. Owner call.
+
+### A4d · Team identity injected once at the stage — adopt this
+
+**ADD, and it is better than what Press Box has.** The plan resolves `CoachWorldTeamIdentity` once
+at `CoachWorldFloodlitStage`, only when `chrome?.club` exists, and injects it through the
+environment — so **teamless entry screens retain nil automatically** rather than each surface
+remembering to opt out.
+
+Press Box has `--club-*` tokens and no equivalent story for a surface with no club. Adopt the
+pattern: one resolution point, contrast-checked, with nil as the honest teamless case.
+
 ### A5 · Accessibility — `prefers-contrast` has no branch
 
 **ADD.** Reduce Motion, Reduce Transparency and forced colours are handled. **Increase Contrast is
@@ -157,6 +229,24 @@ mid-glyph. This requires a `contextShort` alongside `context` on the chrome read
 The reference register specifies the opposite priority and collapses the deadline to `W…`, then
 abandons that itself: *"a date cut to one letter is not a better answer than a shorter date."* The
 standard overrides it (`AUTHORITY.md`).
+
+### A6b · Chrome contracts that are testable — keep them
+
+**CHANGE.** The plan fixes three strings that a UI test asserts, and they are worth preserving
+exactly because they make the chrome checkable rather than merely drawn:
+
+- accessibility identifier **`top-navigator`** on the band
+- the family button's label **`"Open all tasks, <family>"`**
+- the absence of any element labelled **`Sections`** — the rail check, asserted by absence
+
+Also from the plan and absent from Press Box: **`accessibilitySortPriority`** — the header at 100,
+the content at 80, so the band is read before the surface. Press Box specifies reading order
+nowhere.
+
+**One difference to settle:** the plan's family button opens the **registry overlay** (all tasks);
+Press Box's opens a **family switcher** (five families, each with its task count, two taps to any
+task). Press Box's is the standard, and the accessibility label should follow it rather than the
+reverse — a button labelled "Open all tasks" that opens five families is a lie to a screen reader.
 
 ### A7 · Gold is counted, per register
 
@@ -225,6 +315,25 @@ shipped controls no read model supports.
 | 6 | Settings & accessibility | `AppearanceDemo` — mostly readouts; the OS owns text size, transparency, motion, contrast |
 | 54 | Stakeholders | `SeasonExpectationsDemo` — **partial**: draws the board's demands, not the wider cast |
 | 1 | Title / Continue | `ContinuityDemo` — **partial**: draws the save list, not the entry ceremony |
+
+### B0 · Three surfaces carry no band at all
+
+**CHANGE.** The proof matrix asserts the top-navigator on every canonical ID **except 1, 2 and 6**:
+
+```swift
+if ![1, 2, 6].contains(id) {
+    XCTAssertTrue(app.otherElements["top-navigator"].exists, "screen \(id)")
+}
+```
+
+Title / Continue (1), New career & coach identity (2) and Settings & accessibility (6) are
+pre-career or teamless: there is no club, no record, no family and no opponent to put in a band.
+
+**Press Box draws a band on two of the three.** `ContinuityDemo` (1) and `AppearanceDemo` (6) both
+carry one, inventing a club and a week for surfaces that have neither. Both need redrawing without
+it — which also removes the `back` control, since there is nowhere up from a root.
+
+The proof matrix also confirms the canonical count independently: it lists exactly 47 IDs.
 
 ### B2-C · Corrections to surfaces already drawn
 
