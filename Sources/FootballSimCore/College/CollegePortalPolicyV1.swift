@@ -98,12 +98,14 @@ public enum CollegePortalPolicyV1 {
     static let springCalendarWeek = 1
     static let maximumGamesPerSeason = 16
     static let rosterLimit = 105
-    static let minimumPlayableRosterByPosition: [Position: Int] = [
-        .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
-        .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
-        .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 2,
-        .cornerback: 3, .safety: 2, .kicker: 1, .punter: 1,
-    ]
+
+    // No minimum-playable-roster table here on purpose, and none is coming back. Coverage deficits
+    // are a live reading, so they take `SharedRules.minimumPlayableRosterByPosition`; the copy that
+    // stood here drifted below it at two positions and nothing compared the two. Nothing rederives
+    // a deficit from a table either -- every reader of an archived capacity uses the deficits
+    // stored on the record -- so freezing one buys no decode stability. See
+    // `CollegePortalCapacitySnapshot.isValid`.
+
     static let scholarshipLimit = 85
     static let eligibilityClockYears = 5
     static let maximumNILBudget = 9_900

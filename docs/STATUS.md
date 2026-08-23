@@ -152,6 +152,59 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-23 — live portal capacity reads the active coverage floor, and the frozen copy of it
+> is gone.** `CollegePortalMatchingV1` measured every destination's `minimumCoverageDeficits`
+> against `CollegePortalPolicyV1`'s own frozen `minimumPlayableRosterByPosition` rather than
+> `SharedRules`'. The two had diverged in one direction only: the frozen table said
+> `.runningBack: 1` against a live floor of 2 (`b6f3da5`, 2026-08-22) and `.linebacker: 2` against
+> a live floor of 3 (2026-08-20), so live matching under-counted exactly the shortages that field
+> exists to prioritise, at the two positions most recently corrected. The subsystem was already
+> split: `CollegeCycleSystem` fills walk-ons to the live floor and `PortalSchedulerTests` asserts
+> post-transition rosters against it, while matching alone read the frozen copy.
+>
+> The frozen policy's stated reason -- an archived schema-six explanation stays decodable through a
+> balance pass -- is real, but it does not reach a live computation, and nothing rederives a
+> deficit from a table: every `acceptsPortalPositions` caller, in `WorldIntegrity` and in
+> `CollegePortalState` alike, reads the `fixedCapacity` stored on the archived record. So the table
+> is deleted rather than kept in sync, which makes the divergence unrepresentable instead of
+> merely asserted. `CollegePortalCapacitySnapshot.isValid` loses its per-position ceiling with it:
+> a ceiling from any one policy version is a decode hazard rather than a check -- a frozen ceiling
+> rejects a snapshot archived under a higher floor, the live ceiling rejects one archived under a
+> lower floor -- and the surviving `sum(deficits) <= rosterOpenings` bound compares the snapshot
+> against itself, so it is version-independent. Decode gets strictly more permissive; no save that
+> loaded before stops loading.
+>
+> **Verified on this tree, release mode.** `--portal-matching` **18 tests / 141 checks**, including
+> a new regression test that reads the deficit back off a real offer and compares it to
+> `SharedRules` rather than to a literal. `--portal-transaction` **17 / 133**.
+> `--architecture-only` **29 / 245**, so every pinned cross-process fingerprint still
+> holds and none needed re-deriving. `--m1-soak`
+> **20 seasons in 4,069.6 s, 1 test / 52 checks, all passed**, with per-season `WorldIntegrity`
+> clean and save checkpoints 5.58 / 8.25 / 9.76 MB -- the run that would trip
+> `CollegePortalCapacitySnapshot`'s remaining precondition if raised floors ever pushed a
+> programme's deficits past its roster openings.
+>
+> **The fix is currently behaviour-neutral on the covered seeds, and that is measured, not
+> assumed.** A detached worktree built at `2de6268` produces byte-identical portal characterization
+> (`entrantWindows=431 retained=99 transferred=224 returned=108 transferNILTotal=6400`), and all
+> 27 per-season lifecycle distribution lines over a ten-season run -- churn, rating spread, injured
+> share, age curve, discipline -- compare byte-identical. No determinism pin moved and none
+> needed re-pinning: at portal time these programmes are not below the floor at running back or
+> linebacker, so the corrected arithmetic returns the same answer. What changed is that it will
+> keep returning the right one when a programme *is* short.
+>
+> **Four failures on this tree are pre-existing and were confirmed against that same `2de6268`
+> baseline binary, failing identically there:** `--portal-scheduler`'s two scholarship checks
+> (`PortalSchedulerTests.swift:98` and `:162`), `--career-arc`'s promotion career-record check, and
+> `--tactical-state`'s weekly-scheduler summary. **And the no-flag lane does not finish at all**:
+> `--portal-contracts` traps with exit 133, zero bytes on stdout and stderr, and no summary, at
+> `PortalContractTests.swift:869` ("policy-v1 admission components rederive from compact immutable
+> evidence") on the baseline binary as well as this one. Everything registered after
+> `runPortalContractTests()` in `main.swift` -- the ledger batch, jersey numbers, depth charts,
+> read models, the logo families, cap compliance, season rollover, staff pruning and every M8
+> design and accessibility gate -- therefore did not run in the full lane on either tree, and a
+> wrapper reads that aborted run as exit 0.
+
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
 > `GameState.bootstrap(seed: 20_260_812)` generates: **94 of the 166 team identifiers moved**, and

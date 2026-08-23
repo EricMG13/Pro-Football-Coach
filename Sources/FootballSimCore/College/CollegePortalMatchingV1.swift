@@ -274,9 +274,15 @@ extension CollegePortalPolicyV1 {
                     0,
                     scholarshipLimit - recruiting.scholarshipPlayerIDs.count
                 ),
+                // The active floor, not a frozen copy of it. A capacity snapshot is a reading of
+                // a roster as it stands now, so the shortage the live rules call a shortage is the
+                // one matching has to see. `CollegePortalPolicyV1` kept its own table until
+                // 2026-08-23 and it had fallen behind at `.runningBack` and `.linebacker`, so live
+                // matching under-counted exactly the shortages this field exists to prioritise.
+                // The frozen policy's reason -- an archived schema-six explanation stays decodable
+                // through a balance pass -- does not reach a live computation.
                 minimumCoverageDeficits: Dictionary(uniqueKeysWithValues:
-                    CollegePortalPolicyV1.minimumPlayableRosterByPosition.compactMap {
-                        position, minimum in
+                    SharedRules.minimumPlayableRosterByPosition.compactMap { position, minimum in
                         let deficit = max(0, minimum - (positionCounts[position] ?? 0))
                         return deficit > 0 ? (position, deficit) : nil
                     }

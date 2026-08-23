@@ -131,18 +131,25 @@ private func portalMatchingFixture(
         }
         if let roomCount = destinationQuarterbackRooms?[index],
            let destination = state.programmes[destinationID] {
-            var counts = Dictionary(grouping: destination.rosterIDs.compactMap {
-                state.players[$0]?.position
-            }, by: { $0 }).mapValues(\.count)
+            // The room empties to running back and is then filled back up, so it holds exactly
+            // `roomCount` whatever the generated roster started with. `counts` has to describe the
+            // positions this block will leave behind -- quarterbacks it is about to take back
+            // included -- or it reads those bodies as running backs as well as quarterbacks and
+            // lets the fill strand a position below `SharedRules.minimumPlayableRosterByPosition`.
+            // It did: a ten-deep room left one running back against a floor of two, and the
+            // destination's capacity carried a coverage deficit no test meant to put there.
             let existingQuarterbacks = destination.rosterIDs.filter {
                 state.players[$0]?.position == .quarterback
             }
             for playerID in existingQuarterbacks {
                 _ = state.players.update(playerID) { $0.position = .runningBack }
-                counts[.quarterback, default: 0] -= 1
-                counts[.runningBack, default: 0] += 1
             }
             var selected = Array(existingQuarterbacks.prefix(roomCount))
+            var counts = Dictionary(grouping: destination.rosterIDs.compactMap { playerID in
+                selected.contains(playerID)
+                    ? Position.quarterback
+                    : state.players[playerID]?.position
+            }, by: { $0 }).mapValues(\.count)
             if selected.count < roomCount {
                 for playerID in destination.rosterIDs where selected.count < roomCount {
                     guard !selected.contains(playerID),
@@ -284,6 +291,45 @@ func runPortalMatchingTests() {
             expect(Position.allCases.allSatisfy {
                 !CollegePortalPolicyV1.ratedAttributes(for: $0).isEmpty
             })
+        }
+
+        test("capacity deficits are measured against the active coverage floor") {
+            // Regression, 2026-08-23: this read `CollegePortalPolicyV1`'s own frozen copy of the
+            // minimum-playable-roster table, which had fallen to `.runningBack: 1` against a live
+            // floor of 2 and `.linebacker: 2` against a live floor of 3. Live matching therefore
+            // under-counted the shortages the field exists to prioritise. Asserted against
+            // `SharedRules` rather than a literal, so it fails the day the two disagree again
+            // rather than the day someone changes the floor.
+            // The destination empties its running back room by moving those bodies to receiver
+            // rather than off the roster: scholarship rows are keyed to roster membership, and a
+            // snapshot of a roster a player was deleted from is refused before it is built. Three
+            // openings because a capacity snapshot is only valid while its deficits fit inside its
+            // roster openings, and the live floor of 2 is what this test is here to see.
+            var fixture = portalMatchingFixture(destinationOpenings: [3], destinationNIL: [1_000])
+            let destinationID = fixture.destinationProgrammeIDs[0]
+            let runningBackIDs = fixture.state.programmes[destinationID]!.rosterIDs.filter {
+                fixture.state.players[$0]?.position == .runningBack
+            }
+            expect(!runningBackIDs.isEmpty)
+            for playerID in runningBackIDs {
+                _ = fixture.state.players.update(playerID) { $0.position = .wideReceiver }
+            }
+
+            let result = CollegePortalPolicyV1.match(using:
+                CollegePortalPolicyV1.makeMarketSnapshot(
+                    targetSeason: 1,
+                    window: .postseason,
+                    in: fixture.state
+                )!
+            )!
+            let offers = portalMatchingOffers(result, destinationProgrammeID: destinationID)
+            expect(!offers.isEmpty)
+            for (_, offer) in offers {
+                expectEqual(
+                    offer.fixedCapacity.minimumCoverageDeficits[.runningBack],
+                    SharedRules.minimumPlayableRosterByPosition[.runningBack]
+                )
+            }
         }
 
         test("destination fit is exactly rederived from frozen evidence") {

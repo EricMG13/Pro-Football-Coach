@@ -942,11 +942,14 @@ public struct CollegePortalCapacitySnapshot: Codable, Sendable, Equatable {
         window.expectedCalendar(targetSeason: targetSeason) == capturedAt
             && (0...CollegePortalPolicyV1.rosterLimit).contains(rosterOpenings)
             && (0...CollegePortalPolicyV1.scholarshipLimit).contains(scholarshipOpenings)
-            && minimumCoverageDeficits.allSatisfy { position, deficit in
-                deficit > 0
-                    && deficit <= (CollegePortalPolicyV1
-                        .minimumPlayableRosterByPosition[position] ?? 0)
-            }
+            // Positive entries only, and no per-position ceiling: a deficit is measured against
+            // whatever the active coverage floor was when the snapshot was taken, so any ceiling
+            // named here is a decode hazard rather than a check. A frozen ceiling rejects a
+            // snapshot archived under a higher floor; the live ceiling rejects one archived under a
+            // lower floor -- and rejecting an archived snapshot is the undecodable career record
+            // the frozen policy exists to prevent. The sum bound below carries the real check and
+            // is version-independent, since it compares the snapshot against itself.
+            && minimumCoverageDeficits.allSatisfy { $0.value > 0 }
             && minimumCoverageDeficits.values.reduce(0, +) <= rosterOpenings
             && (0...CollegePortalPolicyV1.maximumNILBudget).contains(nilRemaining)
     }
