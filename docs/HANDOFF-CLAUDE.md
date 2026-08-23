@@ -49,12 +49,22 @@ share reads 0.228, 0.196, 0.134, **0.067**, 0.161 against 0.228, 0.196, 0.146, 0
 Every figure fell, which is the expected direction: the extra picks are all age-22 intake. It rules
 the draft out as the band's cause and points squarely at the two items below.
 
-**Open, and it is what keeps the league short.** Free agency signs at most one player per club per
-week and stops for a club at `activeRosterLimit - draftRounds` = 46, which is about two signings a
-club a season against seven to eleven expiries, so 1,696 is never regained. Alongside it, `poolLeft`
-reaches exactly `ProMarketState.maximumFreeAgentIDs` (512) by season 3 and the bound then refuses
-every further release. Both sit inside the professional turnover FSC-013 defers and both move roster
-composition league-wide. Start here rather than at the band.
+**Free agency's throughput is not a defect (2026-08-23).** With the draft finishing, the boundary
+count is exactly `1,696 - expiries` every season and a week-12 sample reads 1,696 in every season.
+The league is fully seated all year and short only in the instant between expiry and the market
+reopening. An earlier revision of this file said otherwise; with the draft stuck that was true.
+
+**The band is not a sampling artefact — tested 2026-08-23, do not retry this.** The league is fully
+seated mid-season (1,696) and short only at the boundary the band samples (1,411…1,496), so the
+age-curve sample was moved in-season and measured. It came back 0.228, 0.228, 0.149, **0.056**,
+0.147 against 0.228, 0.196, 0.134, 0.067, 0.161 at the boundary — season 6 *worse*, because a full roster carries
+the 223 rookies the draft has just seated. Reverted. The model does not retain enough post-decline
+professionals on any sample point.
+
+**The free-agent pool picked its members by coin toss — fixed 2026-08-23.** `openOffseason` capped
+the pool at `maximumFreeAgentIDs` (512) with `sorted { $0.uuidString < ... }.prefix(512)`, so once
+the unattached population passed 512 it kept the same arbitrary slice every season and everyone else
+was unsignable for the rest of the save. Cut by rating now, ties on identifier, same bound.
 
 ---
 
