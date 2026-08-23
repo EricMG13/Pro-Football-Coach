@@ -152,7 +152,7 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
-> **2026-08-23 — the legal sweep never read the shipped world, and now that it does, 61 of the 166
+> **2026-08-23 — the legal sweep never read the shipped world, and now that it does, 155 of the 166
 > canonical teams fail one of the two colour guardrails.** `sweptWorlds` (`LegalTests.swift`) fed
 > both Tier A tests 200 synthetic leagues and never the canonical one:
 > `CanonicalTeamBranding.apply` only fires at `worldSeed = 20_260_812`, so every other seed reaches
@@ -163,28 +163,49 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 >
 > `sweptWorlds` now appends `LeagueGenerator.generate(seed: CanonicalTeamBranding.worldSeed)` as a
 > 201st member, so `Legal: trade dress` reads the actual shipped roster for the first time.
-> `.build/debug/SimTests --legal-only` (30 tests, 193 checks): `Legal: name collision` and
-> `Legal: shipped copy` stay green; `Legal: trade dress` is now red, honestly, on two counts:
+> `Legal: name collision` and `Legal: shipped copy` stay green; `Legal: trade dress` was red on two
+> counts, corrected below after an undercount in the first pass:
 >
-> - **36 of 166 canonical teams (21.7%) carry a primary/secondary pair that exactly matches an
->   entry in `Blocklist.tradeDress`** — `ColourGenerator.collidesWithTradeDress`'s ΔE threshold is
->   25.0 and every one of these 36 is ΔE = 0, a literal hex duplicate, not a near-miss. Examples:
->   `Carlin A&M Founders` and `Nampa Kestrels` both ship `#002244/#69BE28`; `Zumbrota Central
->   Lodestars`, `Middlebury Coastal Goshawks` and `Ketchikan Citadels` all ship `#203731/#FFB612`;
->   `Kanab Tempests`, `Wilber Sharks`, `Cambridge A&M Reapers` and `Sulphur Springs A&M Shrikes` all
->   ship `#00274C/#FFCB05`. The full 36-name list is reproducible from `--legal-only`'s output plus
->   `CanonicalTeamBranding.generated.swift` and `Blocklist.swift`; it is not transcribed here.
-> - **36 of 166 (a different, partly overlapping set — 11 teams sit in both) fail `04` section 2.1's
->   3.0:1 secondary-on-primary legibility floor.** Worst: `Nacogdoches Poly Planters` and
->   `Webster City Coastal Tornadoes`, both `#008E97/#F58220`, at 1.523:1.
-> - **61 distinct teams (36.7% of the roster) fail at least one of the two.**
+> - **148 of 166 canonical teams (89%) collide with `Blocklist.tradeDress` under
+>   `ColourGenerator.collidesWithTradeDress`** — ΔE < 25 in CIE76 Lab against all 71 real pairs, in
+>   both orderings, per `02` section 11.3.5. **A first pass counted only literal hex duplicates
+>   (ΔE = 0) and found 36; that undercounted the actual predicate, which is the near-miss ΔE < 25
+>   standard, not exact equality.** The 200 synthetic leagues never produce a single offender —
+>   `ColourGenerator.next` rejects and retries any colliding pair before returning it — so this is
+>   not chance: the canonical table is hand-authored, was never run through that same filter, and
+>   drew from the same general "bold sports colour" palette real programmes draw from, which lands
+>   near one of 71 real pairs at a very high rate once both colours and both orderings are checked.
+>   Examples: `Carlin A&M Founders` ships `#002244/#69BE28`, an exact copy of a real pair;
+>   `Mesquite Comets` ships `#007BC7/#FFC20E` against a real `#0080C6/#FFC20E`, a near miss under
+>   the same threshold. The full 148-name list is `ownerApprovedTradeDressExceptions` in
+>   `LegalTests.swift`.
+> - **36 of 166 (29 overlapping the 148 above) fail `04` section 2.1's 3.0:1 secondary-on-primary
+>   legibility floor** — this count did not change; it is a plain WCAG contrast check, not a ΔE
+>   match. Worst: `Nacogdoches Poly Planters` and `Webster City Coastal Tornadoes`, both
+>   `#008E97/#F58220`, at 1.523:1.
+> - **155 distinct teams (93.4% of the roster) fail at least one of the two.**
 >
 > This is the guardrail CLAUDE.md calls absolute, failing on the table `STATUS.md` and the owner
 > both treated as approved and shipped. **No colour was changed to produce or investigate this
 > finding** — recolouring an owner-approved identity is a design decision for the owner, per
 > CLAUDE.md's "flag anything borderline for the owner to take to counsel; never resolve it
-> yourself." This is filed as a finding, not fixed, and `Legal: trade dress` is left red rather than
-> excluding the canonical world again to turn it green.
+> yourself."
+>
+> **Owner decision, same day: approved as exceptions, addressed near the end of development.**
+> Beta-level implementation is the priority; these 155 teams' colours are not being chased now.
+> `LegalTests.swift` encodes that as two `Set<UUID>` exception lists — `ownerApprovedTradeDressExceptions`
+> (148) and `ownerApprovedContrastExceptions` (36), 29 overlapping — named by team id and applied
+> only to the canonical world, not a blanket allowance. Both tests still assert the exception count
+> matches the live offender count exactly, so `Legal: trade dress` is green again but not blind: a
+> new violation beyond these 155, or the canonical table changing under an exception that no longer
+> collides, still fails and demands the list be updated deliberately. This is the same idiom as
+> `pendingCanonAmendment` in `DesignContractTests.swift` and the pinned 52-mark count during the
+> logo re-key — an owner-approved gap stays visible and exact rather than silently passing or
+> silently blocking. At this scale the check now exercises the 11 canonical teams outside both
+> lists, plus every synthetic league in full; it is not a strong guarantee about the shipped roster
+> any more, and re-running the canonical colours through `ColourGenerator`'s own avoidance logic is
+> the standing option when the owner wants that guarantee back before release. Verified with
+> `--legal-only`: 30 tests, 195 checks, all green.
 
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
