@@ -4,6 +4,46 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-23, later still — a third pass, on the same branch, found six more scan-root and
+> instrument-status claims the first two did not check.** Method unchanged: extract every backticked
+> type, path and test name from the canon documents and resolve it against the tree rather than
+> against the notes that produced it. `docs/PRE-DEPLOYMENT-CHECKLIST.md` and `docs/PORT-LOG.md` were
+> swept for the first time and are clean — every path resolves, and `PORT-LOG.md`'s references to
+> deleted prior-build files are the intentional historical citations that document owes.
+>
+> - **`04` §6.1's mow-band bullet counted twelve bands; the field draws twenty-four.** Added
+>   2026-08-12, it stated "twelve 8.333% bands... a 10-yard distance gauge." `Turf.mowBands` in
+>   `Sources/ProFootballCoachUI/MatchDayField.swift` is 24, and the drawing function's own comment
+>   calls them "five-yard stripes." There is also no `fieldTurfBand` property on
+>   `DesignTokens.swift`'s palette — the bands paint from private opacity literals (`Turf.mowLight`
+>   0.03, `Turf.mowDark` 0.07), not the named role the row states, so its contrast ratios describe a
+>   token the view does not use. No test checks this claim: `Design token sync` parses hex colours out
+>   of `04` §6.1, not band counts.
+> - **Three source-scan "Root" cells named a hand list of directories where the shipped scan walks a
+>   whole target and exempts one name.** `03` §3.5 and `03b` §1's table both said the ambient-identity
+>   scan covers `Engine/`, `Generation/`, `AI/`, `Abstracted/` — four of `FootballSimCore/`'s
+>   twenty-three directories. `ContractTests.swift` walks the whole of `FootballSimCore/` and exempts
+>   `Model/` by name; its own comment records an adversarial review that named the hand list as
+>   `CLAUDE.md`'s coverage-boundary failure in source, not just in test coverage. `03b`'s design-token
+>   row said `ProFootballCoachUI/`; the scan enumerates every file importing a UI framework, exempting
+>   `CoachWorldMotion.swift` as `04` §6.7's definition site, because the composition layer
+>   (`CoachWorldApp/`) is a second target that draws and a directory name would miss it.
+> - **`05`'s P11a gate list and `04` §6.6 both undercounted what P11a already shipped.** G-07's test
+>   half, G-08 and G-09's orientation half all ship — as "Design token sync", "Symbol register" and
+>   "Orientation policy" in `DesignContractTests.swift` — while P11a still listed all three as still
+>   to be written, and one paragraph of it already said G-09 shipped while the bullet below it said
+>   the opposite. `04` §6.6 called G-08 a `ScreenRegistry.swift` walk; the shipped suite enumerates
+>   every UI-framework importer instead, because a single-directory walk missed the composition layer
+>   the same way the source scans above did. `SmallestDeviceLayoutTest` (G-09's device-floor half)
+>   remains genuinely unwritten in all three sites, and stays reported as owed.
+>
+> Verification: `./scripts/verify.sh --lane accessibility` (Swift 6.3.3, arm64-apple-macosx26.0).
+> Build 374.49s. `--design-contracts` completed at its TestKit summary line, `50 tests, 853 checks`:
+> 11 suites green, 1 pre-existing failure unrelated to this pass's edits (`Design token sync` /
+> `04` §6.4's heat-scale sentence, already recorded above as canon ahead of code). The lane then
+> aborted before `--reduce-motion` and `--screen-read-models` under the same `set -euo pipefail` gap
+> the second pass named — neither ran, and neither is claimed. No other lane was run.
+
 > **2026-08-23, later — a second documentation pass swept the canon documents the first one did not
 > touch, and found five more falsifier instruments that do not exist.** `docs/OPEN-DECISIONS.md`,
 > `docs/02-GAME-DESIGN.md`, `docs/03-MATCH-ENGINE.md`, `docs/04b-AUDIT-RUBRIC.md`, `PRODUCT.md` and
