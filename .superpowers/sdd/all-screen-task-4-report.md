@@ -862,3 +862,34 @@ CONCERNS at the time of review, on the one Saboteur warning; that is fixed, so t
 at NOTE-only from these three personas. A fresh reviewer is still required, and the package is
 ready.
 
+## The touch floor, automated (2026-08-23)
+
+One row of the owner's manual matrix is now a gate rather than a hand check, and it found three
+real defects the moment it ran.
+
+`CLAUDE.md` states the bar: *"The 44 x 44 pt touch floor is HIG-verified (Apple's stated minimum is
+28 x 28 pt; this contract keeps the stricter 44 pt)."* Nothing asserted it. `testEveryControlMeetsTheTouchFloorAt{Default,AX5}` now walks **every button screens 8-13 actually expose** -- enumerated
+from the screen, not from a list someone maintained -- and checks both dimensions at whichever
+content size the harness has set.
+
+Found, all pre-existing, all on the Inbox:
+
+| Control | Measured | Cause |
+|---|---|---|
+| "File it" | 27.3 x 14.3 | `frame(minWidth:minHeight:)` applied to the `Button` rather than inside its label, so the box grew and the target did not |
+| "Open the hub" | 17.0 tall | `frame(minHeight:)` inside the label but no `contentShape`, so the hit and accessibility region stayed the glyph bounds |
+| "Commit decision" | 43.99999999999997 | not a defect -- floating-point layout arithmetic. The assertion rounds, because failing a genuine 44 would be the test being wrong |
+
+Both real ones now size inside the label and carry `.contentShape(Rectangle())`. Green at default
+and at genuine AX5, where labels grow and targets are likeliest to fall under.
+
+This is the general lesson worth keeping: in SwiftUI a frame modifier on a `Button`, or a frame
+without a content shape, moves the layout box and leaves the tap target where it was. Sizing is not
+targeting.
+
+### Suite after the touch-floor gates
+
+23 declared, 23 run, 0 failures, passes disjoint. Pass A 15 at `large` (382.5s), pass B eight at
+genuine AX5 (335.5s). design 58/857, core 238/3,243, screen read models 69/9,704,
+`git diff --check` clean, content size restored to `large`.
+
