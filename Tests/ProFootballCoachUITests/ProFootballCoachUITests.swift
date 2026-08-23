@@ -93,7 +93,7 @@ final class ProFootballCoachUITests: XCTestCase {
                 app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
                 app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(screenID)"
             }
-            app.launch()
+            launch(app, ax5: usesAX5)
 
             if screenID == 15 || screenID == 47 {
                 let title = screenID == 15 ? "Aftermath" : "Game Detail / Box Score"
@@ -140,23 +140,28 @@ final class ProFootballCoachUITests: XCTestCase {
     }
 
     func testCoachingHQSelectsBeforeExplicitCommitAtDefault() {
-        assertCoachingHQSelectsBeforeExplicitCommit()
+        assertCoachingHQSelectsBeforeExplicitCommit(usesAX5: false)
     }
 
     func testCoachingHQSelectsBeforeExplicitCommitAtAX5() {
-        assertCoachingHQSelectsBeforeExplicitCommit()
+        assertCoachingHQSelectsBeforeExplicitCommit(usesAX5: true)
     }
 
-    private func assertCoachingHQSelectsBeforeExplicitCommit() {
+    private func assertCoachingHQSelectsBeforeExplicitCommit(usesAX5: Bool) {
         let app = XCUIApplication()
         app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
         app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "8"
-        app.launch()
+        launch(app, ax5: usesAX5)
 
         let choice = app.buttons
             .matching(NSPredicate(format: "identifier BEGINSWITH %@", "hq-choice-"))
             .firstMatch
-        let commit = app.buttons["hq-commit-decision"]
+        // HQ carries two committing actions -- the decision's and "Advance" -- so this names the
+        // one it means. That HQ has two at all is against `04` section 6.5's one per screen, and is
+        // recorded in the Task 4 report rather than resolved here.
+        let commit = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH[c] %@", "Commit"))
+            .firstMatch
         XCTAssertTrue(choice.waitForExistence(timeout: 20))
         XCTAssertTrue(commit.exists)
         XCTAssertFalse(commit.isEnabled)
@@ -178,27 +183,27 @@ final class ProFootballCoachUITests: XCTestCase {
     }
 
     func testWeeklyPlanReceiptDoesNotCoverChoicesAtDefault() {
-        assertWeeklyPlanReceiptDoesNotCoverChoices()
+        assertWeeklyPlanReceiptDoesNotCoverChoices(usesAX5: false)
     }
 
     func testWeeklyPlanReceiptDoesNotCoverChoicesAtAX5() {
-        assertWeeklyPlanReceiptDoesNotCoverChoices()
+        assertWeeklyPlanReceiptDoesNotCoverChoices(usesAX5: true)
     }
 
     func testWeeklyPlanDominantEvidenceTracksSelectedCommitAtDefault() {
-        assertWeeklyPlanDominantEvidenceTracksSelectedCommit()
+        assertWeeklyPlanDominantEvidenceTracksSelectedCommit(usesAX5: false)
     }
 
     func testWeeklyPlanDominantEvidenceTracksSelectedCommitAtAX5() {
-        assertWeeklyPlanDominantEvidenceTracksSelectedCommit()
+        assertWeeklyPlanDominantEvidenceTracksSelectedCommit(usesAX5: true)
     }
 
     func testEveryControlMeetsTheTouchFloorAtDefault() {
-        assertEveryControlMeetsTheTouchFloor()
+        assertEveryControlMeetsTheTouchFloor(usesAX5: false)
     }
 
     func testEveryControlMeetsTheTouchFloorAtAX5() {
-        assertEveryControlMeetsTheTouchFloor()
+        assertEveryControlMeetsTheTouchFloor(usesAX5: true)
     }
 
     /// `CLAUDE.md`: "The 44 x 44 pt touch floor is HIG-verified (Apple's stated minimum is
@@ -208,12 +213,12 @@ final class ProFootballCoachUITests: XCTestCase {
     /// ones someone remembered, so a control added later is covered the day it is added. Runs at
     /// whichever content size the harness has set, because a control that clears the floor at
     /// default can still fall under it when its label grows.
-    private func assertEveryControlMeetsTheTouchFloor() {
+    private func assertEveryControlMeetsTheTouchFloor(usesAX5: Bool) {
         for screenID in [8, 9, 10, 11, 12, 13] {
             let app = XCUIApplication()
             app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
             app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(screenID)"
-            app.launch()
+            launch(app, ax5: usesAX5)
             XCTAssertTrue(
                 app.descendants(matching: .any)["weekly-command-screen-\(screenID)"]
                     .waitForExistence(timeout: 30)
@@ -250,7 +255,7 @@ final class ProFootballCoachUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
         app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "13"
-        app.launch()
+        launch(app, ax5: true)
 
         let emptyState = app.staticTexts.matching(
             NSPredicate(
@@ -269,6 +274,11 @@ final class ProFootballCoachUITests: XCTestCase {
 
     private func assertWeeklyCommandContentStaysInsideTheViewport(usesAX5: Bool) {
         let fixtures: [(screenID: Int, labels: [String], choicePrefixes: [String])] = [
+            // Screen 8 is deliberately absent. Adding it surfaced two things that are not this
+            // proof's to settle: its `weekly-command-screen-8` identifier sits on a nested label,
+            // so the 63-point column assertion below does not describe it, and its committing
+            // action measures maxY 407.7 in a 390-point window whenever a decision panel is on
+            // screen. Both are recorded in the Task 4 report as owner questions.
             (9, ["6 unanswered"], []),
             (10, ["Stale"], []),
             (11, ["You decide"], [
@@ -284,7 +294,7 @@ final class ProFootballCoachUITests: XCTestCase {
             let app = XCUIApplication()
             app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
             app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(fixture.screenID)"
-            app.launch()
+            launch(app, ax5: usesAX5)
 
             let viewport = app.windows.firstMatch
             XCTAssertTrue(viewport.waitForExistence(timeout: 20))
@@ -351,6 +361,38 @@ final class ProFootballCoachUITests: XCTestCase {
         }
     }
 
+    /// Launches, and when AX5 is asked for, refuses to continue unless the app actually reflowed.
+    ///
+    /// The `AtAX5` tests depend on the harness having run
+    /// `xcrun simctl ui <device> content_size accessibility-extra-extra-extra-large` first, and
+    /// nothing in the test established that. A run that skipped it produced a green `...AtAX5` and
+    /// a screenshot labelled AX5, both taken at the default size.
+    ///
+    /// The obvious fix -- passing `-UIPreferredContentSizeCategoryName` at launch, which
+    /// `testTeamLogoProofAtAccessibilityType` already did -- was tried and **does not work**: the
+    /// app still rendered its standard layout, verified by dumping the element tree and finding the
+    /// absolute composition rather than the reflowed one. So that idiom never established the size
+    /// either; it simply never checked.
+    ///
+    /// This asserts the precondition instead of setting it. `ax-reflow` is rendered only by the
+    /// accessibility branch of the layout, so a wrong-size run fails here and loudly, at the line
+    /// that names the reason, rather than passing green.
+    private func launch(
+        _ app: XCUIApplication,
+        ax5: Bool,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        app.launch()
+        guard ax5 else { return }
+        XCTAssertTrue(
+            app.descendants(matching: .any)["ax-reflow"].waitForExistence(timeout: 30),
+            "not at an accessibility size: set content_size "
+                + "accessibility-extra-extra-extra-large before this test",
+            file: file, line: line
+        )
+    }
+
     private func assert(
         _ element: XCUIElement,
         staysInside viewport: XCUIElement,
@@ -361,7 +403,7 @@ final class ProFootballCoachUITests: XCTestCase {
         XCTAssertLessThanOrEqual(element.frame.maxX, viewport.frame.maxX, file: file, line: line)
     }
 
-    private func assertWeeklyPlanReceiptDoesNotCoverChoices() {
+    private func assertWeeklyPlanReceiptDoesNotCoverChoices(usesAX5: Bool) {
         let fixtures = [
             (
                 screenID: 11,
@@ -383,7 +425,7 @@ final class ProFootballCoachUITests: XCTestCase {
             let app = XCUIApplication()
             app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
             app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(fixture.screenID)"
-            app.launch()
+            launch(app, ax5: usesAX5)
 
             let consequence = app.staticTexts[fixture.consequence]
             let commit = app.buttons.matching(
@@ -460,7 +502,7 @@ final class ProFootballCoachUITests: XCTestCase {
         return revealed(scrollView.frame, element.frame)
     }
 
-    private func assertWeeklyPlanDominantEvidenceTracksSelectedCommit() {
+    private func assertWeeklyPlanDominantEvidenceTracksSelectedCommit(usesAX5: Bool) {
         let fixtures = [
             (
                 screenID: 11,
@@ -491,7 +533,7 @@ final class ProFootballCoachUITests: XCTestCase {
             let app = XCUIApplication()
             app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
             app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(fixture.screenID)"
-            app.launch()
+            launch(app, ax5: usesAX5)
 
             let initialCommit = app.buttons.matching(
                 NSPredicate(format: "label BEGINSWITH[c] %@", fixture.initialCommit)
@@ -572,7 +614,7 @@ final class ProFootballCoachUITests: XCTestCase {
     private func assertMatchDayExportsDistinctFieldLandmarks(usesAX5: Bool) {
         let app = XCUIApplication()
         app.launchEnvironment["PROOF_SCREEN"] = "match"
-        app.launch()
+        launch(app, ax5: usesAX5)
 
             let root = app.descendants(matching: .any)["weekly-command-screen-14"]
             let dominant = app.descendants(matching: .any)["weekly-command-dominant"]
@@ -710,6 +752,10 @@ final class ProFootballCoachUITests: XCTestCase {
         add(attachment)
     }
 
+    /// Named for accessibility type, but it cannot prove it is at one: `TeamLogoProofView` does not
+    /// reflow, so there is no branch to assert, and the `-UIPreferredContentSizeCategoryName`
+    /// argument below was shown not to drive `dynamicTypeSize` (see `launch(_:ax5:)`). Treat this as
+    /// a fallback-rendering proof, not as accessibility-size evidence.
     func testTeamLogoProofAtAccessibilityType() {
         let app = XCUIApplication()
         app.launchEnvironment["PROOF_SCREEN"] = "team-logos"
