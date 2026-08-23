@@ -153,7 +153,10 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 >
 > **The default lane still cannot see any of this, and that is a separate finding.** A release
 > no-flag `SimTests` run on this branch ends with **SIGTRAP (exit 133) after 103 of the 143 suites**
-> and prints no TestKit summary, dying on entry to `runPortalContractTests()` — `main.swift:227`.
+> and prints no TestKit summary, dying inside `runPortalContractTests()` — `main.swift:227`. The
+> crash report names it exactly: `EXC_BREAKPOINT`, **Swift runtime failure: precondition failure**,
+> in `GameState.init(version:league:map:programmes:proTeams:…)` called from that probe, so the
+> probe is building a world the initialiser refuses.
 > Every logo gate is registered *after* that call, at `main.swift:232`, so the full lane has never
 > once executed them. `3da4904` fixes the crash, but it sits on `claude/frosty-northcutt-d4a058`
 > and **is not an ancestor of `main`**; until it is merged, suites 104–143 are unrun in the default
