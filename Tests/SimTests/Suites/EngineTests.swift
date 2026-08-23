@@ -740,6 +740,62 @@ func runGameLoopTests() {
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
 
     suite("Game loop") {
+        test("every recorded situation is one the read model would accept") {
+            // The engine and its own presentation layer have to agree on what a legal situation is.
+            // `ScreenReadModels` validates a Match Day situation and throws on a down outside
+            // 1...4, a clock outside 0...900, a quarter below 1 or yards-to-go below 1 -- so a
+            // situation the engine records but that fails those bounds is a snap Match Day cannot
+            // present at all. That is not hypothetical: the turnover-on-downs fix in this series
+            // was found because a fifth down leaked into the next drive.
+            //
+            // Asserted over every recorded play of every sampled game rather than at hand-picked
+            // spots, so the boundary of this check is the class of situations the engine produces,
+            // not the ones somebody thought to list. Both tiers, and a fixture that forces
+            // overtime, because overtime is where the quarter stops being 1...4 and the reducer's
+            // quarter-rollover loop stops running.
+            for tier in Tier.allCases {
+                let rules = tier.clockRules
+                for seed in UInt64(1)...UInt64(40) {
+                    // Half the sample runs a whole game from kickoff; half is tied late in the
+                    // fourth so regulation expires level and the game falls into overtime.
+                    let forcedOvertime = seed % 2 == 0
+                    let record = GameEngine.play(
+                        tier: tier, home: home, away: away, seed: seed,
+                        initialSituation: forcedOvertime
+                            ? Situation(yardLine: 25, possession: .home, quarter: rules.quarters,
+                                        secondsRemainingInQuarter: 20)
+                            : nil
+                    )
+                    for play in record.plays {
+                        let situation = play.situation
+                        expect((1...4).contains(situation.down),
+                               "a recorded down of \(situation.down) in \(tier.rawValue) seed "
+                                   + "\(seed) is outside the 1...4 the read model requires")
+                        expect(situation.distance >= 1,
+                               "a recorded distance of \(situation.distance) in "
+                                   + "\(tier.rawValue) seed \(seed) is below the 1 the read "
+                                   + "model requires")
+                        expect((0...100).contains(situation.yardLine),
+                               "a recorded yard line of \(situation.yardLine) in "
+                                   + "\(tier.rawValue) seed \(seed) is off the field")
+                        expect(situation.quarter >= 1,
+                               "a recorded quarter below 1 in \(tier.rawValue) seed \(seed)")
+                        expect((0...rules.quarterSeconds)
+                                   .contains(situation.secondsRemainingInQuarter),
+                               "a recorded clock of \(situation.secondsRemainingInQuarter) in "
+                                   + "\(tier.rawValue) seed \(seed) quarter "
+                                   + "\(situation.quarter) is outside the range the read model "
+                                   + "accepts")
+                        for side in Side.allCases {
+                            expect(situation.timeoutsRemaining[side] != nil,
+                                   "\(side.rawValue) has no timeout entry at all in "
+                                       + "\(tier.rawValue) seed \(seed)")
+                        }
+                    }
+                }
+            }
+        }
+
         test("an alternating-possessions overtime gives both sides the ball") {
             // The overtime path the suite never constructs, at the scoring boundary that decides
             // the game. `OvertimeFormat.alternatingPossessions` is canon in `ClockRules`: "Each
