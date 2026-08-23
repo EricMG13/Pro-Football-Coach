@@ -1463,3 +1463,23 @@ is evidence of what rendered rather than a claim that it is correct.
 The XCUITest attachments were fixed too -- `XCUIScreen.main.screenshot()` rather than
 `app.screenshot()` -- so the in-test evidence stops being misleading even though the durable matrix
 no longer comes from it.
+
+### A defect the proof matrix found by being looked at
+
+`docs/proofs/all-screen-ui/844-default/screen-41-844-default.png`, League Map: the region label is
+drawn **underneath the selected place marker** and is unreadable -- only its first and last letters
+escape the marker and the place-card row.
+
+Root cause, `LeagueMapView.regionLabel`: the label is positioned at the mean of its member cities.
+A region whose members cluster, or whose mean happens to fall on a member, puts the label exactly
+where a marker already is. The comment above it explains why a *centre* is used rather than an
+outline -- regions have no boundary in the engine, so an outline would be a UI invention -- and that
+reasoning is sound; the collision is a consequence nobody drew.
+
+Not fixed here, on purpose. Where a region name should go when it collides -- offset, suppressed,
+or placed at the least-occupied point -- is a design decision, and `04` does not answer it. Under
+the doc-first rule that is canon's question before it is code's. It is also **pre-existing**: this
+work's only change to `LeagueMapView` was a `.background` stamp, which adds no layout.
+
+VoiceOver is unaffected: the label is `accessibilityHidden(true)`, so this is a visual collision
+only. Recorded as a confirmed finding with its evidence rather than patched by guess.
