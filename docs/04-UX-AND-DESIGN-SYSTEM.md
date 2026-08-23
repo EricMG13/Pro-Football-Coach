@@ -428,9 +428,9 @@ is deleted. Ratios below are the same WCAG 2.2 relative-luminance method as §6.
 | `action.primary` | `#FFC53D` | 12.55 / 12.14 / 10.29 |
 | `action.secondary` | `#A9BACE` | 10.00 / 9.67 / 8.20 |
 | `action.destructive` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
-| `state.live` | `#37E08A` | 11.50 / 11.12 / 9.43 |
+| `state.live` | `#4FD08C` | 10.13 / 9.79 / 8.30 — declared alias of `state.positive`, §6.1a(ii) |
 | `state.positive` | `#4FD08C` | 10.13 / 9.79 / 8.30 |
-| `state.warning` | `#FFB03A` | 10.87 / 10.51 / 8.91 |
+| `state.warning` | `#C9704A` | 5.57 / 5.38 / 4.56 |
 | `state.negative` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
 | `state.info` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
 | `college.identity` | `#B07BD6` | 6.27 / 6.07 / 5.14 |
@@ -447,9 +447,12 @@ Measured constraints, binding on every consumer:
   working prose is a density choice here, not a contrast requirement.
 - **Filled-control ink reuses `world.page` as the dark ink**, the pattern the shipped
   `CoachWorldActionButtonStyle` already implements (`page.color` as foreground on a filled action).
-  Measured on every fill: `action.primary` 12.55, `state.live` 11.50, `state.positive` 10.13,
-  `state.warning` 10.87, `state.info` 7.84, `state.negative`/`action.destructive` 5.67. All clear
+  Measured on every fill: `action.primary` 12.55, `state.live`/`state.positive` 10.13,
+  `state.warning` 5.57, `state.info` 7.84, `state.negative`/`action.destructive` 5.67. All clear
   4.5:1; no new ink token is introduced.
+- **`state.warning` reads `#C9704A` from 2026-08-23**, the value §6.1a(ii) below derived and the
+  table above now states. The superseded `#FFB03A` measured 10.87 / 10.51 / 8.91 and sat 6.1° from
+  gold, which is why it went: contrast was never its defect.
 - **The team-colour fill rule is unchanged and still binding**: `dark-primary` team fill against the
   new `world.raised` measures 1.26, `content.secondary` as the mandatory hairline on it measures
   6.51. A team fill still always carries the boundary.
@@ -503,6 +506,26 @@ first-down line.
 Consequently `state.warning` leaves the yellow-orange band. Its replacement must sit at least 24°
 from gold's hue of 42.1° and clear 4.5:1 on `world.page`; **`#C9704A` satisfies both**, at 24.1° and
 5.57:1.
+
+**All four applied 2026-08-23.** `DesignTokens.swift` ships `#C9704A`, §6.1a's table states it, and
+every band of §6.4's heat scale is asserted against both limbs — 4.5:1 on `world.page` and 24° off
+gold — for every rating from 40 to 99, in `DesignContractTests`.
+
+The other three are resolved the way this section already permits: **declared as aliases**. Each
+shared value is now named once in the token layer and referenced by every role that takes it, so
+`state.negative`/`action.destructive` and `state.info`/`pro.identity` are one declaration apiece
+rather than a literal typed twice, and **`state.live` is a declared alias of `state.positive`** —
+the 1.1° difference nobody could see is gone rather than nominal. That last one also settles an
+incoherence this table did not reach: `field.live` already carried `#4FD08C` while `state.live`
+carried `#37E08A`, so the two roles that both mean *in play* disagreed with each other.
+
+The sweep found **two more shared values the collision table above never listed**, both now aliases
+too: `content.primary`/`field.line` (`#F6FAFF`) and `content.secondary`/`action.secondary`
+(`#A9BACE`). That is the point of enforcing this by construction instead of from a list — the list
+was measured over state and action roles only, so it could not see a pair spanning content and
+field. `DesignContractTests` asserts **no colour literal appears twice** in the token layer, which
+is the whole invariant; it deliberately does not pin which roles are equal, because diverging a pair
+on purpose is exactly what this section wants to stay possible.
 
 The three identical or near-identical pairs stay legal as **aliases** — `action.destructive` may
 alias `state.negative` — but must be declared as aliases in the token layer rather than repeated as
@@ -810,11 +833,20 @@ desktop-class management density.
      | Well below | 40–59 | `state.negative` |
      | Below | 60–69 | the amended `state.warning` |
      | **Average** | **70–79** | **`content.secondary` — neutral, never amber** |
-     | Above | 80–84 | `state.positive`, lightened |
+     | Above | 80–84 | `state.positive`, lightened — mixed 30% toward `content.primary`, `#81DDAE`, 12.16 on `world.page` |
      | Well above | 85–99 | `state.positive` |
 
      Every band clears 4.5:1 on `world.page` and sits at least 24° from gold, per §6.1a(ii). Retain
      the printed number and a spoken band so colour is not the sole meaning — unchanged.
+
+     **Implemented 2026-08-23** in `CoachWorldTokens.Heat`, which is the single definition every
+     rating colour in the app resolves through. The Above band is **derived, not a new hex**:
+     `state.positive` mixed 30% toward `content.primary`, so that if the positive role is ever
+     re-valued the band follows it instead of drifting away from it. Measured: `40–59` 5.67 on
+     `world.page` and 49.7° off gold, `60–69` 5.57 / 24.1°, `70–79` 10.00 / 170.4°, `80–84` 12.16 /
+     107.2°, `85–99` 10.13 / 106.3°. The band table is asserted against this section at every rating
+     from 40 to 99, and the parser reads this table rather than a sentence — the three-band sentence
+     it replaced is what left the tokens unchecked between 2026-08-22 and 2026-08-23.
    - **Where a surface bands a rating it prints the band table on that surface.** This answers “is 74
      good?” without computing a live percentile, and degrades correctly in a save with no league
      history yet.

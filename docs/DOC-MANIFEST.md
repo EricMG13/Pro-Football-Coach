@@ -288,13 +288,40 @@ dropped silently.
 
 ## 7. What about the source tree?
 
-`Sources/`, `Tests/`, `App/`, `Package.swift` and `build/` are **Tier C: no authority**. They are the
-prior implementation — a pro-only game with an arcade mode — and the rebuild does not carry them
-forward by default. They are not documents, so they are not archived here; they are left in place as
-readable prior art until `docs/05-IMPLEMENTATION-PLAN.md` says what happens to them.
+`Sources/`, `Tests/`, `App/` and `Package.swift` are **Tier C: no authority**. Code never overrules
+canon; a gameplay question answered only in a source file is a defect, not a decision.
 
-Porting any of it requires a logged justification naming what would be lost by rebuilding it.
-Discarding the simulation engine requires the same justification in the other direction, enumerated
-against `docs/STATUS.md`: the calibration bands, the soak invariants, the cross-process determinism
-fix, the bounded save growth, and the cap system's practice-squad defences. Rebuilding may well be
-right. It is not free.
+**Superseded 2026-08-10.** This section was written while the tree still held the prior
+implementation — a pro-only game with an arcade mode — and told the reader it was prior art awaiting
+disposal. P0 removed it. What is under those paths now is the rebuild: three SwiftPM targets
+(`FootballSimCore`, `ProFootballCoachUI`, `CoachWorldApp`), the `SimTests` executable suite, and the
+thin `@main` shell. `build/` is gone and gitignored. `docs/PORT-LOG.md` records what survived the
+removal and why, in both directions; `docs/03b-ARCHITECTURE.md` §1 owns the layout the tree now has.
+
+The Tier C rule itself is unchanged and outlives the transition: porting anything from the prior
+build requires a logged justification in `docs/PORT-LOG.md` naming what would be lost by rebuilding
+it, and discarding something requires the same justification in the other direction.
+
+## 8. Every directory under `docs/`, classified — added 2026-08-23
+
+This manifest decides what is canon, and until this section existed it did not name six of the
+fifteen directories that hold markdown under `docs/`. Between them they held **45 documents at paths
+with no recorded status** — including one titled `10-CANON-AMENDMENT-04.md`, which a cold builder
+could reasonably read as an amendment to canon. §1's rule already answered the question in the
+abstract, since a path listed nowhere carries no authority; but silence reads as omission rather
+than as classification, and this manifest exists precisely so that no reader has to guess which one
+it is.
+
+`DocumentManifestTests` enumerates the directories under `docs/` that contain markdown and fails if
+one is not named here, so a directory added tomorrow is classified the day it appears rather than
+the day someone notices it. That is the same coverage-by-construction rule `CLAUDE.md` states: a
+hand-maintained list becomes the coverage boundary.
+
+| Path | What it is | Authority |
+|---|---|---|
+| `docs/adr/` | Five architecture decision records, all M3 domain-model decisions: recruiting-history lifetimes, participation versus production, commitments as capacity reservations, unified NIL authority, the two-window portal split | **Supporting.** A decision recorded only here has not been through the doc-first rule — canon is `02` for gameplay, `03`/`03b` for engine and system. Treat an ADR as the reasoning behind a canon clause, never as the clause |
+| `docs/ux/` | The twelve-document UI programme: gate zero, repo inventory, benchmark teardowns, intent model, information architecture, component register, tokens and density, gap and decision registers, build prompt, a proposed `04` amendment, and the surface-register regeneration brief | **None, by their own words.** `10-CANON-AMENDMENT-04.md` opens "Status: DRAFT, for owner approval. Not canon until merged into `04` itself." Parts of it were merged on 2026-08-22 (`04` §6.1a(ii) and §6.4) and parts were not; `04` is the record of which, and this directory is not |
+| `docs/superpowers/plans/` | Sixteen skill-generated task plans | **None.** Dated records of intended work, exactly as `docs/plans/` |
+| `docs/superpowers/specs/` | Nine design specs, several marked superseded in their own headers | **None.** Read the `Status:` line before believing any of them |
+| `docs/refs/` | The surface-reference generator's baseline, decisions and gap manifest. `Tools/refs/build.py` writes here; the rendered HTML is gitignored because the deliverable is a published artifact | **None.** Generated output plus the notes explaining a pinned commit |
+| `docs/proofs/figma-pool-2026-08-13/`, `docs/proofs/stitch-2026-08-13/` | Dated proof artefacts beneath the already-listed `docs/proofs/` | **None.** Evidence of what was tried on a date. Note that `CLAUDE.md` records the Stitch references as rejected on 2026-08-11; this directory postdates that and is the proof, not a revival |

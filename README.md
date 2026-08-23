@@ -9,18 +9,22 @@ mode, no throwing passes. Matches are watched in a 2D view and shaped by roster 
 identity, opponent preparation, staff and in-game decisions. Every school, team, conference, city,
 stadium, player and coach is fictional and original.
 
-> **Status: the Master Build Documentation rebaseline is active; M0 architecture hardening, M1
-> playable world, and M2 people lifecycle are implemented.** The normalized deterministic root runs exact
-> college and professional schedules, target-scale rosters, abstract results, regular-season
-> standings, postseason brackets, awards/records, causal development, health and fatigue,
-> eligibility/retirement, staff continuity, season rollover, and bounded history. M2 completed a
-> verified 20-season college/pro lifecycle soak. P4's detailed-engine calibration instrument remains
-> built but not calibrated. M3 college management is the active backend milestone. Exact gates and
-> exclusions are in `docs/STATUS.md`.
+> **Status: the Master Build Documentation rebaseline is active. M0 architecture hardening, M1
+> playable world and M2 people lifecycle are implemented; M3 college management, M4 tactical
+> management, M5 career and stakes, M6 professional management and M7 living world/history have
+> implemented slices, and M8 production UI is the active milestone.** The normalized deterministic
+> root runs exact college and professional schedules, target-scale rosters, abstract results,
+> regular-season standings, postseason brackets, awards/records, causal development, health and
+> fatigue, eligibility/retirement, staff continuity, season rollover and bounded history; on top of
+> it sit recruiting/portal/NIL, the professional market, tactics, the career layer, the news feed and
+> history archive, a compressed versioned save, and the Floodlit design system behind the 62-family
+> screen registry. M2 completed a verified 20-season college/pro lifecycle soak.
 >
-> **The complete management game is not yet built** — college recruiting/portal/NIL, professional
-> roster markets, tactics, the full career/stakes layer, AI/delegation, persistence productionization,
-> the design system, and feature views remain ahead.
+> **What is implemented is not what is verified, and the difference is the whole point of
+> `docs/STATUS.md`.** Read it before believing any milestone word above: it names, per dated run,
+> which gates were green on which commit. P4's detailed-engine calibration gate is still open,
+> persistence productionization (history compaction against the 8 MB save ceiling) is open under M9,
+> and per-milestone exclusions are recorded there rather than here.
 >
 > The rejected v2, Stitch and 34-screen Film Room references were removed on 2026-08-11. The
 > corrected canonical language is **The Coach's World**, with Film Room reserved for scouting,
@@ -30,9 +34,10 @@ stadium, player and coach is fictional and original.
 >
 > [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this
 > paragraph, and it is the cold-start pointer together with
-> [`docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md`](docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md).
-> `docs/HANDOFF-2026-08-10.md` was linked here until 2026-08-23; it was deleted on 2026-08-10 and
-> `docs/DOC-MANIFEST.md` §2 names those two as its replacement.
+> [`docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md`](docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md) — the
+> two `docs/DOC-MANIFEST.md` §2 names as replacing the older `docs/HANDOFF-2026-08-10.md`, which was
+> linked here until 2026-08-23 and deleted for sending a cold builder into an obsolete phase
+> sequence.
 
 ## Start here
 
@@ -64,6 +69,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | [`docs/04-UX-AND-DESIGN-SYSTEM.md`](docs/04-UX-AND-DESIGN-SYSTEM.md) | Design system, screens, match view, accessibility contract |
 | [`docs/04b-AUDIT-RUBRIC.md`](docs/04b-AUDIT-RUBRIC.md) | 40-point product UI audit: football fantasy, specificity, hierarchy, continuity, control, accessibility, truth and craft |
 | [`docs/05-IMPLEMENTATION-PLAN.md`](docs/05-IMPLEMENTATION-PLAN.md) | Phased build with per-phase gates |
+| [`docs/roadmap/`](docs/roadmap/) | The Master Build Documentation. `06-BUILD-ROADMAP-AND-GATES.md` owns the M0–M9 milestone sequence the status line above quotes |
 | [`docs/plans/2026-08-11-skill-integration.md`](docs/plans/2026-08-11-skill-integration.md) | Skill activation, duplication boundaries, and project-local skill creation gates |
 | [`docs/06-AUDIT-DISPOSITION.md`](docs/06-AUDIT-DISPOSITION.md) | Prior audit's P0/P1s and systemic patterns, converted into tests |
 | [`docs/08-OPUS5-BUILD-PROMPT.md`](docs/08-OPUS5-BUILD-PROMPT.md) | Phase-entry prompt. Owns mission and definition of done |
@@ -100,12 +106,16 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | `docs/plans/` | Per-phase task plans, one per phase, written before that phase is built |
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | The Coach's World language, canonical 62-family screen inventory and proof gate |
 | `docs/reviews/` | The governing brief and the review that produced it |
-| `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG. P0–P4 |
-| `Sources/ProFootballCoachUI/` | The SwiftUI layer: views, read-model shapes and the design system |
-| `Sources/CoachWorldApp/` | The composition layer — the only target allowed to see both the authoritative root and the screen read models |
+| `docs/roadmap/` | The Master Build Documentation and the M0–M9 milestone gates |
+| `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG |
+| `Sources/ProFootballCoachUI/` | The SwiftUI layer: views, design tokens, screen registry, packaged team marks |
+| `Sources/CoachWorldApp/` | The composition layer — the only module allowed to see both `GameState` and the screen read models, plus the save store |
 | `Tests/SimTests/` | The suite and its hand-rolled harness |
+| `Tests/ProFootballCoachTests/`, `Tests/ProFootballCoachUITests/` | The two XCTest bundles the Xcode project builds; not part of the SwiftPM package |
 | `App/` | Thin `@main` iOS shell + `project.yml` for Xcode project generation |
-| `scripts/verify.sh` | Runs both machine gates and prints a pasteable result |
+| `Tools/` | Development tooling: the surface-reference renderer and the team-mark pipeline. Never linked into the app |
+| `output/`, `exports/`, `artifacts/` | Working output of the team-mark pipeline and its reviews. Not shipped; the packaged marks live in `Sources/ProFootballCoachUI/Resources/` |
+| `scripts/verify.sh` | Runs the machine gates and prints a pasteable result |
 
 The previous build was removed by P0; what is under `Sources/`, `Tests/` and `App/` now is the
 rebuild. `docs/PORT-LOG.md` records what survived and why, both ways.
@@ -116,32 +126,38 @@ rebuild. `docs/PORT-LOG.md` records what survived and why, both ways.
 ./scripts/verify.sh
 ```
 
-That is the gate: `swift build`, then the suite. Pass `--build` for the build alone, or
-`--lane <name>` for one lane — `accessibility`, `app`, `archive`, `calibration`, `core`,
-`determinism`, `release` or `soaks`.
+That is the gate: the release build, then the full suite. Pass `--build` for the build alone.
+
+Longer gates run as **named lanes**, each with its own scratch directory and logs so a failed
+calibration or archive run cannot contaminate another: `--lane core`, `determinism`, `calibration`,
+`soaks`, `accessibility`, `archive`, `release`, and `app` (XcodeGen + a generic iOS build).
+
+```bash
+./scripts/verify.sh --lane core
+```
 
 Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the codebase is
 compile-verified from the command line without full Xcode. Neither XCTest nor swift-testing ships
 with the Swift Command Line Tools, so the suite is an **executable target** with a hand-rolled
 harness (`Tests/SimTests/TestKit.swift`); it reports real pass/fail counts and exits non-zero on
-failure. The two commands underneath are:
+failure. The commands underneath are:
 
 ```bash
-swift build -c release -Xswiftc -enable-testing
-swift run -c release -Xswiftc -enable-testing SimTests
+swift build -c release -Xswiftc -enable-testing && swift run -c release -Xswiftc -enable-testing SimTests
 ```
 
-`-Xswiftc -enable-testing` is not optional. `SimTests` is a plain executable target that
-`@testable import`s `ProFootballCoachUI`, and a release build does not enable testability the way
-a debug build happens to, so without it every `@testable` target fails with "module ... was not
-compiled for testing". `scripts/verify.sh` passes it on both the build and the run.
+`-Xswiftc -enable-testing` is not optional. `SimTests` is a plain executable target that `@testable
+import`s `ProFootballCoachUI`, and SwiftPM has no reason to infer testability for one — so a release
+run without the flag fails every target that `@testable` imports anything, with "module ... was not
+compiled for testing". `verify.sh` passes it for you.
 
-A run counts only if it ends with TestKit's `N tests, M checks` summary. A Swift `precondition`
-is a SIGTRAP that kills the process mid-run and silently skips every later suite, so a lane that
-stops short of that line is truncated, not green; `verify.sh` fails the lane on a missing summary.
+A run is only complete if it ends with TestKit's `N tests, M checks` summary line. A `precondition`
+failure is a SIGTRAP: it kills the process mid-run, and every suite after it silently never runs.
+`verify.sh` fails a lane that ends without that line; a hand-run command needs the same check.
 
 To build and run the iOS app you need full Xcode and
-[XcodeGen](https://github.com/yonaskolb/XcodeGen) (a build-time tool, not an app dependency):
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) (a build-time tool, not an app dependency). The
+project is written next to its spec, in `App/`:
 
 ```bash
 xcodegen generate --spec App/project.yml && open App/ProFootballCoach.xcodeproj

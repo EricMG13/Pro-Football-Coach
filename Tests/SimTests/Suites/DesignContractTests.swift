@@ -83,6 +83,77 @@ func matches(of pattern: String, in text: String) -> [String] {
     }
 }
 
+/// `04` section 6.4's heat-scale table, as `(floor, ceiling, role)` in the order canon states it.
+///
+/// Parses the **table**, not a sentence, and that is the whole point. This test read canon with
+/// `matches(of: "red below (\\d+)")` until 2026-08-22, when `60f0c2d` replaced the three-band prose
+/// sentence with a five-band table. The parser could not follow canon into a table, failed in its
+/// own guard clause, and `--core-contracts` went red for a reason that had nothing to do with the
+/// tokens — while the tokens, which really had fallen behind, went unchecked behind it. A parser
+/// that reads the structure canon is written in survives canon being edited.
+private func canonHeatBands(_ canon: String) -> [(floor: Int, ceiling: Int, role: String)] {
+    let lines = canon.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    guard let start = lines.firstIndex(where: { $0.contains("default visual heat scale") })
+    else { return [] }
+    var bands: [(floor: Int, ceiling: Int, role: String)] = []
+    for line in lines[start...] {
+        let cells = line.split(separator: "|", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        guard cells.count >= 4 else {
+            // The first non-row line after the rows have started is the end of the table. Before
+            // that it is the amendment's own prose, which the sentinel matched.
+            if !bands.isEmpty { break }
+            continue
+        }
+        let bounds = matches(of: "(\\d+)", in: cells[2]).compactMap(Int.init)
+        // Skips the header and its `|---|` separator, neither of which carries two numbers.
+        guard bounds.count == 2 else { continue }
+        bands.append((floor: bounds[0], ceiling: bounds[1], role: cells[3]))
+    }
+    return bands
+}
+
+/// The palette value a heat band's role cell names, or `nil` if this test cannot resolve it.
+///
+/// Order matters: "`state.positive`, lightened" contains "state.positive", so the lightened case
+/// must be tried first or the Above band silently resolves to the Well above band's colour — which
+/// would make the test pass while the two top bands were identical on screen.
+private func heatBandValue(
+    for role: String,
+    palette: CoachWorldTokens.Palette
+) -> CoachWorldTokens.ColorValue? {
+    if role.contains("state.positive"), role.contains("lightened") {
+        return CoachWorldTokens.Heat.lightenedPositive(palette)
+    }
+    if role.contains("state.positive") { return palette.statePositive }
+    if role.contains("state.negative") { return palette.stateNegative }
+    if role.contains("state.warning") { return palette.stateWarning }
+    if role.contains("content.secondary") { return palette.contentSecondary }
+    return nil
+}
+
+/// HSL hue in degrees. `04` section 6.1a(ii) states role separation in hue, so a test of it needs
+/// the same measure; contrast alone cannot see two roles that are the same colour at a glance.
+private func hueDegrees(_ value: CoachWorldTokens.ColorValue) -> Double {
+    let high = max(value.red, value.green, value.blue)
+    let low = min(value.red, value.green, value.blue)
+    let delta = high - low
+    guard delta > 0 else { return 0 }
+    let hue: Double
+    switch high {
+    case value.red:   hue = 60 * (((value.green - value.blue) / delta).truncatingRemainder(dividingBy: 6))
+    case value.green: hue = 60 * (((value.blue - value.red) / delta) + 2)
+    default:          hue = 60 * (((value.red - value.green) / delta) + 4)
+    }
+    return hue < 0 ? hue + 360 : hue
+}
+
+/// The shorter way round the colour wheel between two hues, in degrees.
+private func hueSeparation(_ a: Double, _ b: Double) -> Double {
+    let raw = abs(a - b).truncatingRemainder(dividingBy: 360)
+    return min(raw, 360 - raw)
+}
+
 private func designSheets() -> [(name: String, text: String)] {
     let root = packageRoot()
     let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path))?
@@ -110,6 +181,56 @@ private func rawAssetLoaders(in source: String) -> [String] {
 }
 
 // MARK: - The suite
+
+/// Every directory under `docs/` that holds markdown.
+///
+/// Walked rather than listed, because a list here would be the coverage boundary the manifest's own
+/// problem was made of.
+private func documentedDirectories() -> [String] {
+    let root = packageRoot().appendingPathComponent("docs")
+    guard let walker = FileManager.default.enumerator(atPath: root.path) else { return [] }
+    var directories: Set<String> = []
+    for case let path as String in walker where path.hasSuffix(".md") {
+        let parent = (path as NSString).deletingLastPathComponent
+        directories.insert(parent.isEmpty ? "docs/" : "docs/\(parent)/")
+    }
+    return directories.sorted()
+}
+
+func runDocumentManifestTests() {
+    suite("Document manifest") {
+        // DOC-MANIFEST decides what is canon, and it had gone stale against the tree it governs:
+        // six directories holding 45 markdown files sat at paths it never named, one of them called
+        // `10-CANON-AMENDMENT-04.md`. Section 1's rule already answers it in the abstract -- a path
+        // listed nowhere carries no authority -- but silence reads as omission rather than as
+        // classification, and a reader cannot tell which. So the directories are enumerated from
+        // disk and checked against the manifest, not maintained by hand inside it.
+        test("every docs directory holding markdown is classified in DOC-MANIFEST") {
+            let manifestURL = packageRoot().appendingPathComponent("docs/DOC-MANIFEST.md")
+            guard let manifest = try? String(contentsOf: manifestURL, encoding: .utf8) else {
+                expect(false, "docs/DOC-MANIFEST.md is unavailable")
+                return
+            }
+            let directories = documentedDirectories()
+            expect(directories.count >= 8,
+                   "walked only \(directories.count) docs directories — the walk, not the manifest, "
+                       + "is what failed")
+            let unclassified = directories.filter { !manifest.contains($0) }
+            expect(unclassified.isEmpty,
+                   "DOC-MANIFEST does not classify \(unclassified.count) directory(ies): "
+                       + "\(unclassified.joined(separator: ", ")). Add each to section 8 with what "
+                       + "it is and what authority it carries — a path the manifest never names is "
+                       + "a path a reader has to guess about.")
+        }
+
+        test("the walk would notice a directory the manifest does not name") {
+            let manifest = "| `docs/plans/` | plans | none |"
+            let planted = ["docs/plans/", "docs/invented/"]
+            expectEqual(planted.filter { !manifest.contains($0) }, ["docs/invented/"],
+                        "an unclassified directory must be reported")
+        }
+    }
+}
 
 func runDesignContractTests() {
     let canon = canonText()
@@ -170,6 +291,45 @@ func runDesignContractTests() {
                            + "\(undeclared.joined(separator: ", ")). Write them into 04 section 6.1 "
                            + "with their measured ratios, or remove them.")
             }
+        }
+
+        // 04 section 6.1a(ii), 2026-08-22: where two roles share a value they must be "declared as
+        // aliases in the token layer rather than repeated as literals, so a future divergence is a
+        // deliberate edit and not an accident". A repeated literal is the accident: someone
+        // re-values one role, the other silently keeps the old number, and nothing records that the
+        // two were ever meant to agree. Uniqueness is the whole invariant — this deliberately does
+        // NOT pin which roles are equal, because canon permits diverging a pair on purpose.
+        test("no colour literal is repeated in the token layer") {
+            let tokenFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .filter { $0.path.hasSuffix("DesignTokens.swift") }
+            expect(!tokenFiles.isEmpty,
+                   "DesignTokens.swift not found under Sources/ProFootballCoachUI")
+            for file in tokenFiles {
+                // Stripped, because the alias declarations explain themselves in prose that names
+                // the very hex they replaced — 04 section 6.1a(ii)'s own example among them.
+                let literals = matches(of: "(0x[0-9A-Fa-f]{6})\\b",
+                                       in: strippingLineComments(file.text))
+                    .map { $0.uppercased() }
+                var seen: Set<String> = []
+                let repeated = Set(literals.filter { !seen.insert($0).inserted }).sorted()
+                expect(repeated.isEmpty,
+                       "\(file.path) repeats \(repeated.count) colour literal(s): "
+                           + "\(repeated.joined(separator: ", ")). 04 section 6.1a(ii) requires a "
+                           + "shared value to be declared once and aliased by each role that takes "
+                           + "it, so that diverging them later is a deliberate edit.")
+            }
+        }
+
+        test("the repeated-literal scan would notice a duplicated value") {
+            let planted = """
+            static let one = ColorValue(hex: 0x4FD08C)
+            static let two = ColorValue(hex: 0x4FD08C)
+            """
+            let literals = matches(of: "(0x[0-9A-Fa-f]{6})\\b", in: strippingLineComments(planted))
+                .map { $0.uppercased() }
+            var seen: Set<String> = []
+            expect(!literals.filter { !seen.insert($0).inserted }.isEmpty,
+                   "a planted duplicate colour literal must be caught")
         }
 
         test("the scan would notice a colour that canon does not hold") {
@@ -235,29 +395,82 @@ func runDesignContractTests() {
         // `Heat.color(for:palette:)` rather than each carrying their own switch, so testing this one
         // function against canon, across the whole rating range, is what makes all three agree by
         // construction rather than by three people remembering to keep three copies in sync.
-        test("Heat.color's banding matches 04 section 6.4's stated heat scale, across the whole range") {
-            guard let steadyFloorText = matches(of: "red below (\\d+)", in: canon).first,
-                  let strongFloorText = matches(of: "green from (\\d+) upward", in: canon).first,
-                  let canonSteadyFloor = Int(steadyFloorText),
-                  let canonStrongFloor = Int(strongFloorText)
-            else {
-                expect(false, "could not parse 04 section 6.4's heat-scale sentence — "
-                    + "the parser, not the tokens, is what failed")
-                return
+        test("Heat's banding matches 04 section 6.4's stated heat scale, across the whole range") {
+            let bands = canonHeatBands(canon)
+            expect(bands.count == 5,
+                   "parsed \(bands.count) bands from 04 section 6.4's heat scale, not the five the "
+                       + "2026-08-22 amendment states — the parser, not the tokens, is what failed")
+            guard bands.count == 5 else { return }
+
+            // The bands must partition the scale. A gap or an overlap is a rating with no colour or
+            // two, and neither is visible by reading the switch: only checking every value is.
+            expectEqual(bands[0].floor, CoachWorldTokens.Heat.scaleFloor,
+                        "04 section 6.4's first band must start at Heat.scaleFloor")
+            expectEqual(bands[bands.count - 1].ceiling, CoachWorldTokens.Heat.scaleCeiling,
+                        "04 section 6.4's last band must end at Heat.scaleCeiling")
+            for (lower, upper) in zip(bands, bands.dropFirst()) {
+                expectEqual(upper.floor, lower.ceiling + 1,
+                            "04 section 6.4's bands must be contiguous: \(lower.ceiling) is "
+                                + "followed by \(upper.floor)")
             }
-            expectEqual(CoachWorldTokens.Heat.steadyFloor, canonSteadyFloor,
-                        "Heat.steadyFloor must match 04 section 6.4's stated amber floor")
-            expectEqual(CoachWorldTokens.Heat.strongFloor, canonStrongFloor,
-                        "Heat.strongFloor must match 04 section 6.4's stated green floor")
 
             let palette = CoachWorldTokens.dark
-            for rating in CoachWorldTokens.Heat.scaleFloor...CoachWorldTokens.Heat.scaleCeiling {
-                let expected = rating >= canonStrongFloor ? palette.statePositive.color
-                    : rating >= canonSteadyFloor ? palette.stateWarning.color
-                    : palette.stateNegative.color
-                expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), expected,
-                            "rating \(rating) does not land in the band 04 section 6.4 describes")
+            for band in bands {
+                guard let expected = heatBandValue(for: band.role, palette: palette) else {
+                    expect(false, "04 section 6.4's \(band.floor)-\(band.ceiling) band names a "
+                        + "role this test cannot resolve: \(band.role)")
+                    continue
+                }
+                for rating in band.floor...band.ceiling {
+                    expectEqual(CoachWorldTokens.Heat.value(for: rating, palette: palette), expected,
+                                "rating \(rating) does not land in the band 04 section 6.4 "
+                                    + "describes")
+                }
             }
+        }
+
+        // 04 section 6.4 states two constraints on the scale in the same breath as the table, and
+        // they are the reason the amendment exists: an average starter must stop reading as a
+        // caution, and no band may be mistaken for the committing action.
+        test("every heat band clears 4.5:1 on world.page and sits 24 degrees off gold") {
+            let palette = CoachWorldTokens.dark
+            let gold = hueDegrees(palette.actionPrimary)
+            for rating in CoachWorldTokens.Heat.scaleFloor...CoachWorldTokens.Heat.scaleCeiling {
+                let band = CoachWorldTokens.Heat.value(for: rating, palette: palette)
+                let ratio = contrastRatio(band, palette.page)
+                expect(ratio >= 4.5,
+                       "rating \(rating)'s band measures \(ratio) on world.page, below 04 section "
+                           + "6.4's stated 4.5:1")
+                let separation = hueSeparation(hueDegrees(band), gold)
+                expect(separation >= 24,
+                       "rating \(rating)'s band sits \(separation) degrees from gold, inside 04 "
+                           + "section 6.1a(ii)'s 24 degree floor — gold marks the committing action "
+                           + "and carries no other meaning, least of all a rating")
+            }
+        }
+
+        test("the heat-scale parser reads a table and is not satisfied by the prose it replaced") {
+            let prose = """
+            The default visual heat scale is red below 70, amber from 70-84 and green from 85 upward.
+
+            """
+            expect(canonHeatBands(prose).isEmpty,
+                   "the superseded sentence form must not parse as bands — that it silently did "
+                       + "not is what left the tokens unchecked")
+
+            let planted = """
+            The default visual heat scale over the 40-99 range is two bands:
+
+            | Band | Range | Role |
+            |---|---|---|
+            | Low | 40-69 | `state.negative` |
+            | High | 70-99 | `state.positive` |
+
+            """
+            let bands = canonHeatBands(planted)
+            expectEqual(bands.count, 2, "a planted two-row band table must parse as two bands")
+            expectEqual(bands.first?.floor, 40, "a planted band's floor must be read from the table")
+            expectEqual(bands.last?.ceiling, 99, "a planted band's ceiling must be read from the table")
         }
     }
 

@@ -129,6 +129,7 @@ if CommandLine.arguments.contains("--catalog") {
     runSeedDerivationTests()
     runContractTests()
     runDesignContractTests()
+    runDocumentManifestTests()
     runMotionContractTests()
     runAccessibilityReflowTests()
     runReduceMotionContractTests()
@@ -167,6 +168,7 @@ if CommandLine.arguments.contains("--catalog") {
     runGenerationTests()
 } else if CommandLine.arguments.contains("--design-contracts") {
     runDesignContractTests()
+    runDocumentManifestTests()
     runMotionContractTests()
     runAccessibilityReflowTests()
     runReduceMotionContractTests()
@@ -246,6 +248,7 @@ if CommandLine.arguments.contains("--catalog") {
     // the one every release claim quotes — did not include the orientation policy, the token sync,
     // the symbol register, the sheet lint or the AX5 contract.
     runDesignContractTests()
+    runDocumentManifestTests()
     runMotionContractTests()
     runAccessibilityReflowTests()
     runReduceMotionContractTests()
