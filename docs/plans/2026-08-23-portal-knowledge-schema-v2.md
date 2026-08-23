@@ -417,10 +417,14 @@ with:
 Run:
 
 ```bash
-swift run -c release -Xswiftc -enable-testing SimTests --portal-contracts --portal-policy --portal-matching --portal-transaction
+for f in --portal-contracts --portal-policy --portal-matching --portal-transaction; do swift run -c release -Xswiftc -enable-testing SimTests "$f" || echo "RED: $f"; done
 ```
 
-Expected: every suite PASSes and the run ends with TestKit's `all passed` summary line.
+One flag per run. `Tests/SimTests/main.swift` dispatches suites through a single `if / else if`
+chain, so passing several flags at once silently runs only whichever appears first in that chain
+and reports green for suites that never executed.
+
+Expected: every suite PASSes and each run ends with TestKit's `all passed` summary line.
 
 - [ ] **Step 5: Commit**
 
@@ -525,10 +529,14 @@ to:
 Run:
 
 ```bash
-swift run -c release -Xswiftc -enable-testing SimTests --portal-policy --portal-contracts --portal-matching --portal-transaction --portal-scheduler
+for f in --portal-policy --portal-contracts --portal-matching --portal-transaction --portal-scheduler; do swift run -c release -Xswiftc -enable-testing SimTests "$f" || echo "RED: $f"; done
 ```
 
-Expected: every suite PASSes and the run ends with `all passed`. If a portal suite fails on a
+One flag per run. `Tests/SimTests/main.swift` dispatches suites through a single `if / else if`
+chain, so passing several flags at once silently runs only whichever appears first in that chain
+and reports green for suites that never executed.
+
+Expected: every suite PASSes and each run ends with `all passed`. If a portal suite fails on a
 pinned expected value rather than on a contract, that is a moved pin — leave it failing, note the
 suite and the old and new values, and fix it in Task 5. Do not re-pin here.
 
