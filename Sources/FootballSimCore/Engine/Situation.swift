@@ -71,6 +71,12 @@ public struct Situation: Codable, Sendable, Equatable {
     /// Seconds left in the half, which is what two-minute logic reads. The quarter alone is not
     /// enough: 30 seconds left in the first quarter is not a two-minute situation.
     public func secondsRemainingInHalf(rules: any ClockRules.Type) -> Int {
+        // An overtime period is its own segment: nothing follows it on the clock, so the half is
+        // the period. Without this guard, `MatchReducer.beginOvertime`'s quarter 5 read as "one
+        // more quarter follows" and added a full 900-second regulation quarter to a 600-second
+        // overtime clock -- which left two-minute logic dead in overtime periods 1 and 3 and alive
+        // in 2, off the parity of a quarter number that means nothing past regulation.
+        guard quarter <= rules.quarters else { return secondsRemainingInQuarter }
         let quartersLeftInHalf = quarter % 2 == 1 ? 1 : 0
         return secondsRemainingInQuarter + quartersLeftInHalf * rules.quarterSeconds
     }

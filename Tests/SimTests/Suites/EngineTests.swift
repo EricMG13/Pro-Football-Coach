@@ -170,6 +170,33 @@ func runEngineTests() {
                    "90 seconds left in the game is not a two-minute situation")
         }
 
+        test("an overtime period is its own segment on the clock") {
+            // Reachable and never constructed: `MatchReducer.beginOvertime` sets the quarter to
+            // `rules.quarters + period`, so the first overtime period is quarter 5. The half-clock
+            // arithmetic read `quarter % 2 == 1` as "one more quarter follows this one" and added a
+            // full regulation quarter to a 600-second overtime clock. Nothing follows an overtime
+            // period, so the half is the period -- and the parity of a number that means nothing
+            // here left two-minute logic dead in overtime periods 1 and 3 and alive in 2. Every
+            // hurry-up, prevent-coverage and go-for-it branch in `DriveEngine` reads it.
+            for rules in [Tier.pro.clockRules, Tier.college.clockRules] {
+                for period in 1...CompetitionRules.maximumOvertimePeriods {
+                    let quarter = rules.quarters + period
+                    for seconds in [CompetitionRules.overtimePeriodSeconds, 121, 120, 90, 1, 0] {
+                        let situation = Situation(quarter: quarter,
+                                                  secondsRemainingInQuarter: seconds)
+                        expectEqual(
+                            situation.secondsRemainingInHalf(rules: rules), seconds,
+                            "overtime period \(period) borrowed time from a quarter that does not follow it"
+                        )
+                        expectEqual(
+                            situation.isTwoMinute(rules: rules), seconds <= rules.twoMinuteSeconds,
+                            "two-minute logic in overtime period \(period) turned on the period's parity"
+                        )
+                    }
+                }
+            }
+        }
+
         test("every situational call-in trigger 02 section 3.1 names fires") {
             // 02 section 3.1 lists seven triggers. Five are properties of the situation and are
             // asserted here; the other two need the plan and the game's history and belong to the
