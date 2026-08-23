@@ -30,7 +30,7 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 | Gate | Requirement |
 |---|---|
 | **G1 Build green** | `swift build` clean. Asserted only by having run it in the session that claims it — see the D11 note below. |
-| **G2 Tests green** | `swift run -c release SimTests` passes in full. Same rule: run it, or do not claim it. |
+| **G2 Tests green** | `swift run -c release -Xswiftc -enable-testing SimTests` passes in full, ending with TestKit's `N tests, M checks` summary — a run that stops short of that line is truncated, not green. Same rule: run it, or do not claim it. `./scripts/verify.sh` does both for you. |
 | **G3 Surface audit** | Touched surfaces score **≥31/40 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md` — its eight dimensions at 0–5 each, owner-approved 2026-08-11. The older ≥17/20 five-dimension frame (Accessibility, Performance, Appearance & Theming) is superseded and the bars are not equivalent. |
 | **G4 Scope** | The diff contains what the phase specifies and nothing else. No opportunistic refactors. |
 | **G5 Calibration** | All bands in `03` §5 hold under TOST. |
@@ -345,8 +345,10 @@ remainder.
 
 P11's existing scope is unchanged; the following are named as entry conditions it currently assumes
 silently: G-07 (token write-back into `04` §6.1/§6.2 with measured ratios), G-08 (density budget and
-component registry adoption in `04`), G-09's test half (`OrientationPolicyTest` written; two-tier
-`SmallestDeviceLayoutTest` — install floor 844 × 390 no-clipping, promise floor full budget), G-12
+component registry adoption in `04`), G-09's test half (the orientation assertion — **landed 2026-08-13**, as the
+`Orientation policy` suite in `DesignContractTests.swift`, not under the name `OrientationPolicyTest`;
+two-tier `SmallestDeviceLayoutTest` — install floor 844 × 390 no-clipping, promise floor full budget
+— **still outstanding**, no test in the tree reads either dimension), G-12
 (AX5 reflow contract test enumerating families from `ScreenRegistry.swift` by construction), G-13
 (failure-set designs).
 
@@ -420,10 +422,13 @@ mechanical, and none of it touches engine work.
   class exceeds its cap. The coverage-boundary rule in `CLAUDE.md` forbids a hand list here: the
   reference library shipped with every sheet pricing its own spend locally and asserting global
   compliance, which no sheet could know, and the missing global check is exactly this test.
-- **G-09 test half** — `OrientationPolicyTest` (reads `App/project.yml`; `CLAUDE.md` claims it
-  asserts landscape-only and it does not exist) and the two-tier `SmallestDeviceLayoutTest`: every
-  registry surface un-clipped and reachable at the 844 × 390 install floor, at full budget at the
-  852 × 393 promise floor.
+- **G-09 test half** — the orientation assertion reading `App/project.yml`, **now landed**: it is
+  the `Orientation policy` suite in `Tests/SimTests/Suites/DesignContractTests.swift`, which asserts
+  both landscape orientations are declared, that portrait is not, and that the scan would notice
+  portrait being added. It is not named `OrientationPolicyTest`, and no test of that name exists.
+  **Still outstanding** is the two-tier `SmallestDeviceLayoutTest`: every registry surface
+  un-clipped and reachable at the 844 × 390 install floor, at full budget at the 852 × 393 promise
+  floor. Neither dimension is read by any test in `Tests/`; both appear only in source comments.
 - **G-12** — the AX5 reflow contract, enumerating families from the registry, asserting no datum is
   dropped and reading order is preserved.
 - **G-13** — the failure-set designs exist on `failure-v3.dc.html`; this phase carries them into the

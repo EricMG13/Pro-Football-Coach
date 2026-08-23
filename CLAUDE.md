@@ -142,7 +142,10 @@ Agent environments frequently have **no `swift` and no `xcodebuild`**, and the e
   - **Changed from portrait-only by the owner on 2026-08-10.** Landscape is what lets the whole
     120-yard field sit in frame at once with no camera pan — the arithmetic is in `04` §5.2 and the
     consequences for every other screen are in `04` §4. It is declared in `App/project.yml` and
-    asserted by `OrientationPolicyTest`. Portrait is not a supported orientation.
+    asserted by the `Orientation policy` suite in `Tests/SimTests/Suites/DesignContractTests.swift`.
+    Portrait is not a supported orientation. **No test named `OrientationPolicyTest` exists**; this
+    line claimed one from 2026-08-10 while nothing asserted the declaration at all, which the suite
+    that eventually landed records against itself as G-09.
 - The 2D match view renders in **SwiftUI `Canvas` + `TimelineView`**. No SpriteKit, no Metal.
 - **Strict engine/UI separation.** The simulation runs headless and contains zero `import SwiftUI`.
 - **Determinism.** A given seed plus a given input state reproduces a match exactly, **across
