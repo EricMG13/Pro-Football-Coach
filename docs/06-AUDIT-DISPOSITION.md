@@ -39,6 +39,15 @@ codebase is "structurally sound and idiomatic". It measures craft. The engagemen
 **(i)** = structurally impossible in the new design · **(ii)** = addressed, with the test named ·
 **(iii)** = retired, with the reason.
 
+**Named is not built, and the difference is checkable.** Every test name in this document was swept
+against the source tree on 2026-08-23 — the whole document, by regular expression, not a spot-check.
+Thirteen of the fifteen exist. **Two do not: `DestructiveActionPlacementTest` (row 18) and
+`SmallestDeviceLayoutTest` (row 23, also named in `04` §7).** Neither is registered in
+`SuiteCatalog`, so neither is a gate any lane runs, and no `PRODUCT.md` commitment names them —
+which is why `CommitmentCoverageTest` stays green with them missing. They are outstanding work, not
+coverage. Re-run the sweep rather than trusting this paragraph: a name with nothing behind it is the
+exact failure `08` §"the two things this project has failed at before" describes.
+
 | # | Finding | Disposition |
 |---|---|---|
 | 1 | Reduce Motion ignored everywhere — zero checks in the UI layer | **(ii)** D12 requires a defined reduced form for every animation; the match view degrades to a discrete state sequence rather than switching off. **Test:** `ReduceMotionContractTest` walks every animated surface. |
