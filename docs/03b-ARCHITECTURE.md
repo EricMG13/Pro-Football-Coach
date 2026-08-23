@@ -152,7 +152,7 @@ Tests/
   SimTests/
     main.swift          flag dispatch: one --flag per suite, plus the default run
     TestKit.swift       the harness: suite/test/expect and the terminal summary
-    TestRoots.swift     package-root resolution, so a scan can read canon and the manifest
+    TestRoots.swift     builds a root at a later season without running the scheduler there
     SuiteCatalog.swift  release gates as data, so the harness and CI enumerate the same list
     Suites/             the suites themselves
 ```

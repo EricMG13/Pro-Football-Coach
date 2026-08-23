@@ -26,9 +26,11 @@ The honest picture: what exists, what is verified, what is not.
 >   exercises several of the components individually by name, but nothing walks the table, so an
 >   entry with no type fails nothing. Measured: four ship under exactly the registry name, seven
 >   under a `CoachWorld` prefix the table does not use, one (`LowerThird`) as `MatchLowerThird`, and
->   eleven have no type under either spelling. `04` §6.5 now carries the itemised list; nine of the
->   eleven are the screen-local implementations §6.5 already books as owing extraction, and entries 3
->   and 13 are simply unbuilt. Reconciling is a rename plus the walking test — P11/M8 work.
+>   eleven have no type under either spelling. `04` §6.5 now carries the itemised list. Only four of the
+>   eleven are the screen-local implementations §6.5 books as owing extraction; the other seven are
+>   booked nowhere and are simply unbuilt, and five entries §6.5 does book as screen-local do have
+>   types — so the two lists disagree in both directions. Reconciling is a rename plus the walking
+>   test — P11/M8 work.
 >
 > Both are counted inside `06`'s "13 addressed with a named test" tally, so that tally has read 13
 > while 11 shipped. `06` now says which eleven, and says these two are absent. Nothing fails while
@@ -36,7 +38,7 @@ The honest picture: what exists, what is verified, what is not.
 > is recorded as an open gap rather than closed by editing the tally down.
 >
 > The corrected claims, in brief: `README.md` linked to `docs/HANDOFF-2026-08-10.md` (deleted
-> 2026-08-10), described `Sources/ProFootballCoachUI/` as "empty until P11" (99 files), omitted
+> 2026-08-10), described `Sources/ProFootballCoachUI/` as "empty until P11" (100 files), omitted
 > `Sources/CoachWorldApp/` entirely, and told a reader to `open ProFootballCoach.xcodeproj` at the
 > repository root (XcodeGen writes it beside the spec, at `App/`). `README.md`, `03b` §5 and `05`'s
 > G1/G2 rows all documented `swift build && swift run -c release SimTests`, which does not work:

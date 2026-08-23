@@ -875,9 +875,11 @@ with no type fails nothing. Of the 23 entries:
 - **One ships under a different name:** 21 ships as `MatchLowerThird`, not `LowerThird`.
 - **Eleven have no type under either spelling:** 3 `coachWorldDeskSurface`, 5 `WorldStrip`, 7
   `DenseTable`, 8 `ColumnSet`, 9 `ListControls`, 10 `RatingBadge`, 13 `VerdictLine`, 16 `FormLine`,
-  18 `RoleToken`, 22 `CallInCard`, 23 `EmptyState` / `ErrorBanner` / `InterruptedState`. Nine of the
-  eleven are the screen-local implementations the paragraph above already books as owing extraction;
-  3 and 13 are not, and are simply unbuilt.
+  18 `RoleToken`, 22 `CallInCard`, 23 `EmptyState` / `ErrorBanner` / `InterruptedState`. Only **four**
+  of the eleven — 5, 7, 10 and 22 — are the screen-local implementations the paragraph above books as
+  owing extraction. The other **seven** — 3, 8, 9, 13, 16, 18 and 23 — are booked nowhere and are
+  simply unbuilt. The paragraph above also books 6, 17, 19, 20 and 21 as screen-local, and those five
+  do have types, so its list and this one disagree in both directions.
 
 Reconciling the names is a rename plus the walking test, and it is P11/M8 work. Until that test
 exists, this list is the record and it goes stale the day the tree moves — which is the argument for
