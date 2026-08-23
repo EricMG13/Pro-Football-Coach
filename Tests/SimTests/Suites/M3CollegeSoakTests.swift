@@ -1,6 +1,22 @@
 import Foundation
 import FootballSimCore
 
+/// D4's hard ceiling for a 20-season save, and the single place any suite states it.
+///
+/// **50 MB, raised from 8 MB by the owner on 2026-08-23** (`docs/OPEN-DECISIONS.md` D4 budget table,
+/// D7 falsifier). Named rather than inlined so the next revision is one edit and cannot leave a
+/// second copy behind disagreeing with canon -- an inline `8 * 1024 * 1024` is exactly the magic
+/// number `CLAUDE.md` forbids.
+///
+/// Note what this ceiling stopped being able to catch when it was raised: at 8 MB it fired from
+/// season 4 onward, so it was reporting unbounded growth as a size failure on every run. At 50 MB
+/// it will not fire until roughly season 50 on the measured curve, so the soak's **growth check**
+/// is now the limb that catches an unbounded collection. Size will not notice one for decades of
+/// simulated time.
+enum SaveBudget {
+    static let twentySeasonCeilingBytes = 50 * 1024 * 1024
+}
+
 func runM3CollegeSoakTests() {
     let requested = ProcessInfo.processInfo.environment["M3_SOAK_SEASONS"]
         .flatMap(Int.init) ?? 20
@@ -47,8 +63,9 @@ func runM3CollegeSoakTests() {
                 let state = try SaveEnvelope.decode(GameState.self, from: data)
                 let completedSeason = targetSeason - 1
                 expect(
-                    data.count <= 8 * 1024 * 1024,
-                    "save is \(data.count) B at season \(targetSeason), over the 8 MB D4 ceiling"
+                    data.count <= SaveBudget.twentySeasonCeilingBytes,
+                    "save is \(data.count) B at season \(targetSeason), over the "
+                        + "\(SaveBudget.twentySeasonCeilingBytes / 1024 / 1024) MB D4 ceiling"
                 )
                 expectEqual(state.calendar, CalendarState(season: targetSeason, week: 2))
                 expectEqual(state.college.portal.phase, .closed)

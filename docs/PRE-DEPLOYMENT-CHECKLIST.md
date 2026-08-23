@@ -26,7 +26,7 @@ owner-checked ones are owner-checked because no agent in this project's environm
 - [ ] The engine/UI boundary scan passes — zero `import SwiftUI` under `FootballSimCore/`.
 - [ ] The design-token scan passes — zero spacing, radius, colour or font-size literals in views.
 - [ ] The 20-season soak passes every assertion, at shipping league size.
-- [ ] Save size after 20 seasons is under the 8 MB ceiling; every bounded collection verified bounded
+- [ ] Save size after 20 seasons is under the 50 MB ceiling (owner, 2026-08-23); every bounded collection verified bounded
       by growth check.
 - [ ] Migration fixtures pass at every schema version boundary.
 - [ ] All ten accessibility contract tests green, including orientation and the coverage

@@ -221,7 +221,7 @@ on 2026-08-11.
 | Week advance, pro (~15 games) | 0.3 s | 0.6 s | |
 | Full-season sim, college | 20 s | 35 s | Used by the soak, and by "sim to end of season" |
 | Match render frame budget | 8 ms | **16.7 ms** | 60 fps floor; `Canvas` + `TimelineView`, 22 marks |
-| Save size, 20 seasons | 4 MB | **8 MB** | Prior build: 8.3 MB unbounded → 2.3 MB bounded, at 32 teams. ~134 programmes plus recruiting history is a materially larger object |
+| Save size, 20 seasons | 4 MB | **50 MB** | **Raised from 8 MB by the owner on 2026-08-23.** Prior build: 8.3 MB unbounded → 2.3 MB bounded, at 32 teams. ~134 programmes plus recruiting history is a materially larger object. The measured 30-season release soak on 2026-08-23 reported 19.7 MB at season 20 and 27.5 MB at season 30, both now inside the ceiling. **The 4 MB target is not raised and is already unmet — season 1 measures 5.4 MB** |
 | Cold launch to playable | 1.2 s | 2.0 s | |
 | Save write (off main actor, always) | 150 ms | 400 ms | The prior build's single P0 was a 2.4–3.3 MB synchronous main-actor save at 11 call sites |
 
@@ -340,7 +340,15 @@ time, each a pure function with a fixture test at every version boundary. A save
 version is refused with a plain message rather than opened.
 
 **Falsifier — instrument: the 20-season soak.** Falsified if a 20-season college→pro career exceeds
-the 8 MB hard ceiling, or if any bounded collection is found unbounded by the soak's growth check.
+the **50 MB** hard ceiling (raised from 8 MB by the owner on 2026-08-23; D4 carries the budget table
+and the measurements), or if any bounded collection is found unbounded by the soak's growth check.
+
+Raising the ceiling changes what this falsifier catches, and it is worth being explicit about what it
+no longer catches: at 8 MB the falsifier fired at season 4 and stayed fired, so it was reporting a
+real unbounded-growth problem as a size problem every run. At 50 MB it will pass until roughly season
+50 on the current growth curve. **The growth-check limb, not the size limb, is now the one doing the
+work** — an unbounded collection must be caught by growth, because size will no longer notice it for
+decades of simulated time.
 
 **Cost of reversal: high after ship, low before.**
 
