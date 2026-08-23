@@ -1518,3 +1518,28 @@ future branch directory will hit the same wall.
   them.
 - `Sources/ProFootballCoachUI` holds no `CoachWorldTokens.light` and no `Environment(\.colorScheme)`.
 - `git diff --check` clean; no emoji in any added line.
+
+### GitNexus scope review
+
+`detect_changes({scope: "compare", base_ref: "main"})` reports **CRITICAL**: 1,000 changed symbols,
+127 affected processes, 211 files -- including engine processes such as `ResolveSnap`,
+`SignFreeAgents` and `GenerateRoster`. That must be reported, and it must also be attributed
+correctly: the branch is 44 commits and this session contributed the last nine.
+
+Comparing against this session's starting commit instead, `base_ref: 88962c38`:
+
+| | |
+|---|---|
+| Changed symbols | 156 |
+| Changed files | 70 |
+| **Affected processes** | **0** |
+| Risk | **LOW** |
+
+Every changed symbol is a `ProFootballCoachUI` view, a test, or a documentation section. No file
+under `Sources/FootballSimCore` or `Sources/CoachWorldApp` is touched. The engine processes in the
+branch-wide report belong to the earlier commits, not to the all-screen migration, and the two
+numbers should not be quoted interchangeably.
+
+This is also the evidence behind the claim made repeatedly above -- that a red engine lane such as
+`--career-portal-decisions` cannot have been caused by this work. It is not an argument from
+plausibility; the changed-symbol set contains no engine symbol at all.
