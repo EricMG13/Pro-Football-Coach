@@ -69,7 +69,10 @@ design decision only in code.
 **Files:**
 - Modify: `docs/02-GAME-DESIGN.md` (insert new section 4.3a after section 4.3, which ends at the
   `---` preceding `## 5. Ratings, progression, development`)
-- Modify: `docs/DOC-MANIFEST.md` (record the amendment date against `02`)
+- `docs/DOC-MANIFEST.md` is **not** modified. Its section 4 table is a purpose register with a
+  `purpose` column, not a changelog, and its only other row for `02` records the DELETED
+  predecessor. `02`'s own heading convention carries amendment dates (`### 4.2a ... added
+  2026-08-12`, `### 4.1a ... added 2026-08-13`), and section 4.3a follows it.
 
 - [ ] **Step 1: Insert section 4.3a into `docs/02-GAME-DESIGN.md`**
 
@@ -102,12 +105,7 @@ live is what broke: a stored record's validity would change whenever a balance p
 rating model, and a save written last month would stop decoding this month.
 ```
 
-- [ ] **Step 2: Record the amendment in `docs/DOC-MANIFEST.md`**
-
-Find the row for `docs/02-GAME-DESIGN.md` and append to its notes the sentence:
-`Section 4.3a (portal scouting fidelity) added 2026-08-23.`
-
-- [ ] **Step 3: Verify no canon conflict**
+- [ ] **Step 2: Verify no canon conflict**
 
 Run:
 
@@ -119,10 +117,10 @@ Expected: no line that contradicts section 4.3a. If a line does contradict it, *
 to the owner** — CLAUDE.md says a canon conflict is a defect to escalate, not to resolve by
 picking a winner.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add docs/02-GAME-DESIGN.md docs/DOC-MANIFEST.md
+git add docs/02-GAME-DESIGN.md
 git commit -m "docs: state that portal scouting estimates the full rated set"
 ```
 
