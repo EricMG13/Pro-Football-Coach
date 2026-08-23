@@ -329,9 +329,21 @@ if ![1, 2, 6].contains(id) {
 Title / Continue (1), New career & coach identity (2) and Settings & accessibility (6) are
 pre-career or teamless: there is no club, no record, no family and no opponent to put in a band.
 
-**Press Box draws a band on two of the three.** `ContinuityDemo` (1) and `AppearanceDemo` (6) both
-carry one, inventing a club and a week for surfaces that have neither. Both need redrawing without
-it — which also removes the `back` control, since there is nowhere up from a root.
+**DONE, and one of the two needed a subtler answer than "remove the band".**
+
+- **1 Title / Continue** — band removed. It is a root: no club, no record, no week, and no `back`,
+  because there is nowhere up from it. The identity moved into a title block.
+- **6 Settings** — **needs both states.** The proof matrix *skips* the assertion here rather than
+  asserting the band absent, and the not-produced register names Title, Job board, Offer, Coach
+  identity and Appointment as bandless — **not** Settings. It is reachable from Title, where there is
+  no club, and from a career, where there is. Both are drawn.
+
+Settings is therefore the surface that proves the pattern in **A4d**: it should not choose. The
+stage resolves team identity once and leaves nil where there is no club, and the surface renders
+whichever it is handed.
+
+Both now live in `demo/Entry.jsx`; the superseded copies were removed from `demo/Admin.jsx` rather
+than left as a second drawing of the same surface.
 
 The proof matrix also confirms the canonical count independently: it lists exactly 47 IDs.
 
