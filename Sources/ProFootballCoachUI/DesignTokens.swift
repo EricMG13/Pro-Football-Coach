@@ -97,19 +97,39 @@ public enum CoachWorldTokens {
         // requiring an exemption on the file that also holds every other view's numbers.
     }
 
-    /// The 40-99 rating scale's three bands. Always a *second* reading of a printed figure — the
-    /// colour never replaces the number, per `04` section 4.4.
+    /// The 40-99 rating scale's five diverging bands. Always a *second* reading of a printed
+    /// figure — the colour never replaces the number, per `04` section 4.4.
     public enum Heat {
         public static let scaleFloor = 40
         public static let scaleCeiling = 99
-        public static let strongFloor = 85
-        /// `04` section 6.4: "red below 70, amber from 70-84 and green from 85 upward."
-        public static let steadyFloor = 70
+
+        /// `04` section 6.4's five diverging bands, amended 2026-08-22, as the floor of each.
+        ///
+        /// The three-band red/amber/green scale this replaced read an average starter as a caution:
+        /// everything from 70 to 84 was amber, so the middle of the range looked like a warning.
+        /// The centre is neutral now, and the two ends each split in two.
+        public static let belowFloor = 60
+        public static let averageFloor = 70
+        public static let aboveFloor = 80
+        public static let wellAboveFloor = 85
+
+        /// How far the Above band travels from `state.positive` toward `content.primary`.
+        ///
+        /// `04` section 6.4 says "`state.positive`, lightened" and the 2026-08-23 amendment fixes
+        /// what that means: the fraction lives here rather than a hex living in the palette, so a
+        /// change to `state.positive` carries the Above band with it instead of stranding a
+        /// second green that nothing keeps in step.
+        public static let aboveLightening = 0.25
 
         public static func color(for rating: Int, palette: Palette) -> Color {
             switch rating {
-            case strongFloor...: palette.statePositive.color
-            case steadyFloor..<strongFloor: palette.stateWarning.color
+            case wellAboveFloor...: palette.statePositive.color
+            case aboveFloor..<wellAboveFloor:
+                palette.statePositive
+                    .mixed(with: palette.contentPrimary, amount: aboveLightening)
+                    .color
+            case averageFloor..<aboveFloor: palette.contentSecondary.color
+            case belowFloor..<averageFloor: palette.stateWarning.color
             default: palette.stateNegative.color
             }
         }

@@ -789,6 +789,14 @@ desktop-class management density.
 
      Every band clears 4.5:1 on `world.page` and sits at least 24° from gold, per §6.1a(ii). Retain
      the printed number and a spoken band so colour is not the sole meaning — unchanged.
+
+     **Amended 2026-08-23: what "lightened" is.** The Above band's ink is `state.positive` mixed a
+     quarter of the way toward `content.primary` — `#4FD08C` to `#F6FAFF` at 0.25, giving `#79DAA9`.
+     The fraction is the value, stated once as `CoachWorldTokens.Heat.aboveLightening`, so no view
+     carries a hex and a later change to `state.positive` carries the Above band with it. Measured
+     on `world.page`: 11.71:1, and 107.6° from `action.primary`'s gold — both bars above are clear
+     with room. It is 14.8 ΔE from `state.positive` itself, which is what makes Above and Well above
+     read as two bands rather than one.
    - **Where a surface bands a rating it prints the band table on that surface.** This answers “is 74
      good?” without computing a live percentile, and degrades correctly in a save with no league
      history yet.

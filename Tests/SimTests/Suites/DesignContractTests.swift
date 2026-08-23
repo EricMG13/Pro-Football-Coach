@@ -33,6 +33,51 @@ private func canonHexValues(_ canon: String) -> Set<String> {
     Set(matches(of: "#([0-9A-Fa-f]{6})\\b", in: canon).map { $0.uppercased() })
 }
 
+/// `04` section 6.4's heat-scale bands, as (low, high, role text), in the order canon states them.
+///
+/// Parses the table rather than a sentence. The retired three-band scale was stated in prose, so
+/// this test read it with two regexes for "red below 70" and "green from 85 upward"; when the
+/// 2026-08-22 amendment replaced that sentence with a five-band table the regexes matched nothing
+/// and the test failed at the parse rather than telling anyone the tokens were stale. Reading the
+/// rows means a band added or moved in canon is covered the day canon changes.
+private func canonHeatBands(_ canon: String) -> [(low: Int, high: Int, role: String)] {
+    let lines = canon.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    guard let header = lines.firstIndex(where: {
+        $0.contains("| Band |") && $0.contains("| Range |") && $0.contains("| Role |")
+    }) else { return [] }
+    var bands: [(low: Int, high: Int, role: String)] = []
+    for line in lines.dropFirst(header + 1) {
+        let row = line.trimmingCharacters(in: .whitespaces)
+        guard row.hasPrefix("|") else { break }
+        let cells = row.split(separator: "|", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        guard cells.count >= 4 else { continue }
+        let bounds = matches(of: "(\\d+)", in: cells[2]).compactMap(Int.init)
+        guard bounds.count == 2 else { continue }
+        bands.append((low: bounds[0], high: bounds[1], role: cells[3]))
+    }
+    return bands
+}
+
+/// The ink `04` section 6.4's role cell names, or nil if this test cannot resolve it.
+///
+/// Returning nil rather than a default is the point: a role canon names and this test does not know
+/// fails loudly instead of quietly banding to whatever the last branch happened to be.
+private func canonHeatInk(role: String, palette: CoachWorldTokens.Palette) -> CoachWorldTokens.ColorValue? {
+    if role.contains("state.positive") {
+        return role.contains("lightened")
+            ? palette.statePositive.mixed(
+                with: palette.contentPrimary,
+                amount: CoachWorldTokens.Heat.aboveLightening
+            )
+            : palette.statePositive
+    }
+    if role.contains("content.secondary") { return palette.contentSecondary }
+    if role.contains("state.warning") { return palette.stateWarning }
+    if role.contains("state.negative") { return palette.stateNegative }
+    return nil
+}
+
 /// The symbol register in `04` section 6.6, as class name to (cap, members).
 ///
 /// Parses the table rows rather than the prose: a row is `| **Name** (…) | cap | `a`, `b` | where |`.
@@ -236,27 +281,71 @@ func runDesignContractTests() {
         // function against canon, across the whole rating range, is what makes all three agree by
         // construction rather than by three people remembering to keep three copies in sync.
         test("Heat.color's banding matches 04 section 6.4's stated heat scale, across the whole range") {
-            guard let steadyFloorText = matches(of: "red below (\\d+)", in: canon).first,
-                  let strongFloorText = matches(of: "green from (\\d+) upward", in: canon).first,
-                  let canonSteadyFloor = Int(steadyFloorText),
-                  let canonStrongFloor = Int(strongFloorText)
-            else {
-                expect(false, "could not parse 04 section 6.4's heat-scale sentence — "
+            let bands = canonHeatBands(canon)
+            guard bands.count >= 2 else {
+                expect(false, "could not parse 04 section 6.4's band table — "
                     + "the parser, not the tokens, is what failed")
                 return
             }
-            expectEqual(CoachWorldTokens.Heat.steadyFloor, canonSteadyFloor,
-                        "Heat.steadyFloor must match 04 section 6.4's stated amber floor")
-            expectEqual(CoachWorldTokens.Heat.strongFloor, canonStrongFloor,
-                        "Heat.strongFloor must match 04 section 6.4's stated green floor")
+
+            // The bands have to partition the scale. A gap would leave ratings no band describes,
+            // and an overlap would let two bands claim one rating, so neither can be caught by
+            // checking the bands one at a time.
+            expectEqual(bands.first?.low, CoachWorldTokens.Heat.scaleFloor,
+                        "04 section 6.4's first band must start at the scale floor")
+            expectEqual(bands.last?.high, CoachWorldTokens.Heat.scaleCeiling,
+                        "04 section 6.4's last band must end at the scale ceiling")
+            for (lower, upper) in zip(bands, bands.dropFirst()) {
+                expectEqual(upper.low, lower.high + 1,
+                            "04 section 6.4 leaves a gap or an overlap between "
+                                + "\(lower.low)–\(lower.high) and \(upper.low)–\(upper.high)")
+            }
+
+            expectEqual(bands.map(\.low),
+                        [CoachWorldTokens.Heat.scaleFloor,
+                         CoachWorldTokens.Heat.belowFloor,
+                         CoachWorldTokens.Heat.averageFloor,
+                         CoachWorldTokens.Heat.aboveFloor,
+                         CoachWorldTokens.Heat.wellAboveFloor],
+                        "the token layer's band floors must be the floors 04 section 6.4 states")
 
             let palette = CoachWorldTokens.dark
-            for rating in CoachWorldTokens.Heat.scaleFloor...CoachWorldTokens.Heat.scaleCeiling {
-                let expected = rating >= canonStrongFloor ? palette.statePositive.color
-                    : rating >= canonSteadyFloor ? palette.stateWarning.color
-                    : palette.stateNegative.color
-                expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), expected,
-                            "rating \(rating) does not land in the band 04 section 6.4 describes")
+            for band in bands {
+                guard let ink = canonHeatInk(role: band.role, palette: palette) else {
+                    expect(false, "04 section 6.4 names a role this test cannot resolve: \(band.role)")
+                    continue
+                }
+                for rating in band.low...band.high {
+                    expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), ink.color,
+                                "rating \(rating) does not land in the band 04 section 6.4 describes")
+                }
+            }
+        }
+
+        // Without this the lightening fraction would only ever be compared against itself: the
+        // banding test builds its expectation from `aboveLightening`, so a wrong fraction would
+        // agree with a wrong colour. Canon states the resulting hex, so the hex is what pins it.
+        test("the Above band's lightened ink is the hex 04 section 6.4 states") {
+            guard let stated = matches(of: "giving `#([0-9A-Fa-f]{6})`", in: canon).first,
+                  let statedValue = UInt32(stated, radix: 16)
+            else {
+                expect(false, "04 section 6.4 no longer states the Above band's resulting hex")
+                return
+            }
+            let palette = CoachWorldTokens.dark
+            let derived = palette.statePositive.mixed(
+                with: palette.contentPrimary,
+                amount: CoachWorldTokens.Heat.aboveLightening
+            )
+            let expected = CoachWorldTokens.ColorValue(hex: statedValue)
+            // One 8-bit step of tolerance: canon states a hex, the mix produces continuous
+            // components, and they can only agree to the nearest 1/255.
+            for (channel, pair) in [("red", (derived.red, expected.red)),
+                                    ("green", (derived.green, expected.green)),
+                                    ("blue", (derived.blue, expected.blue))] {
+                expect(abs(pair.0 - pair.1) <= 1.0 / 255.0,
+                       "the Above band's \(channel) is \(pair.0) but 04 section 6.4 states "
+                           + "#\(String(statedValue, radix: 16, uppercase: true)) (\(pair.1))")
             }
         }
     }
