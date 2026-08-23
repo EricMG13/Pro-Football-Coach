@@ -7,8 +7,9 @@ The honest picture: what exists, what is verified, what is not.
 > **2026-08-23, later — a second documentation pass swept the canon documents the first one did not
 > touch, and found five more falsifier instruments that do not exist.** `docs/OPEN-DECISIONS.md`,
 > `docs/02-GAME-DESIGN.md`, `docs/03-MATCH-ENGINE.md`, `docs/04b-AUDIT-RUBRIC.md`, `PRODUCT.md` and
-> `docs/FUTURE-SIMULATION-CONTRACT.md` were checked by extracting every backticked Swift identifier
-> and resolving it against the tree, and every documented member name against the rules modules.
+> `docs/FUTURE-SIMULATION-CONTRACT.md` were checked by extracting every backticked type, test and
+> member name and resolving each against the tree — types against their declarations, gate names
+> against `SuiteCatalog.swift`'s `ReleaseGateID`, members against the rules and system modules.
 >
 > - **Corrected in place.** `CLAUDE.md`'s document map described `04b` as "five dimensions, 0–4
 >   anchors" — the frame the owner replaced on 2026-08-11 — while `CLAUDE.md`'s own process section 5
