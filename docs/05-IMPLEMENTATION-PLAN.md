@@ -419,26 +419,44 @@ entry.
 
 ### Insertion: P11a — The M8 production-UI entry gate, as tests (immediately before P11)
 
-The entry conditions named above are currently assertions in prose. This phase makes them
-mechanical, and none of it touches engine work.
+The entry conditions named above were assertions in prose when this phase was written. It makes
+them mechanical, and none of it touches engine work.
 
-- **G-07 test half** — a `ContractTests` sync check so `04` §6.1/§6.2 and
-  `Sources/ProFootballCoachUI/DesignTokens.swift` cannot drift. The values are written back; nothing
-  stops them diverging tomorrow.
-- **G-08** — the symbol-register contract test. `04` §6.6 now holds the product's whole symbol
-  vocabulary in capped classes; the test walks `Sources/ProFootballCoachUI/ScreenRegistry.swift`
-  **by construction** and fails when a surface draws a symbol the register does not hold, or when a
-  class exceeds its cap. The coverage-boundary rule in `CLAUDE.md` forbids a hand list here: the
-  reference library shipped with every sheet pricing its own spend locally and asserting global
-  compliance, which no sheet could know, and the missing global check is exactly this test.
-- **G-09 test half** — `OrientationPolicyTest` (reads `App/project.yml`; `CLAUDE.md` claims it
-  asserts landscape-only and it does not exist) and the two-tier `SmallestDeviceLayoutTest`: every
-  registry surface un-clipped and reachable at the 844 × 390 install floor, at full budget at the
-  852 × 393 promise floor.
-- **G-12** — the AX5 reflow contract, enumerating families from the registry, asserting no datum is
-  dropped and reading order is preserved.
-- **G-13** — the failure-set designs exist on `failure-v3.dc.html`; this phase carries them into the
-  view layer as families land.
+**Written as of 2026-08-23, measured against the tree rather than restated from this list.** Of the
+five bullets below, two shipped whole and two shipped in part after they were written here, and the
+list went on describing all four as owed. Where the shipped instrument differs from the
+specification, the shipped mechanism is stated and the specification is marked as what it was.
+
+- **G-07 test half — written.** Ships as the "Design token sync" suite in
+  `Tests/SimTests/Suites/DesignContractTests.swift`, not as the `ContractTests` check specified
+  here: it parses every six-digit hex out of `04` §6.1 at run time and fails on any `0x` colour
+  `Sources/ProFootballCoachUI/DesignTokens.swift` ships that canon does not hold. Its own
+  planted-offender self-test ships beside it.
+- **G-08 — written.** Ships as the "Symbol register" suite in the same file. Two clauses of the
+  specification below did not survive contact: the register is parsed out of `04` §6.6's table
+  rather than restated, which is as specified, but the scan enumerates **every file that imports
+  the UI framework**, not `Sources/ProFootballCoachUI/ScreenRegistry.swift`. The suite's own comment
+  records why — it walked that one directory until 2026-08-13, when the composition layer added a
+  second target containing a view, which a directory walk would have missed. The coverage-boundary
+  rule in `CLAUDE.md` is what the import-based enumeration serves; the path named here would have
+  broken it.
+- **G-09 test half — half written.** The orientation assertion ships as the "Orientation policy"
+  suite in `DesignContractTests.swift`, reading `App/project.yml`. It was named
+  `OrientationPolicyTest` here until 2026-08-23, and this bullet additionally said it "does not
+  exist" after the same pass had corrected the entry-conditions paragraph above to say it does — the
+  two sites disagreed inside one document. No type of that name has ever been written; the suite is
+  what exists. The two-tier `SmallestDeviceLayoutTest` — every registry surface un-clipped and
+  reachable at the 844 × 390 install floor, at full budget at the 852 × 393 promise floor — **is
+  still unwritten**, and `06` §2 row 23 records the same.
+- **G-12 — source limb written, rendered limb open.** Ships as the "AX5 reflow contract" suite in
+  `Tests/SimTests/Suites/AccessibilityReflowTests.swift`, enumerating families from
+  `CoachWorldScreenID` and partitioning them into landed and pending. It asserts that a landed
+  family declares an accessibility-size composition and a deterministic VoiceOver order. It does
+  **not** assert "no datum is dropped", which this bullet claimed: that is a property of a render,
+  and the suite is a headless executable with no view host. `04` §7.1 states the limit and forbids
+  scoring AX5 above 3 on this suite alone.
+- **G-13 — not a test.** The failure-set designs exist on `failure-v3.dc.html`; this phase carries
+  them into the view layer as families land.
 
 **Gates:** G1, G2, G4, plus each test above red-then-green against a deliberately broken fixture, so
 the instrument is proven to fail before it is trusted.
