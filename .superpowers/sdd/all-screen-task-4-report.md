@@ -1422,3 +1422,44 @@ them, so the check fails on its own guard. Scanning `Sources` alone is clean, wh
 question. Recorded rather than quietly rewritten, because the next agent will hit it too.
 
 `Sources/ProFootballCoachUI` also holds no `CoachWorldTokens.light` and no `Environment(\.colorScheme)`.
+
+### The proof images were not evidence, and that took three attempts to see
+
+Task 11's durable captures were first taken from XCTest attachments using `app.screenshot()`. Every
+file passed the plan's stated check -- width greater than height, 2532 x 1170, zero portrait, 90 of
+90 -- and every file was **wrong**. The app-scoped screenshot composites a landscape-only app's
+window into the canvas and stores a *partial, rotated* view: roughly a 390 x 390 point corner of an
+844 x 390 screen, with the rest black.
+
+That artefact is the same one that made a correct Roster render look like a blank navy panel in
+Task 5. It was diagnosed then as "a capture-pipeline artefact, not a layout defect" -- which was
+right -- and then the same pipeline was used to produce the proof matrix, which was wrong. Knowing
+an instrument is faulty is not the same as not using it.
+
+The dimension check could not catch it, and that is the interesting part: the file's *shape* is
+correct while its *content* is a rotated crop. A check on width and height is satisfied by an image
+that shows a third of the screen sideways. The only thing that caught it was opening one.
+
+The captures now come from `simctl` instead:
+
+```
+SIMCTL_CHILD_PROOF_NEW_CAREER=424242 SIMCTL_CHILD_PROOF_SCREEN_NUMBER=<id> \
+  xcrun simctl launch --terminate-running-process <udid> com.ericmg.ProFootballCoach
+xcrun simctl io <udid> screenshot <file>     # device framebuffer, portrait 1170 x 2532
+sips -r 270 <file>                            # lossless, only when it really is portrait
+```
+
+The device framebuffer is portrait and this landscape-only app renders rotated inside it, so the
+grab arrives portrait and is rotated once, losslessly, and only when it actually is portrait --
+rotating an already-landscape file is the mistake that made a correct capture look broken earlier in
+this same work.
+
+Two further benefits, both of which mattered today: this path does not use the test runner, which
+concurrent sessions on this machine were killing outright at load 350 and again at 757
+("Test crashed with signal kill before establishing connection"); and it is a pure capture step. It
+asserts nothing. The assertions stay in the XCUITest family proofs where they belong, so a PNG here
+is evidence of what rendered rather than a claim that it is correct.
+
+The XCUITest attachments were fixed too -- `XCUIScreen.main.screenshot()` rather than
+`app.screenshot()` -- so the in-test evidence stops being misleading even though the durable matrix
+no longer comes from it.

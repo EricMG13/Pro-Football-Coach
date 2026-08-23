@@ -114,7 +114,12 @@ final class ProFootballCoachUITests: XCTestCase {
                     XCTFail("Missing honest unavailable state for screen \(screenID), AX5: \(usesAX5)")
                     return
                 }
-                let attachment = XCTAttachment(screenshot: app.screenshot())
+                // `XCUIScreen.main.screenshot()`, not `app.screenshot()`. The device framebuffer is
+            // portrait and this landscape-only app is drawn rotated inside it; the app-scoped
+            // screenshot composites that into a landscape canvas and captures only part of the
+            // screen, which is how a correct render came to look like a blank panel. The whole
+            // framebuffer is faithful, and the exporter rotates it to landscape.
+            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
                 attachment.name = "Weekly command \(screenID) — \(usesAX5 ? "AX5" : "default") — unavailable"
                 attachment.lifetime = .keepAlways
                 add(attachment)
@@ -146,8 +151,16 @@ final class ProFootballCoachUITests: XCTestCase {
             }
             XCTAssertEqual(app.buttons.matching(identifier: rootIdentifier).count, 0)
             XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-dominant").count, 0)
-            let attachment = XCTAttachment(screenshot: app.screenshot())
-            attachment.name = "Weekly command \(screenID) — \(usesAX5 ? "AX5" : "default")"
+            // `XCUIScreen.main.screenshot()`, not `app.screenshot()`. The device framebuffer is
+            // portrait and this landscape-only app is drawn rotated inside it; the app-scoped
+            // screenshot composites that into a landscape canvas and captures only part of the
+            // screen, which is how a correct render came to look like a blank panel. The whole
+            // framebuffer is faithful, and the exporter rotates it to landscape.
+            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            // The same "-- <branch>" suffix every other family records, so one exporter reads
+            // all 47 and the ledger can state which screens were evidenced by a stamp.
+            attachment.name =
+                "Weekly command \(screenID) — \(usesAX5 ? "AX5" : "default") — stamped"
             attachment.lifetime = .keepAlways
             add(attachment)
             app.terminate()
@@ -312,6 +325,20 @@ final class ProFootballCoachUITests: XCTestCase {
         }
     }
 
+    /// One destination per family, for the widths above the install floor.
+    ///
+    /// The floor is where the composition is tightest and every canonical id is proved there. Above
+    /// it only the content column stretches, so a representative per family is what the wider
+    /// windows need to evidence -- not all 47 again. Entry (1) is absent for the same reason it is
+    /// absent everywhere: the harness cannot stand before a career exists.
+    func testFamilyRepresentativesAtCurrentWindow() {
+        assertCanonicalFamily(
+            "Representative",
+            ids: [8, 16, 24, 34, 41, 52],
+            usesAX5: false
+        )
+    }
+
     /// One canonical destination family, enumerated by id rather than listed by hand.
     ///
     /// Exactly one stamp per screen, and exactly the expected one: counting only the expected id
@@ -368,7 +395,12 @@ final class ProFootballCoachUITests: XCTestCase {
                 )
             }
 
-            let attachment = XCTAttachment(screenshot: app.screenshot())
+            // `XCUIScreen.main.screenshot()`, not `app.screenshot()`. The device framebuffer is
+            // portrait and this landscape-only app is drawn rotated inside it; the app-scoped
+            // screenshot composites that into a landscape canvas and captures only part of the
+            // screen, which is how a correct render came to look like a blank panel. The whole
+            // framebuffer is faithful, and the exporter rotates it to landscape.
+            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             attachment.name =
                 "\(family) \(screenID) — \(usesAX5 ? "AX5" : "default") — \(branch)"
             attachment.lifetime = .keepAlways
@@ -783,7 +815,7 @@ final class ProFootballCoachUITests: XCTestCase {
                 NSPredicate(format: "label ==[c] %@", fixture.route)
             ).firstMatch
             XCTAssertTrue(route.waitForExistence(timeout: 10))
-            let hqScreenshot = XCTAttachment(screenshot: app.screenshot())
+            let hqScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             hqScreenshot.name = "HQ receipt after screen \(fixture.screenID) commit"
             hqScreenshot.lifetime = .keepAlways
             add(hqScreenshot)
@@ -820,7 +852,7 @@ final class ProFootballCoachUITests: XCTestCase {
                     "Expected selected payload evidence: \(expectedEvidence)"
                 )
             }
-            let selectedScreenshot = XCTAttachment(screenshot: app.screenshot())
+            let selectedScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             selectedScreenshot.name = "Selected commit evidence screen \(fixture.screenID)"
             selectedScreenshot.lifetime = .keepAlways
             add(selectedScreenshot)
@@ -833,7 +865,7 @@ final class ProFootballCoachUITests: XCTestCase {
             XCTAssertTrue(commit.label.localizedCaseInsensitiveContains(
                 fixture.choice.dropLast()
             ))
-            let commitScreenshot = XCTAttachment(screenshot: app.screenshot())
+            let commitScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             commitScreenshot.name = "Selected commit target screen \(fixture.screenID)"
             commitScreenshot.lifetime = .keepAlways
             add(commitScreenshot)
@@ -984,7 +1016,7 @@ final class ProFootballCoachUITests: XCTestCase {
             app.otherElements["team-logo-fallback-proof"].staticTexts.count, 0,
             "the fallback proof must still expose its name as a child"
         )
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = "Team logos — packaged and fallback"
         attachment.lifetime = .keepAlways
         add(attachment)
@@ -1005,7 +1037,7 @@ final class ProFootballCoachUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Fallback Team"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.otherElements["team-logo-fallback-proof"].exists)
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = "Team logos — accessibility type"
         attachment.lifetime = .keepAlways
         add(attachment)
