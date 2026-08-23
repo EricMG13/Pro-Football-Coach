@@ -1,2314 +1,3163 @@
 {
-  "schemaVersion": 1,
-  "selectedCandidateIDs": [],
   "fillCandidates": [
     {
+      "family": "researched palette",
       "id": "researched-recolor:f6acb9372042855ea036e5606a282f10c93bd0f39bc45882ffe118993e90bb9e",
-      "sha256": "dd1aa0a4ef2b7aa3cc7b8fd7ef4ac2a844356094d04274cc08ceef368f9463e0",
       "imagePath": "final-166-colors/recolored-selected/001-f6acb9372042.png",
-      "name": "Researched palette 001",
-      "family": "researched palette",
+      "name": "Zumbrota Central Lodestars",
+      "nickname": "Lodestars",
+      "palette": {
+        "league": "NFL",
+        "primary": "#203731",
+        "secondary": "#FFB612",
+        "team": "Green Bay Packers"
+      },
+      "primaryColorHex": "#203731",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "dd1aa0a4ef2b7aa3cc7b8fd7ef4ac2a844356094d04274cc08ceef368f9463e0",
       "sourceCandidateID": "f6acb9372042855ea036e5606a282f10c93bd0f39bc45882ffe118993e90bb9e",
-      "palette": {
-        "league": "NFL",
-        "team": "Green Bay Packers",
-        "primary": "#203731",
-        "secondary": "#FFB612"
-      }
+      "teamStableID": "0017F958-E7D0-4FFC-9EA8-01A252B40FD6"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:973f03365228f777d7f62ff1e601caa2b0f1b1e8a5e423df820402963d80cdf2",
-      "sha256": "6e3240ff96f61fa9d33a297a9979fa87cf76cb6a3bab1461a81a96765fade26f",
       "imagePath": "final-166-colors/recolored-selected/002-973f03365228.png",
-      "name": "Researched palette 002",
-      "family": "researched palette",
+      "name": "Union Maritime Sentinels",
+      "nickname": "Sentinels",
+      "palette": {
+        "league": "NFL",
+        "primary": "#000000",
+        "secondary": "#A5ACAF",
+        "team": "Las Vegas Raiders"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#A5ACAF",
+      "sha256": "6e3240ff96f61fa9d33a297a9979fa87cf76cb6a3bab1461a81a96765fade26f",
       "sourceCandidateID": "973f03365228f777d7f62ff1e601caa2b0f1b1e8a5e423df820402963d80cdf2",
-      "palette": {
-        "league": "NFL",
-        "team": "Las Vegas Raiders",
-        "primary": "#000000",
-        "secondary": "#A5ACAF"
-      }
+      "teamStableID": "00EBE0C0-2B2B-4988-A450-BB870D6D3881"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:600f5be684f6e2dc371ca97fe56408d3fb42b9fa0d2b3374c4d25f2506b9f429",
-      "sha256": "89ae540579e45a1653ce5ab2aefc294e6dc704eb38e930510ad6dc5d789c2073",
       "imagePath": "final-166-colors/recolored-selected/003-600f5be684f6.png",
-      "name": "Researched palette 003",
-      "family": "researched palette",
+      "name": "Pecos Grizzlies",
+      "nickname": "Grizzlies",
+      "palette": {
+        "league": "FBS",
+        "primary": "#0C562D",
+        "secondary": "#CFAB7A",
+        "team": "Charlotte"
+      },
+      "primaryColorHex": "#0C562D",
+      "secondaryColorHex": "#CFAB7A",
+      "sha256": "89ae540579e45a1653ce5ab2aefc294e6dc704eb38e930510ad6dc5d789c2073",
       "sourceCandidateID": "600f5be684f6e2dc371ca97fe56408d3fb42b9fa0d2b3374c4d25f2506b9f429",
-      "palette": {
-        "league": "FBS",
-        "team": "Charlotte",
-        "primary": "#0C562D",
-        "secondary": "#CFAB7A"
-      }
+      "teamStableID": "073A0F70-0650-44A6-A4BB-62347C46F0E8"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:291dc796b97fa5049020990c95c62a742883f8f02fdb0408b56f3f20ec6e2d03",
-      "sha256": "6fc921e4accfff063f81cca42aafdf68c88b83297ced795a3bad9d88fa9f61f9",
       "imagePath": "final-166-colors/remediated/01-291dc796b97fa5049020990c95c62a742883f8f02fdb0408b56f3f20ec6e2d03.png",
-      "name": "Researched palette 004",
-      "family": "researched palette",
+      "name": "Cambridge A&M Reapers",
+      "nickname": "Reapers",
+      "palette": {
+        "league": "FBS",
+        "primary": "#00274C",
+        "secondary": "#FFCB05",
+        "team": "Michigan"
+      },
+      "primaryColorHex": "#00274C",
+      "secondaryColorHex": "#FFCB05",
+      "sha256": "6fc921e4accfff063f81cca42aafdf68c88b83297ced795a3bad9d88fa9f61f9",
       "sourceCandidateID": "291dc796b97fa5049020990c95c62a742883f8f02fdb0408b56f3f20ec6e2d03",
-      "palette": {
-        "league": "FBS",
-        "team": "Michigan",
-        "primary": "#00274C",
-        "secondary": "#FFCB05"
-      }
+      "teamStableID": "958DF3C5-5675-44A6-8A80-999F90B172A4"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:b3f6943d7b1bc9b67c3ed7a18b6255fbc961af2aba547db1476dd1a03ef03d20",
-      "sha256": "866179eb9369a2459764ee75cc9e9d5662a7ca003ed10ac54f0fda3b3dc1eea4",
       "imagePath": "final-166-colors/recolored-selected/005-b3f6943d7b1b.png",
-      "name": "Researched palette 005",
-      "family": "researched palette",
+      "name": "Milford Coastal Nightwings",
+      "nickname": "Nightwings",
+      "palette": {
+        "league": "FBS",
+        "primary": "#E81018",
+        "secondary": "#000000",
+        "team": "Arkansas State"
+      },
+      "primaryColorHex": "#E81018",
+      "secondaryColorHex": "#000000",
+      "sha256": "866179eb9369a2459764ee75cc9e9d5662a7ca003ed10ac54f0fda3b3dc1eea4",
       "sourceCandidateID": "b3f6943d7b1bc9b67c3ed7a18b6255fbc961af2aba547db1476dd1a03ef03d20",
-      "palette": {
-        "league": "FBS",
-        "team": "Arkansas State",
-        "primary": "#E81018",
-        "secondary": "#000000"
-      }
+      "teamStableID": "07CA9577-9354-4F7D-8ED8-E60A784DB48F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:cafdebe5fafddeac4ca17c50dfa23054b2522821dcc31aa860547ae965a0b3aa",
-      "sha256": "eb3f01ce9d25b2643279f5c97fc80f7432b6ad0a736d39bf507e42595b344e2a",
       "imagePath": "final-166-colors/recolored-selected/006-cafdebe5fafd.png",
-      "name": "Researched palette 006",
-      "family": "researched palette",
+      "name": "Ephraim Maritime Stallions",
+      "nickname": "Stallions",
+      "palette": {
+        "league": "FBS",
+        "primary": "#001D40",
+        "secondary": "#F1F2F3",
+        "team": "Connecticut"
+      },
+      "primaryColorHex": "#001D40",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "eb3f01ce9d25b2643279f5c97fc80f7432b6ad0a736d39bf507e42595b344e2a",
       "sourceCandidateID": "cafdebe5fafddeac4ca17c50dfa23054b2522821dcc31aa860547ae965a0b3aa",
-      "palette": {
-        "league": "FBS",
-        "team": "Connecticut",
-        "primary": "#001D40",
-        "secondary": "#F1F2F3"
-      }
+      "teamStableID": "0FB78D18-D089-4719-B861-DD1E9F9C2082"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:81ad69f3b6c8171296ed8fe91cf13a296d3743872a9379a419555e90d16a0a5a",
-      "sha256": "0c2f47453f8b96db7efc0dbda7e9d6537d444dc673159b643153f5ade44a0bfa",
       "imagePath": "final-166-colors/recolored-selected/007-81ad69f3b6c8.png",
-      "name": "Researched palette 007",
-      "family": "researched palette",
+      "name": "Rexburg A&M Sharks",
+      "nickname": "Sharks",
+      "palette": {
+        "league": "FBS",
+        "primary": "#CE9C00",
+        "secondary": "#231F20",
+        "team": "Army"
+      },
+      "primaryColorHex": "#CE9C00",
+      "secondaryColorHex": "#231F20",
+      "sha256": "0c2f47453f8b96db7efc0dbda7e9d6537d444dc673159b643153f5ade44a0bfa",
       "sourceCandidateID": "81ad69f3b6c8171296ed8fe91cf13a296d3743872a9379a419555e90d16a0a5a",
-      "palette": {
-        "league": "FBS",
-        "team": "Army",
-        "primary": "#CE9C00",
-        "secondary": "#231F20"
-      }
+      "teamStableID": "0D81D2F9-0383-4BD5-A741-76604D277691"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:f648c769c062432deb3c2ffc34099cb7d39291de6b7574a6a18ba79f2a80c254",
-      "sha256": "b5f5349b5fd8f29e603e4793493ee4bab24801bf4e4ed0c06872057fe258ee15",
       "imagePath": "final-166-colors/recolored-selected/008-f648c769c062.png",
-      "name": "Researched palette 008",
-      "family": "researched palette",
+      "name": "Oneonta Bitterns",
+      "nickname": "Bitterns",
+      "palette": {
+        "league": "FBS",
+        "primary": "#003775",
+        "secondary": "#F0F0F0",
+        "team": "Georgia Southern"
+      },
+      "primaryColorHex": "#003775",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "b5f5349b5fd8f29e603e4793493ee4bab24801bf4e4ed0c06872057fe258ee15",
       "sourceCandidateID": "f648c769c062432deb3c2ffc34099cb7d39291de6b7574a6a18ba79f2a80c254",
-      "palette": {
-        "league": "FBS",
-        "team": "Georgia Southern",
-        "primary": "#003775",
-        "secondary": "#F0F0F0"
-      }
+      "teamStableID": "10B39F02-2AE6-489D-964E-3A3AC7C808AC"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:42dfa4bd4bdf8b880fae2d22159a6788416a36c3ce57ff0a11e5b623d611b2ab",
-      "sha256": "2c56346bfed9982f97576d76d1e150a35441a10b7db694db6815105a1c33adec",
       "imagePath": "final-166-colors/remediated/02-42dfa4bd4bdf8b880fae2d22159a6788416a36c3ce57ff0a11e5b623d611b2ab.png",
-      "name": "Researched palette 009",
-      "family": "researched palette",
+      "name": "Middlebury Coastal Goshawks",
+      "nickname": "Goshawks",
+      "palette": {
+        "league": "NFL",
+        "primary": "#203731",
+        "secondary": "#FFB612",
+        "team": "Green Bay Packers"
+      },
+      "primaryColorHex": "#203731",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "2c56346bfed9982f97576d76d1e150a35441a10b7db694db6815105a1c33adec",
       "sourceCandidateID": "42dfa4bd4bdf8b880fae2d22159a6788416a36c3ce57ff0a11e5b623d611b2ab",
-      "palette": {
-        "league": "NFL",
-        "team": "Green Bay Packers",
-        "primary": "#203731",
-        "secondary": "#FFB612"
-      }
+      "teamStableID": "0E106627-801B-485A-A173-B723F51CD305"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5d5cb4764a1ef13f021077f112db82669ff450e6bf4d5cf8e7b8cf1bfa3fdd43",
-      "sha256": "850253e42c94017c7fe078afa5b383481428fdd87a68017633de49ed7d18ef4f",
       "imagePath": "final-166-colors/recolored-selected/010-5d5cb4764a1e.png",
-      "name": "Researched palette 010",
-      "family": "researched palette",
+      "name": "Hood River Maritime Gaffers",
+      "nickname": "Gaffers",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002244",
+        "secondary": "#C60C30",
+        "team": "New England Patriots"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#C60C30",
+      "sha256": "850253e42c94017c7fe078afa5b383481428fdd87a68017633de49ed7d18ef4f",
       "sourceCandidateID": "5d5cb4764a1ef13f021077f112db82669ff450e6bf4d5cf8e7b8cf1bfa3fdd43",
-      "palette": {
-        "league": "NFL",
-        "team": "New England Patriots",
-        "primary": "#002244",
-        "secondary": "#C60C30"
-      }
+      "teamStableID": "1032E7BD-52E6-4C02-85D4-4DC399B13B7A"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:77b4eb63c51ac1b2e2fc26f5661ad43ba53f2fc29a6ddbf7578651daeaf72095",
-      "sha256": "238f7d292c7ab7997dc97f3c73fbb8d7897e7ee180ec7014301f12da44058bb3",
       "imagePath": "final-166-colors/recolored-selected/011-77b4eb63c51a.png",
-      "name": "Researched palette 011",
-      "family": "researched palette",
+      "name": "Edgartown Arbors",
+      "nickname": "Arbors",
+      "palette": {
+        "league": "FBS",
+        "primary": "#18453B",
+        "secondary": "#FFFFFF",
+        "team": "Michigan State"
+      },
+      "primaryColorHex": "#18453B",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "238f7d292c7ab7997dc97f3c73fbb8d7897e7ee180ec7014301f12da44058bb3",
       "sourceCandidateID": "77b4eb63c51ac1b2e2fc26f5661ad43ba53f2fc29a6ddbf7578651daeaf72095",
-      "palette": {
-        "league": "FBS",
-        "team": "Michigan State",
-        "primary": "#18453B",
-        "secondary": "#FFFFFF"
-      }
+      "teamStableID": "0F05F4F3-68CA-4674-B210-9DD7B75E1088"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:187febbd5c7dc1c97dd613529825808c0c9a7974b6ba1afe8d3fda3fd69845ef",
-      "sha256": "856afe471524e1612e82595d9f1c1fa60b1cf5460ce9c4ab436ac68be17870ac",
       "imagePath": "final-166-colors/recolored-selected/012-187febbd5c7d.png",
-      "name": "Researched palette 012",
-      "family": "researched palette",
+      "name": "Pella Martens",
+      "nickname": "Martens",
+      "palette": {
+        "league": "FBS",
+        "primary": "#74232D",
+        "secondary": "#C2C1BA",
+        "team": "Virginia Tech"
+      },
+      "primaryColorHex": "#74232D",
+      "secondaryColorHex": "#C2C1BA",
+      "sha256": "856afe471524e1612e82595d9f1c1fa60b1cf5460ce9c4ab436ac68be17870ac",
       "sourceCandidateID": "187febbd5c7dc1c97dd613529825808c0c9a7974b6ba1afe8d3fda3fd69845ef",
-      "palette": {
-        "league": "FBS",
-        "team": "Virginia Tech",
-        "primary": "#74232D",
-        "secondary": "#C2C1BA"
-      }
+      "teamStableID": "40ADB459-3F48-4A55-804E-42FFC987D1BA"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:2064ad7e24be25c3b0d28a08ebe64f1d8d4684e6e9d903454af894e0752275cd",
-      "sha256": "aae3c428c209e2b68699ce399d79da1044b203ebee3883be0ddcfdf6ca1b71ca",
       "imagePath": "final-166-colors/recolored-selected/013-2064ad7e24be.png",
-      "name": "Researched palette 013",
-      "family": "researched palette",
+      "name": "Hamilton Ursids",
+      "nickname": "Ursids",
+      "palette": {
+        "league": "NFL",
+        "primary": "#A71930",
+        "secondary": "#322F2B",
+        "team": "Tampa Bay Buccaneers"
+      },
+      "primaryColorHex": "#A71930",
+      "secondaryColorHex": "#322F2B",
+      "sha256": "aae3c428c209e2b68699ce399d79da1044b203ebee3883be0ddcfdf6ca1b71ca",
       "sourceCandidateID": "2064ad7e24be25c3b0d28a08ebe64f1d8d4684e6e9d903454af894e0752275cd",
-      "palette": {
-        "league": "NFL",
-        "team": "Tampa Bay Buccaneers",
-        "primary": "#A71930",
-        "secondary": "#322F2B"
-      }
+      "teamStableID": "10E07F5C-24A8-414C-83AE-8B54CBE2BCB8"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5ed209a34089df6ba210270c10c71fae0c6be01dd377d9ecc4c100403c2aa347",
-      "sha256": "6b35d59f831166994827a6860fe519969afb6a8c6dc1cc1536e73b9d8bafd034",
       "imagePath": "final-166-colors/recolored-selected/014-5ed209a34089.png",
-      "name": "Researched palette 014",
-      "family": "researched palette",
+      "name": "New London Valley Kestrels",
+      "nickname": "Kestrels",
+      "palette": {
+        "league": "FBS",
+        "primary": "#00122B",
+        "secondary": "#AE9142",
+        "team": "Notre Dame"
+      },
+      "primaryColorHex": "#00122B",
+      "secondaryColorHex": "#AE9142",
+      "sha256": "6b35d59f831166994827a6860fe519969afb6a8c6dc1cc1536e73b9d8bafd034",
       "sourceCandidateID": "5ed209a34089df6ba210270c10c71fae0c6be01dd377d9ecc4c100403c2aa347",
-      "palette": {
-        "league": "FBS",
-        "team": "Notre Dame",
-        "primary": "#00122B",
-        "secondary": "#AE9142"
-      }
+      "teamStableID": "14A2B6E2-62D4-4F68-B5C8-99DD51B84249"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:2fb1174af027caa5d3c64687826fc9b1e2652f228b231a60fb7a88b9d4dd7046",
-      "sha256": "bc617a32e613b89966d370b1d669d71d1571ea8717db1e68496613fb9226f2ff",
       "imagePath": "final-166-colors/remediated/03-2fb1174af027caa5d3c64687826fc9b1e2652f228b231a60fb7a88b9d4dd7046.png",
-      "name": "Researched palette 015",
-      "family": "researched palette",
+      "name": "Lexington Regional Curlews",
+      "nickname": "Curlews",
+      "palette": {
+        "league": "NFL",
+        "primary": "#003594",
+        "secondary": "#FFD100",
+        "team": "Los Angeles Rams"
+      },
+      "primaryColorHex": "#003594",
+      "secondaryColorHex": "#FFD100",
+      "sha256": "bc617a32e613b89966d370b1d669d71d1571ea8717db1e68496613fb9226f2ff",
       "sourceCandidateID": "2fb1174af027caa5d3c64687826fc9b1e2652f228b231a60fb7a88b9d4dd7046",
-      "palette": {
-        "league": "NFL",
-        "team": "Los Angeles Rams",
-        "primary": "#003594",
-        "secondary": "#FFD100"
-      }
+      "teamStableID": "16A673C3-8E4D-4C59-A0EA-2D3047C8D6EA"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5309985e49a73343fd2409468cd926b04c94135d4ea606a7397b2ef9e35121c2",
-      "sha256": "c1a52ddbf5e8505e52c90873d1614d85def487bab26c3ab41af35ba7ab40a575",
       "imagePath": "final-166-colors/recolored-selected/016-5309985e49a7.png",
-      "name": "Researched palette 016",
-      "family": "researched palette",
+      "name": "Kanab Tempests",
+      "nickname": "Tempests",
+      "palette": {
+        "league": "FBS",
+        "primary": "#00274C",
+        "secondary": "#FFCB05",
+        "team": "Michigan"
+      },
+      "primaryColorHex": "#00274C",
+      "secondaryColorHex": "#FFCB05",
+      "sha256": "c1a52ddbf5e8505e52c90873d1614d85def487bab26c3ab41af35ba7ab40a575",
       "sourceCandidateID": "5309985e49a73343fd2409468cd926b04c94135d4ea606a7397b2ef9e35121c2",
-      "palette": {
-        "league": "FBS",
-        "team": "Michigan",
-        "primary": "#00274C",
-        "secondary": "#FFCB05"
-      }
+      "teamStableID": "1652A3B7-3E69-4E18-88F0-B2E2F0ADBA86"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:ab067fa677b67e610b4f7b6ec4d33f8efe338f7a023a82f7e1ecf725906803d5",
-      "sha256": "83b42b28bc3eb41d546b845898d4000ec1c5e03be4969dfdfd9bb6c4e0adeb5b",
       "imagePath": "final-166-colors/recolored-selected/017-ab067fa677b6.png",
-      "name": "Researched palette 017",
-      "family": "researched palette",
-      "sourceCandidateID": "ab067fa677b67e610b4f7b6ec4d33f8efe338f7a023a82f7e1ecf725906803d5",
+      "name": "New Castle Maritime Sentinels",
+      "nickname": "Sentinels",
       "palette": {
         "league": "FBS",
-        "team": "Texas",
         "primary": "#EE7524",
-        "secondary": "#F0F0F0"
-      }
+        "secondary": "#F0F0F0",
+        "team": "Texas"
+      },
+      "primaryColorHex": "#EE7524",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "83b42b28bc3eb41d546b845898d4000ec1c5e03be4969dfdfd9bb6c4e0adeb5b",
+      "sourceCandidateID": "ab067fa677b67e610b4f7b6ec4d33f8efe338f7a023a82f7e1ecf725906803d5",
+      "teamStableID": "1982A97F-CD2B-459B-AF23-89D5151A9829"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:ede3c6dcb90a10d5f83ca2e2f10af21a83faefbbf4a35a1a4298d8a86a230076",
-      "sha256": "afb379ec1445e6f4beb6a0b294ea78d4f7c68957e3b2860c4328116c08417ffd",
       "imagePath": "final-166-colors/recolored-selected/018-ede3c6dcb90a.png",
-      "name": "Researched palette 018",
-      "family": "researched palette",
+      "name": "San Angelo A&M Hoplites",
+      "nickname": "Hoplites",
+      "palette": {
+        "league": "FBS",
+        "primary": "#C90822",
+        "secondary": "#231F20",
+        "team": "Houston"
+      },
+      "primaryColorHex": "#C90822",
+      "secondaryColorHex": "#231F20",
+      "sha256": "afb379ec1445e6f4beb6a0b294ea78d4f7c68957e3b2860c4328116c08417ffd",
       "sourceCandidateID": "ede3c6dcb90a10d5f83ca2e2f10af21a83faefbbf4a35a1a4298d8a86a230076",
-      "palette": {
-        "league": "FBS",
-        "team": "Houston",
-        "primary": "#C90822",
-        "secondary": "#231F20"
-      }
+      "teamStableID": "1C8CC9B1-F549-4AE4-8CF1-8E4C718D0245"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:4870414d159134c0133c30f972db1562fea2f58cbeca37a46b0ba5a710d819a3",
-      "sha256": "e5d0ebe78726f8f5d28aa773078af8e81b1bb13c867c81035e2efe04f38ddfd4",
       "imagePath": "final-166-colors/remediated/04-4870414d159134c0133c30f972db1562fea2f58cbeca37a46b0ba5a710d819a3.png",
-      "name": "Researched palette 019",
-      "family": "researched palette",
+      "name": "Danville Curlews",
+      "nickname": "Curlews",
+      "palette": {
+        "league": "NFL",
+        "primary": "#4F2683",
+        "secondary": "#FFC62F",
+        "team": "Minnesota Vikings"
+      },
+      "primaryColorHex": "#4F2683",
+      "secondaryColorHex": "#FFC62F",
+      "sha256": "e5d0ebe78726f8f5d28aa773078af8e81b1bb13c867c81035e2efe04f38ddfd4",
       "sourceCandidateID": "4870414d159134c0133c30f972db1562fea2f58cbeca37a46b0ba5a710d819a3",
-      "palette": {
-        "league": "NFL",
-        "team": "Minnesota Vikings",
-        "primary": "#4F2683",
-        "secondary": "#FFC62F"
-      }
+      "teamStableID": "236E7A67-CFFC-4AD0-A041-DABDD7CB3492"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:2199d4825d69579e85841bfd7c2780b619c5701410448bd4d3a24a49bde89ac9",
-      "sha256": "4062da8e2f1ddf8985baee15aa32c98eb0d1276d47fc4382661bd06fafcb53c0",
       "imagePath": "final-166-colors/recolored-selected/020-2199d4825d69.png",
-      "name": "Researched palette 020",
-      "family": "researched palette",
+      "name": "Jerome Whirlwinds",
+      "nickname": "Whirlwinds",
+      "palette": {
+        "league": "FBS",
+        "primary": "#005893",
+        "secondary": "#FDBA31",
+        "team": "San Jos\u00e9 State"
+      },
+      "primaryColorHex": "#005893",
+      "secondaryColorHex": "#FDBA31",
+      "sha256": "4062da8e2f1ddf8985baee15aa32c98eb0d1276d47fc4382661bd06fafcb53c0",
       "sourceCandidateID": "2199d4825d69579e85841bfd7c2780b619c5701410448bd4d3a24a49bde89ac9",
-      "palette": {
-        "league": "FBS",
-        "team": "San Jos\u00e9 State",
-        "primary": "#005893",
-        "secondary": "#FDBA31"
-      }
+      "teamStableID": "8AA6D28B-6EBE-454A-B27E-973800B9FE5C"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:9c7b50c8fe63aac985491aa4b9da5e6a132f5e132b96e057f01d5c8419bfd4df",
-      "sha256": "9be9e7f95e360bbc2f7984c9e4a476337ea9175efc622121b55e468dce0853ce",
       "imagePath": "final-166-colors/recolored-selected/021-9c7b50c8fe63.png",
-      "name": "Researched palette 021",
-      "family": "researched palette",
-      "sourceCandidateID": "9c7b50c8fe63aac985491aa4b9da5e6a132f5e132b96e057f01d5c8419bfd4df",
+      "name": "Watertown Coastal Reapers",
+      "nickname": "Reapers",
       "palette": {
         "league": "NFL",
-        "team": "Kansas City Chiefs",
         "primary": "#E31837",
-        "secondary": "#FFB612"
-      }
+        "secondary": "#FFB612",
+        "team": "Kansas City Chiefs"
+      },
+      "primaryColorHex": "#E31837",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "9be9e7f95e360bbc2f7984c9e4a476337ea9175efc622121b55e468dce0853ce",
+      "sourceCandidateID": "9c7b50c8fe63aac985491aa4b9da5e6a132f5e132b96e057f01d5c8419bfd4df",
+      "teamStableID": "218774CA-1F35-4B02-9FAA-54C54191C80F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:eaec297b1348b22dd03a432d306a9345b47a036c28d66bc92e4b5c6022bcca1c",
-      "sha256": "8489dde2dbf15c6b48d163aa059c37c002c105b379116bfc69c3966a9bf2dd10",
       "imagePath": "final-166-colors/recolored-selected/022-eaec297b1348.png",
-      "name": "Researched palette 022",
-      "family": "researched palette",
+      "name": "Waurika Maritime Palisades",
+      "nickname": "Palisades",
+      "palette": {
+        "league": "FBS",
+        "primary": "#005837",
+        "secondary": "#3BAF29",
+        "team": "Tulane"
+      },
+      "primaryColorHex": "#005837",
+      "secondaryColorHex": "#3BAF29",
+      "sha256": "8489dde2dbf15c6b48d163aa059c37c002c105b379116bfc69c3966a9bf2dd10",
       "sourceCandidateID": "eaec297b1348b22dd03a432d306a9345b47a036c28d66bc92e4b5c6022bcca1c",
-      "palette": {
-        "league": "FBS",
-        "team": "Tulane",
-        "primary": "#005837",
-        "secondary": "#3BAF29"
-      }
+      "teamStableID": "3ADF86BC-763D-4996-AA5C-4A847C44EE0E"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5c7514cf22891ddb6f87782b399d3cc83832f7ea864430edc5b0c27f36e60869",
-      "sha256": "c9a60de99781945993fb8b88cb19c69bf77b976ec749bf246fc5eec5212caf6e",
       "imagePath": "final-166-colors/recolored-selected/023-5c7514cf2289.png",
-      "name": "Researched palette 023",
-      "family": "researched palette",
+      "name": "Lakeview Regional Palisades",
+      "nickname": "Palisades",
+      "palette": {
+        "league": "NFL",
+        "primary": "#006778",
+        "secondary": "#000000",
+        "team": "Jacksonville Jaguars"
+      },
+      "primaryColorHex": "#006778",
+      "secondaryColorHex": "#000000",
+      "sha256": "c9a60de99781945993fb8b88cb19c69bf77b976ec749bf246fc5eec5212caf6e",
       "sourceCandidateID": "5c7514cf22891ddb6f87782b399d3cc83832f7ea864430edc5b0c27f36e60869",
-      "palette": {
-        "league": "NFL",
-        "team": "Jacksonville Jaguars",
-        "primary": "#006778",
-        "secondary": "#000000"
-      }
+      "teamStableID": "E7C72D75-4A02-48FA-BB77-31F39465C863"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:c033602925b3f2968ee5a9c1bbe5473d066188614403c925230316137fafca55",
-      "sha256": "781cc1ceefcdc19fcd9f29fc23aeb138477089fbdd751829889a15086671d9be",
       "imagePath": "final-166-colors/recolored-selected/024-c033602925b3.png",
-      "name": "Researched palette 024",
-      "family": "researched palette",
+      "name": "Weiser Valley Marlins",
+      "nickname": "Marlins",
+      "palette": {
+        "league": "FBS",
+        "primary": "#004A7B",
+        "secondary": "#FFFFFF",
+        "team": "Air Force"
+      },
+      "primaryColorHex": "#004A7B",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "781cc1ceefcdc19fcd9f29fc23aeb138477089fbdd751829889a15086671d9be",
       "sourceCandidateID": "c033602925b3f2968ee5a9c1bbe5473d066188614403c925230316137fafca55",
-      "palette": {
-        "league": "FBS",
-        "team": "Air Force",
-        "primary": "#004A7B",
-        "secondary": "#FFFFFF"
-      }
+      "teamStableID": "234A4A68-7B33-464E-801A-D4A52CD357B5"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:bf083473cb53e922cfd36826539c93f61fee8826d990b80e4a31945cff71cd7b",
-      "sha256": "1f20ff3bd739d7fea6f1d487cfb293659ec385731ac7617e113465d2c938b236",
       "imagePath": "final-166-colors/recolored-selected/025-bf083473cb53.png",
-      "name": "Researched palette 025",
-      "family": "researched palette",
-      "sourceCandidateID": "bf083473cb53e922cfd36826539c93f61fee8826d990b80e4a31945cff71cd7b",
+      "name": "Rockland Prowlers",
+      "nickname": "Prowlers",
       "palette": {
         "league": "FBS",
-        "team": "Liberty",
         "primary": "#071740",
-        "secondary": "#A61F21"
-      }
+        "secondary": "#A61F21",
+        "team": "Liberty"
+      },
+      "primaryColorHex": "#071740",
+      "secondaryColorHex": "#A61F21",
+      "sha256": "1f20ff3bd739d7fea6f1d487cfb293659ec385731ac7617e113465d2c938b236",
+      "sourceCandidateID": "bf083473cb53e922cfd36826539c93f61fee8826d990b80e4a31945cff71cd7b",
+      "teamStableID": "306B310F-484F-48B9-8FC0-4F76DCE0F51F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8a2fb2d114299ab4221a34fab14f04798ee56194c1ad9a5de1355f59802166bf",
-      "sha256": "a1f84210152e116616014b8236ec981b4985672cc91a4e676b3a949a80c0ed64",
       "imagePath": "final-166-colors/recolored-selected/026-8a2fb2d11429.png",
-      "name": "Researched palette 026",
-      "family": "researched palette",
-      "sourceCandidateID": "8a2fb2d114299ab4221a34fab14f04798ee56194c1ad9a5de1355f59802166bf",
+      "name": "Danbury State Breakers",
+      "nickname": "Breakers",
       "palette": {
         "league": "FBS",
-        "team": "Washington",
         "primary": "#2B2F64",
-        "secondary": "#E8E3D3"
-      }
+        "secondary": "#E8E3D3",
+        "team": "Washington"
+      },
+      "primaryColorHex": "#2B2F64",
+      "secondaryColorHex": "#E8E3D3",
+      "sha256": "a1f84210152e116616014b8236ec981b4985672cc91a4e676b3a949a80c0ed64",
+      "sourceCandidateID": "8a2fb2d114299ab4221a34fab14f04798ee56194c1ad9a5de1355f59802166bf",
+      "teamStableID": "2E2D3637-D977-4D9E-9007-16ACB14ED7C7"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:ac45a402d755db97e12bfaf8ea1a5f2b581ff21c73918a9c6881aac3b622ca47",
-      "sha256": "0d7f2bc9f96b3262b6b8d19188d1db0b584e98076781be08d3a1d94e48bfe923",
       "imagePath": "final-166-colors/remediated/05-ac45a402d755db97e12bfaf8ea1a5f2b581ff21c73918a9c6881aac3b622ca47.png",
-      "name": "Researched palette 027",
-      "family": "researched palette",
+      "name": "Laurel Tech Squall",
+      "nickname": "Squall",
+      "palette": {
+        "league": "NFL",
+        "primary": "#000000",
+        "secondary": "#FFB612",
+        "team": "Pittsburgh Steelers"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "0d7f2bc9f96b3262b6b8d19188d1db0b584e98076781be08d3a1d94e48bfe923",
       "sourceCandidateID": "ac45a402d755db97e12bfaf8ea1a5f2b581ff21c73918a9c6881aac3b622ca47",
-      "palette": {
-        "league": "NFL",
-        "team": "Pittsburgh Steelers",
-        "primary": "#000000",
-        "secondary": "#FFB612"
-      }
+      "teamStableID": "26C528C1-BFD0-4048-B126-D9B601B22071"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:e8c170bacc0b66090de9d6e25d9e8df85e9c5bbdb37dccdb3b47016cb6cf4a4c",
-      "sha256": "efabe10da3fc9f6a0b3efe25255332c72624c15e17f9acd8bbc2aa07af32ed4b",
       "imagePath": "final-166-colors/recolored-selected/028-e8c170bacc0b.png",
-      "name": "Researched palette 028",
-      "family": "researched palette",
+      "name": "Delaware City Marlins",
+      "nickname": "Marlins",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002244",
+        "secondary": "#FB4F14",
+        "team": "Denver Broncos"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#FB4F14",
+      "sha256": "efabe10da3fc9f6a0b3efe25255332c72624c15e17f9acd8bbc2aa07af32ed4b",
       "sourceCandidateID": "e8c170bacc0b66090de9d6e25d9e8df85e9c5bbdb37dccdb3b47016cb6cf4a4c",
-      "palette": {
-        "league": "NFL",
-        "team": "Denver Broncos",
-        "primary": "#002244",
-        "secondary": "#FB4F14"
-      }
+      "teamStableID": "3FEBFCA9-A9F3-4C2B-9740-7F27575C64BB"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:6a80f393f1f10c86570b44889246bb9690dd45f8ecefed4395dd4fe71756473f",
-      "sha256": "b46b6722e47d3438fe6b04edb227ebcb9b9e1c1e4fb0bc37abd2314727810b98",
       "imagePath": "final-166-colors/recolored-selected/029-6a80f393f1f1.png",
-      "name": "Researched palette 029",
-      "family": "researched palette",
+      "name": "Binghamton Shrikes",
+      "nickname": "Shrikes",
+      "palette": {
+        "league": "FBS",
+        "primary": "#891216",
+        "secondary": "#000000",
+        "team": "New Mexico State"
+      },
+      "primaryColorHex": "#891216",
+      "secondaryColorHex": "#000000",
+      "sha256": "b46b6722e47d3438fe6b04edb227ebcb9b9e1c1e4fb0bc37abd2314727810b98",
       "sourceCandidateID": "6a80f393f1f10c86570b44889246bb9690dd45f8ecefed4395dd4fe71756473f",
-      "palette": {
-        "league": "FBS",
-        "team": "New Mexico State",
-        "primary": "#891216",
-        "secondary": "#000000"
-      }
+      "teamStableID": "02D86903-1751-489C-83A9-579368E3BB40"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:36192f3dbb59cb6a19d9522cffd2e92b915e00d53d126d86bf95b2e47dca0b93",
-      "sha256": "a4bd77fb08c3c93210a690ff2c6ec0b461147cefac2772c931cc784388c978ea",
       "imagePath": "final-166-colors/recolored-selected/030-36192f3dbb59.png",
-      "name": "Researched palette 030",
-      "family": "researched palette",
+      "name": "Dagsboro Comets",
+      "nickname": "Comets",
+      "palette": {
+        "league": "FBS",
+        "primary": "#A80532",
+        "secondary": "#A7A9AC",
+        "team": "Temple"
+      },
+      "primaryColorHex": "#A80532",
+      "secondaryColorHex": "#A7A9AC",
+      "sha256": "a4bd77fb08c3c93210a690ff2c6ec0b461147cefac2772c931cc784388c978ea",
       "sourceCandidateID": "36192f3dbb59cb6a19d9522cffd2e92b915e00d53d126d86bf95b2e47dca0b93",
-      "palette": {
-        "league": "FBS",
-        "team": "Temple",
-        "primary": "#A80532",
-        "secondary": "#A7A9AC"
-      }
+      "teamStableID": "0E961082-75BA-47B1-A5B4-CAFEF9D9DC93"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:40f5020eff4e55014a1f33f3190ba936a97f06bc94b10a567f862b43774cc9c3",
-      "sha256": "892bf8914c8ad6d9fc192c2794bcefa82cd2655d8bf1b5278826b6f0db3a82da",
       "imagePath": "final-166-colors/recolored-selected/031-40f5020eff4e.png",
-      "name": "Researched palette 031",
-      "family": "researched palette",
+      "name": "Elkins Central Thunderbolts",
+      "nickname": "Thunderbolts",
+      "palette": {
+        "league": "NFL",
+        "primary": "#241773",
+        "secondary": "#9E7C0C",
+        "team": "Baltimore Ravens"
+      },
+      "primaryColorHex": "#241773",
+      "secondaryColorHex": "#9E7C0C",
+      "sha256": "892bf8914c8ad6d9fc192c2794bcefa82cd2655d8bf1b5278826b6f0db3a82da",
       "sourceCandidateID": "40f5020eff4e55014a1f33f3190ba936a97f06bc94b10a567f862b43774cc9c3",
-      "palette": {
-        "league": "NFL",
-        "team": "Baltimore Ravens",
-        "primary": "#241773",
-        "secondary": "#9E7C0C"
-      }
+      "teamStableID": "3CC89B98-DB12-4AF5-924F-434FF612C1E7"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:7ee68e8a4e3d762c9adcd47f28615264a0793bed63d595a7e3f85c9d9bf9aac0",
-      "sha256": "39107f3020e1e8cfc10909a079afce9c48d590ce578d9851d507ec72097e0d0b",
       "imagePath": "final-166-colors/recolored-selected/032-7ee68e8a4e3d.png",
-      "name": "Researched palette 032",
-      "family": "researched palette",
-      "sourceCandidateID": "7ee68e8a4e3d762c9adcd47f28615264a0793bed63d595a7e3f85c9d9bf9aac0",
+      "name": "Goshen Prowlers",
+      "nickname": "Prowlers",
       "palette": {
         "league": "FBS",
-        "team": "Alabama",
         "primary": "#690014",
-        "secondary": "#F1F2F3"
-      }
+        "secondary": "#F1F2F3",
+        "team": "Alabama"
+      },
+      "primaryColorHex": "#690014",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "39107f3020e1e8cfc10909a079afce9c48d590ce578d9851d507ec72097e0d0b",
+      "sourceCandidateID": "7ee68e8a4e3d762c9adcd47f28615264a0793bed63d595a7e3f85c9d9bf9aac0",
+      "teamStableID": "29C6A2AE-BFCA-4266-81A5-DF123A3DB00D"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:81786c8f445464a1778a71a8a6eeff040ba609be4c6b1a4be3bfaca47b18f7ba",
-      "sha256": "776887797f57e24ff210289c427d021d3e4755e0a6d77f9fb8498fc87951f542",
       "imagePath": "final-166-colors/recolored-selected/033-81786c8f4454.png",
-      "name": "Researched palette 033",
-      "family": "researched palette",
-      "sourceCandidateID": "81786c8f445464a1778a71a8a6eeff040ba609be4c6b1a4be3bfaca47b18f7ba",
+      "name": "Shelbyville Poly Pumas",
+      "nickname": "Pumas",
       "palette": {
         "league": "NFL",
-        "team": "Cincinnati Bengals",
         "primary": "#FB4F14",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "Cincinnati Bengals"
+      },
+      "primaryColorHex": "#FB4F14",
+      "secondaryColorHex": "#000000",
+      "sha256": "776887797f57e24ff210289c427d021d3e4755e0a6d77f9fb8498fc87951f542",
+      "sourceCandidateID": "81786c8f445464a1778a71a8a6eeff040ba609be4c6b1a4be3bfaca47b18f7ba",
+      "teamStableID": "2DBDBC5E-18D2-417B-BC73-C6596576F72B"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:ecc11667a65e239039e2d9b58cc85172b52ee368e36cc9166379730f2310440d",
-      "sha256": "c11a093a35b67850bb4c8173cb741c219fb0a26354fba3d7071a2f319c794d82",
       "imagePath": "final-166-colors/recolored-selected/034-ecc11667a65e.png",
-      "name": "Researched palette 034",
-      "family": "researched palette",
+      "name": "Winnemucca Agricultural Atoms",
+      "nickname": "Atoms",
+      "palette": {
+        "league": "FBS",
+        "primary": "#000000",
+        "secondary": "#FFE100",
+        "team": "Iowa"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#FFE100",
+      "sha256": "c11a093a35b67850bb4c8173cb741c219fb0a26354fba3d7071a2f319c794d82",
       "sourceCandidateID": "ecc11667a65e239039e2d9b58cc85172b52ee368e36cc9166379730f2310440d",
-      "palette": {
-        "league": "FBS",
-        "team": "Iowa",
-        "primary": "#000000",
-        "secondary": "#FFE100"
-      }
+      "teamStableID": "00A6282E-56F8-4971-953D-08DB822B3CC7"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:fab0386acc80c124a363bbd1b0043c14f8dc381d68169369ed90bcdc960cb1cf",
-      "sha256": "acc5dab623837e99cb80d74f3b4c25fc3dd76a65fdaac0f806a018a07af4acbd",
       "imagePath": "final-166-colors/recolored-selected/035-fab0386acc80.png",
-      "name": "Researched palette 035",
-      "family": "researched palette",
+      "name": "Carbondale Coastal Racers",
+      "nickname": "Racers",
+      "palette": {
+        "league": "FBS",
+        "primary": "#D21034",
+        "secondary": "#FFFFFF",
+        "team": "Rutgers"
+      },
+      "primaryColorHex": "#D21034",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "acc5dab623837e99cb80d74f3b4c25fc3dd76a65fdaac0f806a018a07af4acbd",
       "sourceCandidateID": "fab0386acc80c124a363bbd1b0043c14f8dc381d68169369ed90bcdc960cb1cf",
-      "palette": {
-        "league": "FBS",
-        "team": "Rutgers",
-        "primary": "#D21034",
-        "secondary": "#FFFFFF"
-      }
+      "teamStableID": "42330E58-BBFC-4870-B3C6-AA4232F6BFF3"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8ee5e0771c848d0194e297dfe3aad61e7c05f013b2409f2874f7ad0e1afc79db",
-      "sha256": "3d7be5400a8002131327fb072eb382c0b26273cfcfbbcfd31671dd75d76a8c27",
       "imagePath": "final-166-colors/recolored-selected/036-8ee5e0771c84.png",
-      "name": "Researched palette 036",
-      "family": "researched palette",
+      "name": "Carlisle Goshawks",
+      "nickname": "Goshawks",
+      "palette": {
+        "league": "FBS",
+        "primary": "#044520",
+        "secondary": "#FEE123",
+        "team": "Oregon"
+      },
+      "primaryColorHex": "#044520",
+      "secondaryColorHex": "#FEE123",
+      "sha256": "3d7be5400a8002131327fb072eb382c0b26273cfcfbbcfd31671dd75d76a8c27",
       "sourceCandidateID": "8ee5e0771c848d0194e297dfe3aad61e7c05f013b2409f2874f7ad0e1afc79db",
-      "palette": {
-        "league": "FBS",
-        "team": "Oregon",
-        "primary": "#044520",
-        "secondary": "#FEE123"
-      }
+      "teamStableID": "4025813E-0EF7-4FBA-A821-87DB4A5D967F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:438243256cda1122c194f2fad88fda18f08602cae32735e4118ff911fb19053d",
-      "sha256": "835b17dece8d9e66ef3c07f38f5bd7d43deef3d5b9353b637300d987000b192e",
       "imagePath": "final-166-colors/recolored-selected/037-438243256cda.png",
-      "name": "Researched palette 037",
-      "family": "researched palette",
+      "name": "Nacogdoches Poly Planters",
+      "nickname": "Planters",
+      "palette": {
+        "league": "NFL",
+        "primary": "#008E97",
+        "secondary": "#F58220",
+        "team": "Miami Dolphins"
+      },
+      "primaryColorHex": "#008E97",
+      "secondaryColorHex": "#F58220",
+      "sha256": "835b17dece8d9e66ef3c07f38f5bd7d43deef3d5b9353b637300d987000b192e",
       "sourceCandidateID": "438243256cda1122c194f2fad88fda18f08602cae32735e4118ff911fb19053d",
-      "palette": {
-        "league": "NFL",
-        "team": "Miami Dolphins",
-        "primary": "#008E97",
-        "secondary": "#F58220"
-      }
+      "teamStableID": "892CB41F-7F6E-4692-86FF-64FA39A7E48D"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5a4c421fb2650439ffb55841892bfccfe2eb9de0000b38be4ecca9bb894f0428",
-      "sha256": "11ae2d49853882b1f36eaa1816c19f1020e502db6c79db1c213dcad0570f1df6",
       "imagePath": "final-166-colors/recolored-selected/038-5a4c421fb265.png",
-      "name": "Researched palette 038",
-      "family": "researched palette",
-      "sourceCandidateID": "5a4c421fb2650439ffb55841892bfccfe2eb9de0000b38be4ecca9bb894f0428",
+      "name": "Beverly Maritime Nightwings",
+      "nickname": "Nightwings",
       "palette": {
         "league": "FBS",
-        "team": "Boise State",
         "primary": "#09347A",
-        "secondary": "#D8D9DA"
-      }
+        "secondary": "#D8D9DA",
+        "team": "Boise State"
+      },
+      "primaryColorHex": "#09347A",
+      "secondaryColorHex": "#D8D9DA",
+      "sha256": "11ae2d49853882b1f36eaa1816c19f1020e502db6c79db1c213dcad0570f1df6",
+      "sourceCandidateID": "5a4c421fb2650439ffb55841892bfccfe2eb9de0000b38be4ecca9bb894f0428",
+      "teamStableID": "7124CE9C-8D5F-4FC9-9D0B-88A78F18BA90"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:1180b416b83ccb131ae4a3c2b17435779443b54e126eb447e1ee3d46026ef426",
-      "sha256": "0b3dba4e01f865b36049405777c2e044dc88cb7f1048125bf183dac9f85229c8",
       "imagePath": "final-166-colors/remediated/06-1180b416b83ccb131ae4a3c2b17435779443b54e126eb447e1ee3d46026ef426.png",
-      "name": "Researched palette 039",
-      "family": "researched palette",
+      "name": "Nampa Kestrels",
+      "nickname": "Kestrels",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002244",
+        "secondary": "#69BE28",
+        "team": "Seattle Seahawks"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#69BE28",
+      "sha256": "0b3dba4e01f865b36049405777c2e044dc88cb7f1048125bf183dac9f85229c8",
       "sourceCandidateID": "1180b416b83ccb131ae4a3c2b17435779443b54e126eb447e1ee3d46026ef426",
-      "palette": {
-        "league": "NFL",
-        "team": "Seattle Seahawks",
-        "primary": "#002244",
-        "secondary": "#69BE28"
-      }
+      "teamStableID": "4F61ED93-A823-4F4A-B32D-ABED1B6AA243"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8c7545eaa74f02eb39ad6ba7f9889dbf91e95afcd51a4a5bb34de552d62b2877",
-      "sha256": "7fb08140a1403f8fb3356a6b99d871306279a4d6df68713ee1d85460a571566f",
       "imagePath": "final-166-colors/recolored-selected/040-8c7545eaa74f.png",
-      "name": "Researched palette 040",
-      "family": "researched palette",
-      "sourceCandidateID": "8c7545eaa74f02eb39ad6ba7f9889dbf91e95afcd51a4a5bb34de552d62b2877",
+      "name": "Red Wing State Meteors",
+      "nickname": "Meteors",
       "palette": {
         "league": "NFL",
-        "team": "Chicago Bears",
         "primary": "#0B162A",
-        "secondary": "#E64100"
-      }
+        "secondary": "#E64100",
+        "team": "Chicago Bears"
+      },
+      "primaryColorHex": "#0B162A",
+      "secondaryColorHex": "#E64100",
+      "sha256": "7fb08140a1403f8fb3356a6b99d871306279a4d6df68713ee1d85460a571566f",
+      "sourceCandidateID": "8c7545eaa74f02eb39ad6ba7f9889dbf91e95afcd51a4a5bb34de552d62b2877",
+      "teamStableID": "4D2BD12B-F3B7-46FE-8863-CD6973A66EB1"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:83f1c4a4b66a0935cdedc6ec5cf118ee90a264e92a41bc98ce8011dfa8b2c1b1",
-      "sha256": "c52424a4eb7e4feac6a5751057d42e414becc5d621e3eb4baa1941c57ce4c808",
       "imagePath": "final-166-colors/recolored-selected/041-83f1c4a4b66a.png",
-      "name": "Researched palette 041",
-      "family": "researched palette",
-      "sourceCandidateID": "83f1c4a4b66a0935cdedc6ec5cf118ee90a264e92a41bc98ce8011dfa8b2c1b1",
+      "name": "Siloam Springs State Miners",
+      "nickname": "Miners",
       "palette": {
         "league": "NFL",
-        "team": "Los Angeles Rams",
         "primary": "#003594",
-        "secondary": "#FFD100"
-      }
+        "secondary": "#FFD100",
+        "team": "Los Angeles Rams"
+      },
+      "primaryColorHex": "#003594",
+      "secondaryColorHex": "#FFD100",
+      "sha256": "c52424a4eb7e4feac6a5751057d42e414becc5d621e3eb4baa1941c57ce4c808",
+      "sourceCandidateID": "83f1c4a4b66a0935cdedc6ec5cf118ee90a264e92a41bc98ce8011dfa8b2c1b1",
+      "teamStableID": "4D74C029-1A74-48D9-BF51-CAEDFCCBEFA0"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:e171d3f0e005492a2824f68f1c6be99acef85f358ff77151ccf24fa51d74286a",
-      "sha256": "2dda146c2ddcfc3d2d9dd78f1362f3204326605d51bfd2ea7edd7d72b830a83b",
       "imagePath": "final-166-colors/recolored-selected/042-e171d3f0e005.png",
-      "name": "Researched palette 042",
-      "family": "researched palette",
-      "sourceCandidateID": "e171d3f0e005492a2824f68f1c6be99acef85f358ff77151ccf24fa51d74286a",
+      "name": "Wapakoneta Poly Tempests",
+      "nickname": "Tempests",
       "palette": {
         "league": "NFL",
-        "team": "Atlanta Falcons",
         "primary": "#A71930",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "Atlanta Falcons"
+      },
+      "primaryColorHex": "#A71930",
+      "secondaryColorHex": "#000000",
+      "sha256": "2dda146c2ddcfc3d2d9dd78f1362f3204326605d51bfd2ea7edd7d72b830a83b",
+      "sourceCandidateID": "e171d3f0e005492a2824f68f1c6be99acef85f358ff77151ccf24fa51d74286a",
+      "teamStableID": "304B950B-6445-4300-8EEE-13F6F6B0B971"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:54b09829fc8b9db888c0834751ebd2565019dd7bdf8580966ede0e929fc43875",
-      "sha256": "ae6a3f7d3d2406801c075dbb0a0b54ab781ec78fd537becdad4b7dbcdceca28e",
       "imagePath": "final-166-colors/recolored-selected/043-54b09829fc8b.png",
-      "name": "Researched palette 043",
-      "family": "researched palette",
-      "sourceCandidateID": "54b09829fc8b9db888c0834751ebd2565019dd7bdf8580966ede0e929fc43875",
+      "name": "Escanaba Coastal Anchors",
+      "nickname": "Anchors",
       "palette": {
         "league": "FBS",
-        "team": "Florida Atlantic",
         "primary": "#004B85",
-        "secondary": "#BB2F4C"
-      }
+        "secondary": "#BB2F4C",
+        "team": "Florida Atlantic"
+      },
+      "primaryColorHex": "#004B85",
+      "secondaryColorHex": "#BB2F4C",
+      "sha256": "ae6a3f7d3d2406801c075dbb0a0b54ab781ec78fd537becdad4b7dbcdceca28e",
+      "sourceCandidateID": "54b09829fc8b9db888c0834751ebd2565019dd7bdf8580966ede0e929fc43875",
+      "teamStableID": "729F50FA-DC6F-4122-80E5-EBCCB0E0569E"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:7f727924e05445d0f3ae28ebea44ecfbee88cb62f30c762ef94e209feb30d22b",
-      "sha256": "1ab291bee8a2fc4125f9a71d37022d922da7272bbcf24a5347d44866619c82c0",
       "imagePath": "final-166-colors/recolored-selected/044-7f727924e054.png",
-      "name": "Researched palette 044",
-      "family": "researched palette",
-      "sourceCandidateID": "7f727924e05445d0f3ae28ebea44ecfbee88cb62f30c762ef94e209feb30d22b",
+      "name": "Calexico Regional Foremen",
+      "nickname": "Foremen",
       "palette": {
         "league": "NFL",
-        "team": "Arizona Cardinals",
         "primary": "#97233F",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "Arizona Cardinals"
+      },
+      "primaryColorHex": "#97233F",
+      "secondaryColorHex": "#000000",
+      "sha256": "1ab291bee8a2fc4125f9a71d37022d922da7272bbcf24a5347d44866619c82c0",
+      "sourceCandidateID": "7f727924e05445d0f3ae28ebea44ecfbee88cb62f30c762ef94e209feb30d22b",
+      "teamStableID": "428AF1A5-E2DB-4ADE-AC55-F97D76F94FBF"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8b6e6293761d5203443ddec2cc8aac89c81b31d537311bf50e83f262b1373b62",
-      "sha256": "4cd5d302b7b1106a9a8926bc4397fe7a04beb32d554db5cfda459dcda7b5eaeb",
       "imagePath": "final-166-colors/recolored-selected/045-8b6e6293761d.png",
-      "name": "Researched palette 045",
-      "family": "researched palette",
+      "name": "Missoula Conductors",
+      "nickname": "Conductors",
+      "palette": {
+        "league": "FBS",
+        "primary": "#03244D",
+        "secondary": "#F1F2F3",
+        "team": "Auburn"
+      },
+      "primaryColorHex": "#03244D",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "4cd5d302b7b1106a9a8926bc4397fe7a04beb32d554db5cfda459dcda7b5eaeb",
       "sourceCandidateID": "8b6e6293761d5203443ddec2cc8aac89c81b31d537311bf50e83f262b1373b62",
-      "palette": {
-        "league": "FBS",
-        "team": "Auburn",
-        "primary": "#03244D",
-        "secondary": "#F1F2F3"
-      }
+      "teamStableID": "A9B34775-5B86-4716-92FB-62A181590973"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8b2fae81b893ea08dbd4250c7c2ec289f1dae80b08246694115f10b6dde3e8e6",
-      "sha256": "7a1fca3f6010646616933cdae640b40874c3958e1a3dcc7c347ae544b0f8fd38",
       "imagePath": "final-166-colors/recolored-selected/046-8b2fae81b893.png",
-      "name": "Researched palette 046",
-      "family": "researched palette",
+      "name": "Glenwood Springs Valley Thunderbolts",
+      "nickname": "Thunderbolts",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002244",
+        "secondary": "#B0B7BC",
+        "team": "Dallas Cowboys"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#B0B7BC",
+      "sha256": "7a1fca3f6010646616933cdae640b40874c3958e1a3dcc7c347ae544b0f8fd38",
       "sourceCandidateID": "8b2fae81b893ea08dbd4250c7c2ec289f1dae80b08246694115f10b6dde3e8e6",
-      "palette": {
-        "league": "NFL",
-        "team": "Dallas Cowboys",
-        "primary": "#002244",
-        "secondary": "#B0B7BC"
-      }
+      "teamStableID": "57E1B055-AFBA-4F86-931D-51D9B1769E46"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:d5c4114c26868c73048f080f694390659792e1a2bb2fc2f04ce8b5f396347ab3",
-      "sha256": "394af11a3a24b16dac559d1cf5bd4254564c1f075cd17bdd8bb65351bbdadf40",
       "imagePath": "final-166-colors/recolored-selected/047-d5c4114c2686.png",
-      "name": "Researched palette 047",
-      "family": "researched palette",
-      "sourceCandidateID": "d5c4114c26868c73048f080f694390659792e1a2bb2fc2f04ce8b5f396347ab3",
+      "name": "Kirksville State Navigators",
+      "nickname": "Navigators",
       "palette": {
         "league": "FBS",
-        "team": "Tulsa",
         "primary": "#004371",
-        "secondary": "#EE3B33"
-      }
+        "secondary": "#EE3B33",
+        "team": "Tulsa"
+      },
+      "primaryColorHex": "#004371",
+      "secondaryColorHex": "#EE3B33",
+      "sha256": "394af11a3a24b16dac559d1cf5bd4254564c1f075cd17bdd8bb65351bbdadf40",
+      "sourceCandidateID": "d5c4114c26868c73048f080f694390659792e1a2bb2fc2f04ce8b5f396347ab3",
+      "teamStableID": "320CF43A-6943-4341-BF51-B90853823208"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:ad7d4702561908793a1678381b36dcabb7aa4159fd2de58261a8fdec1899c842",
-      "sha256": "9bc28dcf28ad9859968448efc9cd6dccbd76753a0f8eea7cac04d86f9b86f6d7",
       "imagePath": "final-166-colors/recolored-selected/048-ad7d47025619.png",
-      "name": "Researched palette 048",
-      "family": "researched palette",
-      "sourceCandidateID": "ad7d4702561908793a1678381b36dcabb7aa4159fd2de58261a8fdec1899c842",
+      "name": "Hermann Coastal Lancers",
+      "nickname": "Lancers",
       "palette": {
         "league": "FBS",
-        "team": "Rice",
         "primary": "#003D7D",
-        "secondary": "#D1D5D8"
-      }
+        "secondary": "#D1D5D8",
+        "team": "Rice"
+      },
+      "primaryColorHex": "#003D7D",
+      "secondaryColorHex": "#D1D5D8",
+      "sha256": "9bc28dcf28ad9859968448efc9cd6dccbd76753a0f8eea7cac04d86f9b86f6d7",
+      "sourceCandidateID": "ad7d4702561908793a1678381b36dcabb7aa4159fd2de58261a8fdec1899c842",
+      "teamStableID": "5C4CE91F-969D-4A74-8E1A-7E672C9631AB"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:22c2b51a8a58be2ff808670aec908d5d069e240b894ea6fe483b47537c18c391",
-      "sha256": "40db42378e436c03afb91ce7ac622be0137d54eff46e1de0a6901c190ea4a812",
       "imagePath": "final-166-colors/recolored-selected/049-22c2b51a8a58.png",
-      "name": "Researched palette 049",
-      "family": "researched palette",
-      "sourceCandidateID": "22c2b51a8a58be2ff808670aec908d5d069e240b894ea6fe483b47537c18c391",
+      "name": "Hillsboro Whirlwinds",
+      "nickname": "Whirlwinds",
       "palette": {
         "league": "FBS",
-        "team": "Arizona State",
         "primary": "#942139",
-        "secondary": "#F1F2F3"
-      }
+        "secondary": "#F1F2F3",
+        "team": "Arizona State"
+      },
+      "primaryColorHex": "#942139",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "40db42378e436c03afb91ce7ac622be0137d54eff46e1de0a6901c190ea4a812",
+      "sourceCandidateID": "22c2b51a8a58be2ff808670aec908d5d069e240b894ea6fe483b47537c18c391",
+      "teamStableID": "889EB520-67E7-4878-B29F-4936D9C0715C"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:c8ae8244671eaf40ea5e1012aff2fde0db7ac7d7bcd024f9eb8611acc27d41d9",
-      "sha256": "05a7b5405776d3514c26aff84bdc5f3177c4ea18d3e501b8bc4c21e705f985a5",
       "imagePath": "final-166-colors/recolored-selected/050-c8ae8244671e.png",
-      "name": "Researched palette 050",
-      "family": "researched palette",
-      "sourceCandidateID": "c8ae8244671eaf40ea5e1012aff2fde0db7ac7d7bcd024f9eb8611acc27d41d9",
+      "name": "Sitka Poly Eclipses",
+      "nickname": "Eclipses",
       "palette": {
         "league": "FBS",
-        "team": "North Texas",
         "primary": "#00853D",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "North Texas"
+      },
+      "primaryColorHex": "#00853D",
+      "secondaryColorHex": "#000000",
+      "sha256": "05a7b5405776d3514c26aff84bdc5f3177c4ea18d3e501b8bc4c21e705f985a5",
+      "sourceCandidateID": "c8ae8244671eaf40ea5e1012aff2fde0db7ac7d7bcd024f9eb8611acc27d41d9",
+      "teamStableID": "32605344-4E6C-40A7-8F3B-066C9DEF3952"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:1d4d53df67f63a01e11d886b8342864c06f6005e57665092fc904e7c7f0c39a9",
-      "sha256": "05cd7f6cadd252af0e7d6ef99c854fd32823f21b4f62c537c8af21e7b4e42170",
       "imagePath": "final-166-colors/recolored-selected/051-1d4d53df67f6.png",
-      "name": "Researched palette 051",
-      "family": "researched palette",
-      "sourceCandidateID": "1d4d53df67f63a01e11d886b8342864c06f6005e57665092fc904e7c7f0c39a9",
+      "name": "Sedalia Shards",
+      "nickname": "Shards",
       "palette": {
         "league": "NFL",
-        "team": "Indianapolis Colts",
         "primary": "#002C5F",
-        "secondary": "#A5ACAF"
-      }
+        "secondary": "#A5ACAF",
+        "team": "Indianapolis Colts"
+      },
+      "primaryColorHex": "#002C5F",
+      "secondaryColorHex": "#A5ACAF",
+      "sha256": "05cd7f6cadd252af0e7d6ef99c854fd32823f21b4f62c537c8af21e7b4e42170",
+      "sourceCandidateID": "1d4d53df67f63a01e11d886b8342864c06f6005e57665092fc904e7c7f0c39a9",
+      "teamStableID": "520C4F29-4C68-4D36-B1C8-681CF1869908"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:9acc6be08eb930be7aa30208ce99fe6f172bf34d856d906433bed3397434c39c",
-      "sha256": "320baa860748f7858d664999f7bd9f5624ab5c02b1b7bdfb8b1e2198afd21cbc",
       "imagePath": "final-166-colors/recolored-selected/052-9acc6be08eb9.png",
-      "name": "Researched palette 052",
-      "family": "researched palette",
-      "sourceCandidateID": "9acc6be08eb930be7aa30208ce99fe6f172bf34d856d906433bed3397434c39c",
+      "name": "Parkersburg Poly Meteors",
+      "nickname": "Meteors",
       "palette": {
         "league": "FBS",
-        "team": "Wake Forest",
         "primary": "#9E7E38",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "Wake Forest"
+      },
+      "primaryColorHex": "#9E7E38",
+      "secondaryColorHex": "#000000",
+      "sha256": "320baa860748f7858d664999f7bd9f5624ab5c02b1b7bdfb8b1e2198afd21cbc",
+      "sourceCandidateID": "9acc6be08eb930be7aa30208ce99fe6f172bf34d856d906433bed3397434c39c",
+      "teamStableID": "343AE8DE-59CC-4017-96B2-46AE69E744BE"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:0d09dec7f299569d98852935583558b0886dfc3e12bd74664938b58046b03702",
-      "sha256": "a1575cd39d1c22725f7c120aef023a8a1d60cfd7e252f03e8b286c82aebb3c4b",
       "imagePath": "final-166-colors/recolored-selected/053-0d09dec7f299.png",
-      "name": "Researched palette 053",
-      "family": "researched palette",
+      "name": "Abingdon Stallions",
+      "nickname": "Stallions",
+      "palette": {
+        "league": "NFL",
+        "primary": "#5A1414",
+        "secondary": "#FFB612",
+        "team": "Washington Commanders"
+      },
+      "primaryColorHex": "#5A1414",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "a1575cd39d1c22725f7c120aef023a8a1d60cfd7e252f03e8b286c82aebb3c4b",
       "sourceCandidateID": "0d09dec7f299569d98852935583558b0886dfc3e12bd74664938b58046b03702",
-      "palette": {
-        "league": "NFL",
-        "team": "Washington Commanders",
-        "primary": "#5A1414",
-        "secondary": "#FFB612"
-      }
+      "teamStableID": "C1FDC4CC-8A24-47C9-A71A-D1EB2C31DFF4"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:b9142a8ca3c664e706b2a22dac2d6eac8ee0f52e4b5047969a48765c8191fc31",
-      "sha256": "08fd6417c2317825e897af2f5a0f4dce0cdbbcfe8bcddf6ae4295c9d92051de4",
       "imagePath": "final-166-colors/remediated/07-b9142a8ca3c664e706b2a22dac2d6eac8ee0f52e4b5047969a48765c8191fc31.png",
-      "name": "Researched palette 054",
-      "family": "researched palette",
-      "sourceCandidateID": "b9142a8ca3c664e706b2a22dac2d6eac8ee0f52e4b5047969a48765c8191fc31",
+      "name": "Mesquite Comets",
+      "nickname": "Comets",
       "palette": {
         "league": "NFL",
-        "team": "Los Angeles Chargers",
         "primary": "#007BC7",
-        "secondary": "#FFC20E"
-      }
+        "secondary": "#FFC20E",
+        "team": "Los Angeles Chargers"
+      },
+      "primaryColorHex": "#007BC7",
+      "secondaryColorHex": "#FFC20E",
+      "sha256": "08fd6417c2317825e897af2f5a0f4dce0cdbbcfe8bcddf6ae4295c9d92051de4",
+      "sourceCandidateID": "b9142a8ca3c664e706b2a22dac2d6eac8ee0f52e4b5047969a48765c8191fc31",
+      "teamStableID": "3A59F5FD-43A8-4418-A103-62D1275E07B4"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8fbb35dcb185807c2c179336725e0a4e95921e113d7e895a7143bdd2c7e3d4a0",
-      "sha256": "f3981ae51ee2a249cdcfa32da9ad2b325df915797f46bf297604954f39c57a53",
       "imagePath": "final-166-colors/remediated/08-8fbb35dcb185807c2c179336725e0a4e95921e113d7e895a7143bdd2c7e3d4a0.png",
-      "name": "Researched palette 055",
-      "family": "researched palette",
-      "sourceCandidateID": "8fbb35dcb185807c2c179336725e0a4e95921e113d7e895a7143bdd2c7e3d4a0",
+      "name": "Camden Bolts",
+      "nickname": "Bolts",
       "palette": {
         "league": "NFL",
-        "team": "Washington Commanders",
         "primary": "#5A1414",
-        "secondary": "#FFB612"
-      }
+        "secondary": "#FFB612",
+        "team": "Washington Commanders"
+      },
+      "primaryColorHex": "#5A1414",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "f3981ae51ee2a249cdcfa32da9ad2b325df915797f46bf297604954f39c57a53",
+      "sourceCandidateID": "8fbb35dcb185807c2c179336725e0a4e95921e113d7e895a7143bdd2c7e3d4a0",
+      "teamStableID": "FD596501-2D90-49B5-9EDA-275EE0141BA5"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:9ffb6238d6245d98a566d8eaaf92e32b6e434ee156113eeeabff353ba89850eb",
-      "sha256": "2a417f8f5e26f7dfca6deb92b9a0baf7ea2165927d784885a29fdb0f0a0b7d32",
       "imagePath": "final-166-colors/recolored-selected/056-9ffb6238d624.png",
-      "name": "Researched palette 056",
-      "family": "researched palette",
-      "sourceCandidateID": "9ffb6238d6245d98a566d8eaaf92e32b6e434ee156113eeeabff353ba89850eb",
+      "name": "Flandreau Maritime Cacti",
+      "nickname": "Cacti",
       "palette": {
         "league": "FBS",
-        "team": "Nebraska",
         "primary": "#F20017",
-        "secondary": "#F5F1E7"
-      }
+        "secondary": "#F5F1E7",
+        "team": "Nebraska"
+      },
+      "primaryColorHex": "#F20017",
+      "secondaryColorHex": "#F5F1E7",
+      "sha256": "2a417f8f5e26f7dfca6deb92b9a0baf7ea2165927d784885a29fdb0f0a0b7d32",
+      "sourceCandidateID": "9ffb6238d6245d98a566d8eaaf92e32b6e434ee156113eeeabff353ba89850eb",
+      "teamStableID": "3E7B8999-7AE8-46D6-91FA-65C4712CBD1C"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:6ea77ad29cd03ea5c160c4c7f36755ccde3ca29c17fb2a4f6cc8dc417e3b8519",
-      "sha256": "52239dd3c0bc718f92f8c32bc6e19a666376d257742aee4a16306ec7baaa093f",
       "imagePath": "final-166-colors/recolored-selected/057-6ea77ad29cd0.png",
-      "name": "Researched palette 057",
-      "family": "researched palette",
+      "name": "Carlin A&M Founders",
+      "nickname": "Founders",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002244",
+        "secondary": "#69BE28",
+        "team": "Seattle Seahawks"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#69BE28",
+      "sha256": "52239dd3c0bc718f92f8c32bc6e19a666376d257742aee4a16306ec7baaa093f",
       "sourceCandidateID": "6ea77ad29cd03ea5c160c4c7f36755ccde3ca29c17fb2a4f6cc8dc417e3b8519",
-      "palette": {
-        "league": "NFL",
-        "team": "Seattle Seahawks",
-        "primary": "#002244",
-        "secondary": "#69BE28"
-      }
+      "teamStableID": "0344382F-0BA9-4C30-A1FF-EEF7E9DCE73D"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:ba6dc8ecac40701809f373987ac4509ba0bce03221396119889079121f9f83d4",
-      "sha256": "af7138ef49ba50f4d8826795bf67609939a68599ad2467e77fd2c70f7349e031",
       "imagePath": "final-166-colors/recolored-selected/058-ba6dc8ecac40.png",
-      "name": "Researched palette 058",
-      "family": "researched palette",
+      "name": "Aberdeen Regional Tornadoes",
+      "nickname": "Tornadoes",
+      "palette": {
+        "league": "FBS",
+        "primary": "#99BFE5",
+        "secondary": "#13294B",
+        "team": "North Carolina"
+      },
+      "primaryColorHex": "#99BFE5",
+      "secondaryColorHex": "#13294B",
+      "sha256": "af7138ef49ba50f4d8826795bf67609939a68599ad2467e77fd2c70f7349e031",
       "sourceCandidateID": "ba6dc8ecac40701809f373987ac4509ba0bce03221396119889079121f9f83d4",
-      "palette": {
-        "league": "FBS",
-        "team": "North Carolina",
-        "primary": "#99BFE5",
-        "secondary": "#13294B"
-      }
+      "teamStableID": "40329404-47DB-4AD9-B97B-35BFC6B34854"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:b97d140b0ab035a0a3d36322553bd9a1ca96e04a03dc7cd4cef4cac0b40fd1c7",
-      "sha256": "98316d87c19ab113f92fb590ade3a0c4858ceb78629fa0fa164d58ff8ead5ae5",
       "imagePath": "final-166-colors/recolored-selected/059-b97d140b0ab0.png",
-      "name": "Researched palette 059",
-      "family": "researched palette",
-      "sourceCandidateID": "b97d140b0ab035a0a3d36322553bd9a1ca96e04a03dc7cd4cef4cac0b40fd1c7",
+      "name": "Yreka Agricultural Surveyors",
+      "nickname": "Surveyors",
       "palette": {
         "league": "NFL",
-        "team": "New York Jets",
         "primary": "#003F2D",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "New York Jets"
+      },
+      "primaryColorHex": "#003F2D",
+      "secondaryColorHex": "#000000",
+      "sha256": "98316d87c19ab113f92fb590ade3a0c4858ceb78629fa0fa164d58ff8ead5ae5",
+      "sourceCandidateID": "b97d140b0ab035a0a3d36322553bd9a1ca96e04a03dc7cd4cef4cac0b40fd1c7",
+      "teamStableID": "5F09D018-DCA9-41F7-8ACD-040A07230254"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:241862da0185b834779b690a34de0e473c1ea962e03d03016f063b22efb567af",
-      "sha256": "fbf8c0948959242739a2a144e932537bb5ee441bc6f77b3d8c5ada6d6c8c6658",
       "imagePath": "final-166-colors/recolored-selected/060-241862da0185.png",
-      "name": "Researched palette 060",
-      "family": "researched palette",
-      "sourceCandidateID": "241862da0185b834779b690a34de0e473c1ea962e03d03016f063b22efb567af",
+      "name": "Titusville Breakers",
+      "nickname": "Breakers",
       "palette": {
         "league": "FBS",
-        "team": "Texas State",
         "primary": "#4E1719",
-        "secondary": "#B4975A"
-      }
+        "secondary": "#B4975A",
+        "team": "Texas State"
+      },
+      "primaryColorHex": "#4E1719",
+      "secondaryColorHex": "#B4975A",
+      "sha256": "fbf8c0948959242739a2a144e932537bb5ee441bc6f77b3d8c5ada6d6c8c6658",
+      "sourceCandidateID": "241862da0185b834779b690a34de0e473c1ea962e03d03016f063b22efb567af",
+      "teamStableID": "606AF674-1C1B-484F-A13F-E6D511734B15"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:bc3dae89b7a253ab20c759d93b195702b04fb119f85f31b11292d52687d7715c",
-      "sha256": "5929c298ecffd86788f823770c49f2ad8f19f0e657f93e7cbb6662d64a146418",
       "imagePath": "final-166-colors/recolored-selected/061-bc3dae89b7a2.png",
-      "name": "Researched palette 061",
-      "family": "researched palette",
+      "name": "Dalhart Nightwings",
+      "nickname": "Nightwings",
+      "palette": {
+        "league": "FBS",
+        "primary": "#7D110C",
+        "secondary": "#EEEDEB",
+        "team": "Indiana"
+      },
+      "primaryColorHex": "#7D110C",
+      "secondaryColorHex": "#EEEDEB",
+      "sha256": "5929c298ecffd86788f823770c49f2ad8f19f0e657f93e7cbb6662d64a146418",
       "sourceCandidateID": "bc3dae89b7a253ab20c759d93b195702b04fb119f85f31b11292d52687d7715c",
-      "palette": {
-        "league": "FBS",
-        "team": "Indiana",
-        "primary": "#7D110C",
-        "secondary": "#EEEDEB"
-      }
+      "teamStableID": "4135CA8D-38DC-4CDE-AC7C-F4951BC6E52E"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:3facb5ff3362ce9db39f5378f97c1a03f5d232e2088f31c8fd6cd2cdb4a42fd9",
-      "sha256": "987a8fd7e7f436bb3bd76c2ecc3458c2468898426fc96954546802f9fc46a640",
       "imagePath": "final-166-colors/recolored-selected/062-3facb5ff3362.png",
-      "name": "Researched palette 062",
-      "family": "researched palette",
+      "name": "Lovelock Kestrels",
+      "nickname": "Kestrels",
+      "palette": {
+        "league": "FBS",
+        "primary": "#031522",
+        "secondary": "#FFC423",
+        "team": "California"
+      },
+      "primaryColorHex": "#031522",
+      "secondaryColorHex": "#FFC423",
+      "sha256": "987a8fd7e7f436bb3bd76c2ecc3458c2468898426fc96954546802f9fc46a640",
       "sourceCandidateID": "3facb5ff3362ce9db39f5378f97c1a03f5d232e2088f31c8fd6cd2cdb4a42fd9",
-      "palette": {
-        "league": "FBS",
-        "team": "California",
-        "primary": "#031522",
-        "secondary": "#FFC423"
-      }
+      "teamStableID": "6A58BFEC-098E-40C2-94F6-A1B551F098DD"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:bd4c205df6d0613501a1f3631b51da9e2abe28ae98695e1af7a56e7ee63267a7",
-      "sha256": "d9b6dc6c395acf71f3a766bbc64d0cf659f70e93a05f8cc99c1b3d665733e283",
       "imagePath": "final-166-colors/recolored-selected/063-bd4c205df6d0.png",
-      "name": "Researched palette 063",
-      "family": "researched palette",
+      "name": "Biddeford Central Goshawks",
+      "nickname": "Goshawks",
+      "palette": {
+        "league": "FBS",
+        "primary": "#633194",
+        "secondary": "#E7D2AD",
+        "team": "Kansas State"
+      },
+      "primaryColorHex": "#633194",
+      "secondaryColorHex": "#E7D2AD",
+      "sha256": "d9b6dc6c395acf71f3a766bbc64d0cf659f70e93a05f8cc99c1b3d665733e283",
       "sourceCandidateID": "bd4c205df6d0613501a1f3631b51da9e2abe28ae98695e1af7a56e7ee63267a7",
-      "palette": {
-        "league": "FBS",
-        "team": "Kansas State",
-        "primary": "#633194",
-        "secondary": "#E7D2AD"
-      }
+      "teamStableID": "465D568E-3258-4DFD-BBD0-92640592A749"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:a072b1984c3ff97101bdc76d59756f64f94052b0578bc4eacb41a2e9b8841a5c",
-      "sha256": "73dab98a08c10497f0a15714566eb56f3ca7daabdc21f1af8e7b25fc313f7d6e",
       "imagePath": "final-166-colors/recolored-selected/064-a072b1984c3f.png",
-      "name": "Researched palette 064",
-      "family": "researched palette",
-      "sourceCandidateID": "a072b1984c3ff97101bdc76d59756f64f94052b0578bc4eacb41a2e9b8841a5c",
+      "name": "Davenport Agricultural Tornadoes",
+      "nickname": "Tornadoes",
       "palette": {
         "league": "FBS",
-        "team": "Utah",
         "primary": "#890012",
-        "secondary": "#7E8083"
-      }
+        "secondary": "#7E8083",
+        "team": "Utah"
+      },
+      "primaryColorHex": "#890012",
+      "secondaryColorHex": "#7E8083",
+      "sha256": "73dab98a08c10497f0a15714566eb56f3ca7daabdc21f1af8e7b25fc313f7d6e",
+      "sourceCandidateID": "a072b1984c3ff97101bdc76d59756f64f94052b0578bc4eacb41a2e9b8841a5c",
+      "teamStableID": "74FA7E3F-3395-408F-883C-3CB271E0FA9F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:7943e86ff6bf50e663565cfaa787dc4a0fe22687679d8ef0aac955f33b5594ed",
-      "sha256": "46d415a3040e8d4b7f025a704d9cc4b217759086fa0a9eec1669b1a9b8699d11",
       "imagePath": "final-166-colors/recolored-selected/065-7943e86ff6bf.png",
-      "name": "Researched palette 065",
-      "family": "researched palette",
-      "sourceCandidateID": "7943e86ff6bf50e663565cfaa787dc4a0fe22687679d8ef0aac955f33b5594ed",
+      "name": "Ripon Regional Corsairs",
+      "nickname": "Corsairs",
       "palette": {
         "league": "FBS",
-        "team": "Eastern Michigan",
         "primary": "#00331B",
-        "secondary": "#F0F0F0"
-      }
+        "secondary": "#F0F0F0",
+        "team": "Eastern Michigan"
+      },
+      "primaryColorHex": "#00331B",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "46d415a3040e8d4b7f025a704d9cc4b217759086fa0a9eec1669b1a9b8699d11",
+      "sourceCandidateID": "7943e86ff6bf50e663565cfaa787dc4a0fe22687679d8ef0aac955f33b5594ed",
+      "teamStableID": "7767AA6A-6FA7-4402-98D6-B02EEA82AF5F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:37612ad93ab622d922200072b65988097c7fa5392fbf799ee83632ddbdcd5aac",
-      "sha256": "3ca2d379009fb237ebc62ea15454b11048fa0a59f74d7161aa5458d42cce33a7",
       "imagePath": "final-166-colors/recolored-selected/066-37612ad93ab6.png",
-      "name": "Researched palette 066",
-      "family": "researched palette",
+      "name": "Effingham Cobras",
+      "nickname": "Cobras",
+      "palette": {
+        "league": "FBS",
+        "primary": "#762123",
+        "secondary": "#C8C8C8",
+        "team": "Mississippi State"
+      },
+      "primaryColorHex": "#762123",
+      "secondaryColorHex": "#C8C8C8",
+      "sha256": "3ca2d379009fb237ebc62ea15454b11048fa0a59f74d7161aa5458d42cce33a7",
       "sourceCandidateID": "37612ad93ab622d922200072b65988097c7fa5392fbf799ee83632ddbdcd5aac",
-      "palette": {
-        "league": "FBS",
-        "team": "Mississippi State",
-        "primary": "#762123",
-        "secondary": "#C8C8C8"
-      }
+      "teamStableID": "7A931080-33EA-4761-B5A7-499C7451D9F5"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:fb3342f9bb2bedc245ba13beef5c4cf235640aff32cdf1fdb679b64d242349ad",
-      "sha256": "cdc8a7d803607ad4daf9c9fa435eb20152fa66a180d4912d167ed6aa56726de7",
       "imagePath": "final-166-colors/recolored-selected/067-fb3342f9bb2b.png",
-      "name": "Researched palette 067",
-      "family": "researched palette",
-      "sourceCandidateID": "fb3342f9bb2bedc245ba13beef5c4cf235640aff32cdf1fdb679b64d242349ad",
+      "name": "Holdrege Tech Lamplighters",
+      "nickname": "Lamplighters",
       "palette": {
         "league": "FBS",
-        "team": "TCU",
         "primary": "#3C377D",
-        "secondary": "#F1F2F3"
-      }
+        "secondary": "#F1F2F3",
+        "team": "TCU"
+      },
+      "primaryColorHex": "#3C377D",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "cdc8a7d803607ad4daf9c9fa435eb20152fa66a180d4912d167ed6aa56726de7",
+      "sourceCandidateID": "fb3342f9bb2bedc245ba13beef5c4cf235640aff32cdf1fdb679b64d242349ad",
+      "teamStableID": "FAE94B0E-BD99-4B65-AE37-6DAB8D288CBC"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:6ed52465ced8a94025403dc107e9f360ce426e10defcb4e98ab4a406be73b325",
-      "sha256": "ec010b99a988c7e3696d5e8fc2cd32b4a25442f0798c1df341f38df3e3630d79",
       "imagePath": "final-166-colors/recolored-selected/068-6ed52465ced8.png",
-      "name": "Researched palette 068",
-      "family": "researched palette",
-      "sourceCandidateID": "6ed52465ced8a94025403dc107e9f360ce426e10defcb4e98ab4a406be73b325",
+      "name": "Zeeland Sabrecats",
+      "nickname": "Sabrecats",
       "palette": {
         "league": "NFL",
-        "team": "San Francisco 49ers",
         "primary": "#AA0000",
-        "secondary": "#B3995D"
-      }
+        "secondary": "#B3995D",
+        "team": "San Francisco 49ers"
+      },
+      "primaryColorHex": "#AA0000",
+      "secondaryColorHex": "#B3995D",
+      "sha256": "ec010b99a988c7e3696d5e8fc2cd32b4a25442f0798c1df341f38df3e3630d79",
+      "sourceCandidateID": "6ed52465ced8a94025403dc107e9f360ce426e10defcb4e98ab4a406be73b325",
+      "teamStableID": "10AA9D4C-D1C1-4E25-9B8B-86520D782A68"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:dffad891d5c6771063cded07ad481d76b0096bf2563a23cdf52dac37788ba687",
-      "sha256": "adbe69816f580946201d28545677dfdb405d8dc5dca4a15e8b0a806d7e5ccd6c",
       "imagePath": "final-166-colors/recolored-selected/069-dffad891d5c6.png",
-      "name": "Researched palette 069",
-      "family": "researched palette",
-      "sourceCandidateID": "dffad891d5c6771063cded07ad481d76b0096bf2563a23cdf52dac37788ba687",
+      "name": "Zanesville Valley Lynx",
+      "nickname": "Lynx",
       "palette": {
         "league": "NFL",
-        "team": "Philadelphia Eagles",
         "primary": "#004C54",
-        "secondary": "#A5ACAF"
-      }
+        "secondary": "#A5ACAF",
+        "team": "Philadelphia Eagles"
+      },
+      "primaryColorHex": "#004C54",
+      "secondaryColorHex": "#A5ACAF",
+      "sha256": "adbe69816f580946201d28545677dfdb405d8dc5dca4a15e8b0a806d7e5ccd6c",
+      "sourceCandidateID": "dffad891d5c6771063cded07ad481d76b0096bf2563a23cdf52dac37788ba687",
+      "teamStableID": "49697F49-CF9B-463E-BC2E-E3FD1FB6DC4D"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:56d22fad3eecb611006e946052bcb05a74ff31c19ac7fe30b6f8d8b13d99ef13",
-      "sha256": "5d6330bd8aa169e92dab1b32165c44153be150eef020922672d2fba775b745f8",
       "imagePath": "final-166-colors/recolored-selected/070-56d22fad3eec.png",
-      "name": "Researched palette 070",
-      "family": "researched palette",
-      "sourceCandidateID": "56d22fad3eecb611006e946052bcb05a74ff31c19ac7fe30b6f8d8b13d99ef13",
+      "name": "Smithfield Central Firebirds",
+      "nickname": "Firebirds",
       "palette": {
         "league": "FBS",
-        "team": "SMU",
         "primary": "#E32F38",
-        "secondary": "#ECDCB9"
-      }
+        "secondary": "#ECDCB9",
+        "team": "SMU"
+      },
+      "primaryColorHex": "#E32F38",
+      "secondaryColorHex": "#ECDCB9",
+      "sha256": "5d6330bd8aa169e92dab1b32165c44153be150eef020922672d2fba775b745f8",
+      "sourceCandidateID": "56d22fad3eecb611006e946052bcb05a74ff31c19ac7fe30b6f8d8b13d99ef13",
+      "teamStableID": "7E474219-E18A-4091-ADB2-A7C4A3A5A445"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:892b788f4804e066291e74858b6184e529d74f0f1f9ad0250bb39690129f379f",
-      "sha256": "96c8e5447aee53badb16528fec0db56e230352ccc8374e0100f24a91325a0fe9",
       "imagePath": "final-166-colors/recolored-selected/071-892b788f4804.png",
-      "name": "Researched palette 071",
-      "family": "researched palette",
-      "sourceCandidateID": "892b788f4804e066291e74858b6184e529d74f0f1f9ad0250bb39690129f379f",
+      "name": "Halifax Valley Ursids",
+      "nickname": "Ursids",
       "palette": {
         "league": "FBS",
-        "team": "Ohio",
         "primary": "#295A29",
-        "secondary": "#E4BB85"
-      }
+        "secondary": "#E4BB85",
+        "team": "Ohio"
+      },
+      "primaryColorHex": "#295A29",
+      "secondaryColorHex": "#E4BB85",
+      "sha256": "96c8e5447aee53badb16528fec0db56e230352ccc8374e0100f24a91325a0fe9",
+      "sourceCandidateID": "892b788f4804e066291e74858b6184e529d74f0f1f9ad0250bb39690129f379f",
+      "teamStableID": "8156AB48-7AD9-4E84-AAE2-51E14C4441D6"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:70434d0f80072e680bafe90a30188e59f8a8a382702f3ff8aa0ae6adaafc6b82",
-      "sha256": "7c2cb6c95f9b60e229f9b6bdd43d2765fa44535cec2b28fd1e1f151f7a822294",
       "imagePath": "final-166-colors/recolored-selected/072-70434d0f8007.png",
-      "name": "Researched palette 072",
-      "family": "researched palette",
+      "name": "Sharon Nightwings",
+      "nickname": "Nightwings",
+      "palette": {
+        "league": "FBS",
+        "primary": "#1E539A",
+        "secondary": "#EBEBEB",
+        "team": "Georgia State"
+      },
+      "primaryColorHex": "#1E539A",
+      "secondaryColorHex": "#EBEBEB",
+      "sha256": "7c2cb6c95f9b60e229f9b6bdd43d2765fa44535cec2b28fd1e1f151f7a822294",
       "sourceCandidateID": "70434d0f80072e680bafe90a30188e59f8a8a382702f3ff8aa0ae6adaafc6b82",
-      "palette": {
-        "league": "FBS",
-        "team": "Georgia State",
-        "primary": "#1E539A",
-        "secondary": "#EBEBEB"
-      }
+      "teamStableID": "84233BCF-267B-4311-89BD-5FE567EDDCCB"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5b874a1f5b7b2744d0fddda78515975504217f3448bd927e168a59d1d69bd35f",
-      "sha256": "6cae97ef03c921f71d5926da718c4a7402022e5d946793eb7560babec0b81c1d",
       "imagePath": "final-166-colors/recolored-selected/073-5b874a1f5b7b.png",
-      "name": "Researched palette 073",
-      "family": "researched palette",
-      "sourceCandidateID": "5b874a1f5b7b2744d0fddda78515975504217f3448bd927e168a59d1d69bd35f",
+      "name": "Bristol Shrikes",
+      "nickname": "Shrikes",
       "palette": {
         "league": "NFL",
-        "team": "Detroit Lions",
         "primary": "#0076B6",
-        "secondary": "#B0B7BC"
-      }
+        "secondary": "#B0B7BC",
+        "team": "Detroit Lions"
+      },
+      "primaryColorHex": "#0076B6",
+      "secondaryColorHex": "#B0B7BC",
+      "sha256": "6cae97ef03c921f71d5926da718c4a7402022e5d946793eb7560babec0b81c1d",
+      "sourceCandidateID": "5b874a1f5b7b2744d0fddda78515975504217f3448bd927e168a59d1d69bd35f",
+      "teamStableID": "A34541EA-0304-4A47-8CA0-9B3BC0B6DC46"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:e7e01e989edccee6d6eddae8cbfc4b6654d68681cb203946b0246dee2dda2804",
-      "sha256": "fe483db85c99c3b063a435afa023d5cae54b3579aab0887c09d0e0c661b269d6",
       "imagePath": "final-166-colors/recolored-selected/074-e7e01e989edc.png",
-      "name": "Researched palette 074",
-      "family": "researched palette",
+      "name": "Warrensburg Kestrels",
+      "nickname": "Kestrels",
+      "palette": {
+        "league": "FBS",
+        "primary": "#131630",
+        "secondary": "#B6A77C",
+        "team": "Navy"
+      },
+      "primaryColorHex": "#131630",
+      "secondaryColorHex": "#B6A77C",
+      "sha256": "fe483db85c99c3b063a435afa023d5cae54b3579aab0887c09d0e0c661b269d6",
       "sourceCandidateID": "e7e01e989edccee6d6eddae8cbfc4b6654d68681cb203946b0246dee2dda2804",
-      "palette": {
-        "league": "FBS",
-        "team": "Navy",
-        "primary": "#131630",
-        "secondary": "#B6A77C"
-      }
+      "teamStableID": "4C697B3A-741A-4D32-AE66-86A3B92CB4F7"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:0b6cf65989f079cdaec2120de5f7fea8f34aee627d5c202e1e8e3bf31c8adb47",
-      "sha256": "ef0e2052050c817af93daa5710156b7ceb7569b378eac436c5f8be988a3f1ab2",
       "imagePath": "final-166-colors/recolored-selected/075-0b6cf65989f0.png",
-      "name": "Researched palette 075",
-      "family": "researched palette",
-      "sourceCandidateID": "0b6cf65989f079cdaec2120de5f7fea8f34aee627d5c202e1e8e3bf31c8adb47",
+      "name": "Ogallala Coastal Palisades",
+      "nickname": "Palisades",
       "palette": {
         "league": "NFL",
-        "team": "Tennessee Titans",
         "primary": "#4495D2",
-        "secondary": "#D50A0A"
-      }
+        "secondary": "#D50A0A",
+        "team": "Tennessee Titans"
+      },
+      "primaryColorHex": "#4495D2",
+      "secondaryColorHex": "#D50A0A",
+      "sha256": "ef0e2052050c817af93daa5710156b7ceb7569b378eac436c5f8be988a3f1ab2",
+      "sourceCandidateID": "0b6cf65989f079cdaec2120de5f7fea8f34aee627d5c202e1e8e3bf31c8adb47",
+      "teamStableID": "87497AA4-AED8-4757-B45C-C5EFEBA7EBEC"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:12d6c530346a6d8eb75e28ed1c1cef034d052466c376933921bc87d980f5c936",
-      "sha256": "60b9b2e12cacd42a3595a7c1b5c5bcf7250bcef1497684fac5a05249504b6094",
       "imagePath": "final-166-colors/recolored-selected/076-12d6c530346a.png",
-      "name": "Researched palette 076",
-      "family": "researched palette",
-      "sourceCandidateID": "12d6c530346a6d8eb75e28ed1c1cef034d052466c376933921bc87d980f5c936",
+      "name": "Sturgis Comets",
+      "nickname": "Comets",
       "palette": {
         "league": "FBS",
-        "team": "Texas Tech",
         "primary": "#C80025",
-        "secondary": "#231F20"
-      }
+        "secondary": "#231F20",
+        "team": "Texas Tech"
+      },
+      "primaryColorHex": "#C80025",
+      "secondaryColorHex": "#231F20",
+      "sha256": "60b9b2e12cacd42a3595a7c1b5c5bcf7250bcef1497684fac5a05249504b6094",
+      "sourceCandidateID": "12d6c530346a6d8eb75e28ed1c1cef034d052466c376933921bc87d980f5c936",
+      "teamStableID": "4CACCDE7-340F-4E4F-8869-031E960CD31E"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:42834e2b734dc22067d0fe6b9b611cfde89dfd0a76eac9133a40617d1642e3bb",
-      "sha256": "e4d4a00528cd20ff3d3f404e34df8e3d5ba97a1b2504cdc7e226d833838fed3b",
       "imagePath": "final-166-colors/recolored-selected/077-42834e2b734d.png",
-      "name": "Researched palette 077",
-      "family": "researched palette",
+      "name": "Claremont Maritime Martens",
+      "nickname": "Martens",
+      "palette": {
+        "league": "FBS",
+        "primary": "#000000",
+        "secondary": "#FFCD00",
+        "team": "Appalachian State"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#FFCD00",
+      "sha256": "e4d4a00528cd20ff3d3f404e34df8e3d5ba97a1b2504cdc7e226d833838fed3b",
       "sourceCandidateID": "42834e2b734dc22067d0fe6b9b611cfde89dfd0a76eac9133a40617d1642e3bb",
-      "palette": {
-        "league": "FBS",
-        "team": "Appalachian State",
-        "primary": "#000000",
-        "secondary": "#FFCD00"
-      }
+      "teamStableID": "8C11B43C-26AF-44CC-9D1D-313C56292C16"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:9f5a451b826bac5b4109e37918d7abab6f4cce14f5659608c7ef79168fe39ed6",
-      "sha256": "1759403416f73b0a477e87eca343a0f65551220f3289b757d7fa68c328535ae1",
       "imagePath": "final-166-colors/remediated/09-9f5a451b826bac5b4109e37918d7abab6f4cce14f5659608c7ef79168fe39ed6.png",
-      "name": "Researched palette 078",
-      "family": "researched palette",
+      "name": "Petoskey Regional Raccoons",
+      "nickname": "Raccoons",
+      "palette": {
+        "league": "FBS",
+        "primary": "#004A7B",
+        "secondary": "#FFFFFF",
+        "team": "Air Force"
+      },
+      "primaryColorHex": "#004A7B",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "1759403416f73b0a477e87eca343a0f65551220f3289b757d7fa68c328535ae1",
       "sourceCandidateID": "9f5a451b826bac5b4109e37918d7abab6f4cce14f5659608c7ef79168fe39ed6",
-      "palette": {
-        "league": "FBS",
-        "team": "Air Force",
-        "primary": "#004A7B",
-        "secondary": "#FFFFFF"
-      }
+      "teamStableID": "50F026EE-0C7B-45A7-ABDC-48BBB936D396"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:aed64413a9c68de44a6ead6902b5f93d3577c6a57d61928979dabaad1bf15272",
-      "sha256": "e4b6eadd7f81ac9ede0229821a7abbb17207458ddd9d722846e82083b29573b1",
       "imagePath": "final-166-colors/recolored-selected/079-aed64413a9c6.png",
-      "name": "Researched palette 079",
-      "family": "researched palette",
-      "sourceCandidateID": "aed64413a9c68de44a6ead6902b5f93d3577c6a57d61928979dabaad1bf15272",
+      "name": "Ridgway Coastal Prowlers",
+      "nickname": "Prowlers",
       "palette": {
         "league": "NFL",
-        "team": "New York Giants",
         "primary": "#0B2265",
-        "secondary": "#A71930"
-      }
+        "secondary": "#A71930",
+        "team": "New York Giants"
+      },
+      "primaryColorHex": "#0B2265",
+      "secondaryColorHex": "#A71930",
+      "sha256": "e4b6eadd7f81ac9ede0229821a7abbb17207458ddd9d722846e82083b29573b1",
+      "sourceCandidateID": "aed64413a9c68de44a6ead6902b5f93d3577c6a57d61928979dabaad1bf15272",
+      "teamStableID": "545D878F-D881-45B0-A7C2-F1AC3B3E018E"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:1c88a70a2c899705ad22b1e1bb7c7aa029eb625ebf5f92abc4f28cb4403ad599",
-      "sha256": "39ab1189398c439f715f768c4de8a726a31d0b00282df5b18bba7f8cdadffed6",
       "imagePath": "final-166-colors/recolored-selected/080-1c88a70a2c89.png",
-      "name": "Researched palette 080",
-      "family": "researched palette",
+      "name": "Lapeer State Aviators",
+      "nickname": "Aviators",
+      "palette": {
+        "league": "FBS",
+        "primary": "#A80532",
+        "secondary": "#FFFFFF",
+        "team": "Stanford"
+      },
+      "primaryColorHex": "#A80532",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "39ab1189398c439f715f768c4de8a726a31d0b00282df5b18bba7f8cdadffed6",
       "sourceCandidateID": "1c88a70a2c899705ad22b1e1bb7c7aa029eb625ebf5f92abc4f28cb4403ad599",
-      "palette": {
-        "league": "FBS",
-        "team": "Stanford",
-        "primary": "#A80532",
-        "secondary": "#FFFFFF"
-      }
+      "teamStableID": "A3C286C7-47C6-46F6-BCF3-318840C3E6DA"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8c519f5fd86187e8a236a94d0cbfcac48fb6921f0da8dd6e582ed907734046a9",
-      "sha256": "4334236e31cc842e19ba7151b635ecc6bd064de1a5011395ec400de25e201e81",
       "imagePath": "final-166-colors/remediated/10-8c519f5fd86187e8a236a94d0cbfcac48fb6921f0da8dd6e582ed907734046a9.png",
-      "name": "Researched palette 081",
-      "family": "researched palette",
+      "name": "Shamokin Corsairs",
+      "nickname": "Corsairs",
+      "palette": {
+        "league": "NFL",
+        "primary": "#000000",
+        "secondary": "#FFB612",
+        "team": "Pittsburgh Steelers"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "4334236e31cc842e19ba7151b635ecc6bd064de1a5011395ec400de25e201e81",
       "sourceCandidateID": "8c519f5fd86187e8a236a94d0cbfcac48fb6921f0da8dd6e582ed907734046a9",
-      "palette": {
-        "league": "NFL",
-        "team": "Pittsburgh Steelers",
-        "primary": "#000000",
-        "secondary": "#FFB612"
-      }
+      "teamStableID": "A404526F-1958-4108-B555-4027E21DFBDF"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:81c127fc74a7e85c77be05bcf5eb78cf51dd0211dba7f77c11835dd6f4300d9b",
-      "sha256": "fc4c9afe6f08db7238128958501474a95999d0ea01b880660732c141bbfe8425",
       "imagePath": "final-166-colors/recolored-selected/082-81c127fc74a7.png",
-      "name": "Researched palette 082",
-      "family": "researched palette",
+      "name": "Millinocket Coastal Sea Dragons",
+      "nickname": "Sea Dragons",
+      "palette": {
+        "league": "FBS",
+        "primary": "#D5002B",
+        "secondary": "#FFCD00",
+        "team": "Maryland"
+      },
+      "primaryColorHex": "#D5002B",
+      "secondaryColorHex": "#FFCD00",
+      "sha256": "fc4c9afe6f08db7238128958501474a95999d0ea01b880660732c141bbfe8425",
       "sourceCandidateID": "81c127fc74a7e85c77be05bcf5eb78cf51dd0211dba7f77c11835dd6f4300d9b",
-      "palette": {
-        "league": "FBS",
-        "team": "Maryland",
-        "primary": "#D5002B",
-        "secondary": "#FFCD00"
-      }
+      "teamStableID": "A6B3C25F-D8C2-410D-9981-8F260720A790"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:3475d19c117d95a9a1dff33d878370736d33304dfbb4fe32f8cf85bc26d63dc8",
-      "sha256": "717c22380ca50f387f7e38ea4799f26c77680481d3545b91419af2de105cf9e1",
       "imagePath": "final-166-colors/remediated/11-3475d19c117d95a9a1dff33d878370736d33304dfbb4fe32f8cf85bc26d63dc8.png",
-      "name": "Researched palette 083",
-      "family": "researched palette",
-      "sourceCandidateID": "3475d19c117d95a9a1dff33d878370736d33304dfbb4fe32f8cf85bc26d63dc8",
+      "name": "Cranston Crystals",
+      "nickname": "Crystals",
       "palette": {
         "league": "FBS",
-        "team": "California",
         "primary": "#031522",
-        "secondary": "#FFC423"
-      }
+        "secondary": "#FFC423",
+        "team": "California"
+      },
+      "primaryColorHex": "#031522",
+      "secondaryColorHex": "#FFC423",
+      "sha256": "717c22380ca50f387f7e38ea4799f26c77680481d3545b91419af2de105cf9e1",
+      "sourceCandidateID": "3475d19c117d95a9a1dff33d878370736d33304dfbb4fe32f8cf85bc26d63dc8",
+      "teamStableID": "AC5D9C75-1059-4B7C-9C98-8B557A5EAE3D"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:0eff5b3e900c4c574d628f944112c77c4d23792b8905dc9ca86bba630e741f8d",
-      "sha256": "f0b614d9be7a26255d694410f1e1135eba1a8a293ad51138339fdf662bff10c8",
       "imagePath": "final-166-colors/remediated/12-0eff5b3e900c4c574d628f944112c77c4d23792b8905dc9ca86bba630e741f8d.png",
-      "name": "Researched palette 084",
-      "family": "researched palette",
-      "sourceCandidateID": "0eff5b3e900c4c574d628f944112c77c4d23792b8905dc9ca86bba630e741f8d",
+      "name": "Spencer Maritime Coopers",
+      "nickname": "Coopers",
       "palette": {
         "league": "FBS",
-        "team": "Auburn",
         "primary": "#03244D",
-        "secondary": "#F1F2F3"
-      }
+        "secondary": "#F1F2F3",
+        "team": "Auburn"
+      },
+      "primaryColorHex": "#03244D",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "f0b614d9be7a26255d694410f1e1135eba1a8a293ad51138339fdf662bff10c8",
+      "sourceCandidateID": "0eff5b3e900c4c574d628f944112c77c4d23792b8905dc9ca86bba630e741f8d",
+      "teamStableID": "99FD7E6A-C476-4FA2-97F3-89E767D8D29F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:20c17789e3b16a58313ac9c97b42685cd59c477f8e2b1ec78f32102b13ed6986",
-      "sha256": "b8ece81798197cbd24cee362f67755c3ed4ae38a4bf8e487bd02e2ab6ba0c46f",
       "imagePath": "final-166-colors/recolored-selected/085-20c17789e3b1.png",
-      "name": "Researched palette 085",
-      "family": "researched palette",
-      "sourceCandidateID": "20c17789e3b16a58313ac9c97b42685cd59c477f8e2b1ec78f32102b13ed6986",
+      "name": "Redding Gars",
+      "nickname": "Gars",
       "palette": {
         "league": "NFL",
-        "team": "Cleveland Browns",
         "primary": "#FF3C00",
-        "secondary": "#311D00"
-      }
+        "secondary": "#311D00",
+        "team": "Cleveland Browns"
+      },
+      "primaryColorHex": "#FF3C00",
+      "secondaryColorHex": "#311D00",
+      "sha256": "b8ece81798197cbd24cee362f67755c3ed4ae38a4bf8e487bd02e2ab6ba0c46f",
+      "sourceCandidateID": "20c17789e3b16a58313ac9c97b42685cd59c477f8e2b1ec78f32102b13ed6986",
+      "teamStableID": "BC1EBE0F-069B-4BC9-A33B-23A887CA898C"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:8ac9d3e4713040e72a9574c00766e2691e3bca6935fbcf6b35b161c41ad0c127",
-      "sha256": "c7f58107f66778fb67aeb6a56929c4e5bf0007ea89fb91205af799e40fa87511",
       "imagePath": "final-166-colors/recolored-selected/086-8ac9d3e47130.png",
-      "name": "Researched palette 086",
-      "family": "researched palette",
+      "name": "Hinton Coastal Sentinels",
+      "nickname": "Sentinels",
+      "palette": {
+        "league": "NFL",
+        "primary": "#000000",
+        "secondary": "#FFB612",
+        "team": "Pittsburgh Steelers"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "c7f58107f66778fb67aeb6a56929c4e5bf0007ea89fb91205af799e40fa87511",
       "sourceCandidateID": "8ac9d3e4713040e72a9574c00766e2691e3bca6935fbcf6b35b161c41ad0c127",
-      "palette": {
-        "league": "NFL",
-        "team": "Pittsburgh Steelers",
-        "primary": "#000000",
-        "secondary": "#FFB612"
-      }
+      "teamStableID": "A6E5417A-9D72-4874-AAC3-8CD372E646BB"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:45117ed09ec20feeccd7926a239d819c79c05e5cd4ea8a225daf8631f0f4cdad",
-      "sha256": "2a3340af6f4f895790b475f3be327f9ece54fff880be0d95da39b54cb650fbc2",
       "imagePath": "final-166-colors/recolored-selected/087-45117ed09ec2.png",
-      "name": "Researched palette 087",
-      "family": "researched palette",
-      "sourceCandidateID": "45117ed09ec20feeccd7926a239d819c79c05e5cd4ea8a225daf8631f0f4cdad",
+      "name": "Wahpeton Prowlers",
+      "nickname": "Prowlers",
       "palette": {
         "league": "FBS",
-        "team": "Wisconsin",
         "primary": "#A00001",
-        "secondary": "#F7F7F7"
-      }
+        "secondary": "#F7F7F7",
+        "team": "Wisconsin"
+      },
+      "primaryColorHex": "#A00001",
+      "secondaryColorHex": "#F7F7F7",
+      "sha256": "2a3340af6f4f895790b475f3be327f9ece54fff880be0d95da39b54cb650fbc2",
+      "sourceCandidateID": "45117ed09ec20feeccd7926a239d819c79c05e5cd4ea8a225daf8631f0f4cdad",
+      "teamStableID": "BCB38CAC-CC60-4EF4-8760-567F2E725486"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:9a7dfc6aeb5e9dc5649242352a714a3936ac90956c225311d57129daf7c79f9a",
-      "sha256": "9879874c6649ef73911a7a43a0473da811da85f2b2a48864756944662f418909",
       "imagePath": "final-166-colors/recolored-selected/088-9a7dfc6aeb5e.png",
-      "name": "Researched palette 088",
-      "family": "researched palette",
+      "name": "Skowhegan Valley Lynx",
+      "nickname": "Lynx",
+      "palette": {
+        "league": "FBS",
+        "primary": "#002445",
+        "secondary": "#F0B510",
+        "team": "Kent State"
+      },
+      "primaryColorHex": "#002445",
+      "secondaryColorHex": "#F0B510",
+      "sha256": "9879874c6649ef73911a7a43a0473da811da85f2b2a48864756944662f418909",
       "sourceCandidateID": "9a7dfc6aeb5e9dc5649242352a714a3936ac90956c225311d57129daf7c79f9a",
-      "palette": {
-        "league": "FBS",
-        "team": "Kent State",
-        "primary": "#002445",
-        "secondary": "#F0B510"
-      }
+      "teamStableID": "5964FBBF-088C-4B89-BD17-7C44C4CB1FED"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:328ffa80dec790e8f7f7610cf31004a4d7a38d13b380cbd2a68fe907f938f401",
-      "sha256": "b32d661b7f5400023f3b671c2c7df3838b61e99b612bda48dd8753e90e598a9a",
       "imagePath": "final-166-colors/recolored-selected/089-328ffa80dec7.png",
-      "name": "Researched palette 089",
-      "family": "researched palette",
-      "sourceCandidateID": "328ffa80dec790e8f7f7610cf31004a4d7a38d13b380cbd2a68fe907f938f401",
+      "name": "Kerrville Lamplighters",
+      "nickname": "Lamplighters",
       "palette": {
         "league": "NFL",
-        "team": "New Orleans Saints",
         "primary": "#D3BC8D",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "New Orleans Saints"
+      },
+      "primaryColorHex": "#D3BC8D",
+      "secondaryColorHex": "#000000",
+      "sha256": "b32d661b7f5400023f3b671c2c7df3838b61e99b612bda48dd8753e90e598a9a",
+      "sourceCandidateID": "328ffa80dec790e8f7f7610cf31004a4d7a38d13b380cbd2a68fe907f938f401",
+      "teamStableID": "ABD2FF25-9964-494B-86E3-4B89E24B5348"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:d9d327f27b570a56f4394cb0adcb1b9dc4f9f789a42f588ab8a1e45730889576",
-      "sha256": "5c60b2759a8f9bd58d403a0aa965f7978bc4a8b4456715bd5967fa3f18e975ac",
       "imagePath": "final-166-colors/recolored-selected/090-d9d327f27b57.png",
-      "name": "Researched palette 090",
-      "family": "researched palette",
-      "sourceCandidateID": "d9d327f27b570a56f4394cb0adcb1b9dc4f9f789a42f588ab8a1e45730889576",
+      "name": "Derby Central Fletchers",
+      "nickname": "Fletchers",
       "palette": {
         "league": "FBS",
-        "team": "Toledo",
         "primary": "#00488F",
-        "secondary": "#FFD51D"
-      }
+        "secondary": "#FFD51D",
+        "team": "Toledo"
+      },
+      "primaryColorHex": "#00488F",
+      "secondaryColorHex": "#FFD51D",
+      "sha256": "5c60b2759a8f9bd58d403a0aa965f7978bc4a8b4456715bd5967fa3f18e975ac",
+      "sourceCandidateID": "d9d327f27b570a56f4394cb0adcb1b9dc4f9f789a42f588ab8a1e45730889576",
+      "teamStableID": "B495A8A8-AAFA-4736-875B-C4ECD8E1C5DF"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5818a2bdb8f7796bd099cd26a719ad1ef2d2b47d3fca7d7d2bbae7cbadcb45c5",
-      "sha256": "ebd0222386281af439c281d25834bf4e6051913fda43dbe6eb4e20d70806a1e1",
       "imagePath": "final-166-colors/remediated/13-5818a2bdb8f7796bd099cd26a719ad1ef2d2b47d3fca7d7d2bbae7cbadcb45c5.png",
-      "name": "Researched palette 091",
-      "family": "researched palette",
+      "name": "Rocky Mount A&M Lamplighters",
+      "nickname": "Lamplighters",
+      "palette": {
+        "league": "FBS",
+        "primary": "#001D40",
+        "secondary": "#F1F2F3",
+        "team": "Connecticut"
+      },
+      "primaryColorHex": "#001D40",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "ebd0222386281af439c281d25834bf4e6051913fda43dbe6eb4e20d70806a1e1",
       "sourceCandidateID": "5818a2bdb8f7796bd099cd26a719ad1ef2d2b47d3fca7d7d2bbae7cbadcb45c5",
-      "palette": {
-        "league": "FBS",
-        "team": "Connecticut",
-        "primary": "#001D40",
-        "secondary": "#F1F2F3"
-      }
+      "teamStableID": "D3563C9A-7703-4E80-A87E-D02C6E12D677"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:6d2b34e37ce9edfa828d956838d817af282b51fb35b2e2dfab685a2532604dcc",
-      "sha256": "22bae9c51e0f5b6bf630ed1c7010917f237a71ac92398a9bdf189b65c63425b7",
       "imagePath": "final-166-colors/recolored-selected/092-6d2b34e37ce9.png",
-      "name": "Researched palette 092",
-      "family": "researched palette",
-      "sourceCandidateID": "6d2b34e37ce9edfa828d956838d817af282b51fb35b2e2dfab685a2532604dcc",
+      "name": "Orangeburg A&M Whirlwinds",
+      "nickname": "Whirlwinds",
       "palette": {
         "league": "NFL",
-        "team": "Buffalo Bills",
         "primary": "#00338D",
-        "secondary": "#C60C30"
-      }
+        "secondary": "#C60C30",
+        "team": "Buffalo Bills"
+      },
+      "primaryColorHex": "#00338D",
+      "secondaryColorHex": "#C60C30",
+      "sha256": "22bae9c51e0f5b6bf630ed1c7010917f237a71ac92398a9bdf189b65c63425b7",
+      "sourceCandidateID": "6d2b34e37ce9edfa828d956838d817af282b51fb35b2e2dfab685a2532604dcc",
+      "teamStableID": "B6783970-BA3D-485C-815D-9A62F25005C9"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:b0751dcc97c8edfcc36247648979aafc523074b1363daa1b6e6fb2bdc1b7a4db",
-      "sha256": "e368065869f1a0cc091cfca0ec7ce24b1a905b0f2e7398f71e61a9f466b59771",
       "imagePath": "final-166-colors/recolored-selected/093-b0751dcc97c8.png",
-      "name": "Researched palette 093",
-      "family": "researched palette",
+      "name": "Saranac Lake Central Torchbearers",
+      "nickname": "Torchbearers",
+      "palette": {
+        "league": "FBS",
+        "primary": "#A4000C",
+        "secondary": "#F0F0F0",
+        "team": "Miami (OH)"
+      },
+      "primaryColorHex": "#A4000C",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "e368065869f1a0cc091cfca0ec7ce24b1a905b0f2e7398f71e61a9f466b59771",
       "sourceCandidateID": "b0751dcc97c8edfcc36247648979aafc523074b1363daa1b6e6fb2bdc1b7a4db",
-      "palette": {
-        "league": "FBS",
-        "team": "Miami (OH)",
-        "primary": "#A4000C",
-        "secondary": "#F0F0F0"
-      }
+      "teamStableID": "5E8574FC-01C2-4A46-86F9-6B7D135139C5"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:59780adc5055e0ae069e2c40bf6abf0b0c79512d8ce1161e217bc01d3537dff2",
-      "sha256": "f92175fc497e6a0d46d114b26fafafd98851df16837a21f2373646a2e08aa17e",
       "imagePath": "final-166-colors/recolored-selected/094-59780adc5055.png",
-      "name": "Researched palette 094",
-      "family": "researched palette",
-      "sourceCandidateID": "59780adc5055e0ae069e2c40bf6abf0b0c79512d8ce1161e217bc01d3537dff2",
+      "name": "New Haven Shipwrights",
+      "nickname": "Shipwrights",
       "palette": {
         "league": "FBS",
-        "team": "Louisiana Monroe",
         "primary": "#231F20",
-        "secondary": "#B18445"
-      }
+        "secondary": "#B18445",
+        "team": "Louisiana Monroe"
+      },
+      "primaryColorHex": "#231F20",
+      "secondaryColorHex": "#B18445",
+      "sha256": "f92175fc497e6a0d46d114b26fafafd98851df16837a21f2373646a2e08aa17e",
+      "sourceCandidateID": "59780adc5055e0ae069e2c40bf6abf0b0c79512d8ce1161e217bc01d3537dff2",
+      "teamStableID": "BB6717ED-25E7-4CE3-838D-9292E41AA8C1"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:c35270f23e0616c81157b1b917923adfa4b3df451a4f285c664680c0360183a7",
-      "sha256": "2806897c72b81bf2e7215da6f07f2e9633c7ed3786045584a0089f6969def1bd",
       "imagePath": "final-166-colors/recolored-selected/095-c35270f23e06.png",
-      "name": "Researched palette 095",
-      "family": "researched palette",
-      "sourceCandidateID": "c35270f23e0616c81157b1b917923adfa4b3df451a4f285c664680c0360183a7",
+      "name": "Moberly Tornadoes",
+      "nickname": "Tornadoes",
       "palette": {
         "league": "NFL",
-        "team": "Houston Texans",
         "primary": "#03202F",
-        "secondary": "#A71930"
-      }
+        "secondary": "#A71930",
+        "team": "Houston Texans"
+      },
+      "primaryColorHex": "#03202F",
+      "secondaryColorHex": "#A71930",
+      "sha256": "2806897c72b81bf2e7215da6f07f2e9633c7ed3786045584a0089f6969def1bd",
+      "sourceCandidateID": "c35270f23e0616c81157b1b917923adfa4b3df451a4f285c664680c0360183a7",
+      "teamStableID": "C0A6908A-FD4D-408A-B0BE-70A2298C0B70"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:0bb2727cbcd7c302c2b8682cd05cb2895d6f9d9788c969fe519bfa22402cf72f",
-      "sha256": "5fa8f4683acdc80cb014c865015315f7dcdc755d3a9002c4d479fdb3c444419e",
       "imagePath": "final-166-colors/recolored-selected/096-0bb2727cbcd7.png",
-      "name": "Researched palette 096",
-      "family": "researched palette",
+      "name": "Ellensburg Regional Reapers",
+      "nickname": "Reapers",
+      "palette": {
+        "league": "FBS",
+        "primary": "#003420",
+        "secondary": "#FFFFFF",
+        "team": "Hawai'i"
+      },
+      "primaryColorHex": "#003420",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "5fa8f4683acdc80cb014c865015315f7dcdc755d3a9002c4d479fdb3c444419e",
       "sourceCandidateID": "0bb2727cbcd7c302c2b8682cd05cb2895d6f9d9788c969fe519bfa22402cf72f",
-      "palette": {
-        "league": "FBS",
-        "team": "Hawai'i",
-        "primary": "#003420",
-        "secondary": "#FFFFFF"
-      }
+      "teamStableID": "C1E1DD21-4DB7-4A9B-B72F-E028B4AAA9C3"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:27137595a9ae7f2e777b1e690299efabb4d60328b7b9247936f3a1f4b174afa6",
-      "sha256": "7a1e0d473abc8beae88683122be7e9949112b85928032e108b03f596b9ada2de",
       "imagePath": "final-166-colors/recolored-selected/097-27137595a9ae.png",
-      "name": "Researched palette 097",
-      "family": "researched palette",
-      "sourceCandidateID": "27137595a9ae7f2e777b1e690299efabb4d60328b7b9247936f3a1f4b174afa6",
+      "name": "Canandaigua Tech Galaxies",
+      "nickname": "Galaxies",
       "palette": {
         "league": "NFL",
-        "team": "Carolina Panthers",
         "primary": "#0085CA",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "Carolina Panthers"
+      },
+      "primaryColorHex": "#0085CA",
+      "secondaryColorHex": "#000000",
+      "sha256": "7a1e0d473abc8beae88683122be7e9949112b85928032e108b03f596b9ada2de",
+      "sourceCandidateID": "27137595a9ae7f2e777b1e690299efabb4d60328b7b9247936f3a1f4b174afa6",
+      "teamStableID": "E175143F-FFD4-41AB-9CB8-7F317FCE2082"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:386e676258a2c56ec2491cc5598594c6deab16f76eb2090d5d29640ba950681a",
-      "sha256": "54e3db24f986fbaad02b01a4c1dd95fe4b4d098ed70b4a6a8e12ff9701b3bcf0",
       "imagePath": "final-166-colors/recolored-selected/098-386e676258a2.png",
-      "name": "Researched palette 098",
-      "family": "researched palette",
-      "sourceCandidateID": "386e676258a2c56ec2491cc5598594c6deab16f76eb2090d5d29640ba950681a",
+      "name": "Oak Bluffs Tech Shooting Stars",
+      "nickname": "Shooting Stars",
       "palette": {
         "league": "FBS",
-        "team": "Texas A&M",
         "primary": "#5C0025",
-        "secondary": "#FFFFFF"
-      }
+        "secondary": "#FFFFFF",
+        "team": "Texas A&M"
+      },
+      "primaryColorHex": "#5C0025",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "54e3db24f986fbaad02b01a4c1dd95fe4b4d098ed70b4a6a8e12ff9701b3bcf0",
+      "sourceCandidateID": "386e676258a2c56ec2491cc5598594c6deab16f76eb2090d5d29640ba950681a",
+      "teamStableID": "E2EA9F87-85EC-4B2D-A307-6FAE41E7C490"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:a303707963fa6dc8cfc4b5c57410e6a79b5b99fb7126e5ad85f0038659aaf788",
-      "sha256": "bd6a69e841713ef7f681ee7245fa8c066cc61d7700d68b8551bd64517908947e",
       "imagePath": "final-166-colors/recolored-selected/099-a303707963fa.png",
-      "name": "Researched palette 099",
-      "family": "researched palette",
-      "sourceCandidateID": "a303707963fa6dc8cfc4b5c57410e6a79b5b99fb7126e5ad85f0038659aaf788",
+      "name": "New Prague Thunder",
+      "nickname": "Thunder",
       "palette": {
         "league": "FBS",
-        "team": "Boston College",
         "primary": "#88001A",
-        "secondary": "#A39161"
-      }
+        "secondary": "#A39161",
+        "team": "Boston College"
+      },
+      "primaryColorHex": "#88001A",
+      "secondaryColorHex": "#A39161",
+      "sha256": "bd6a69e841713ef7f681ee7245fa8c066cc61d7700d68b8551bd64517908947e",
+      "sourceCandidateID": "a303707963fa6dc8cfc4b5c57410e6a79b5b99fb7126e5ad85f0038659aaf788",
+      "teamStableID": "CF446B37-9C11-417D-ADF8-C4952970D1C9"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:a9cfdbd3af6e5813c1aa9d36ff4e84e08024c4d206b80624b425b1543dcc3690",
-      "sha256": "1ae621eedbc69993203e0420f6f12da19dc30e32d14ae2b41e9fa7b6d66dbf24",
       "imagePath": "final-166-colors/recolored-selected/100-a9cfdbd3af6e.png",
-      "name": "Researched palette 100",
-      "family": "researched palette",
-      "sourceCandidateID": "a9cfdbd3af6e5813c1aa9d36ff4e84e08024c4d206b80624b425b1543dcc3690",
+      "name": "Waynesboro Poly Quarrymen",
+      "nickname": "Quarrymen",
       "palette": {
         "league": "FBS",
-        "team": "Louisiana Tech",
         "primary": "#002D65",
-        "secondary": "#D3313A"
-      }
+        "secondary": "#D3313A",
+        "team": "Louisiana Tech"
+      },
+      "primaryColorHex": "#002D65",
+      "secondaryColorHex": "#D3313A",
+      "sha256": "1ae621eedbc69993203e0420f6f12da19dc30e32d14ae2b41e9fa7b6d66dbf24",
+      "sourceCandidateID": "a9cfdbd3af6e5813c1aa9d36ff4e84e08024c4d206b80624b425b1543dcc3690",
+      "teamStableID": "3011BF87-371C-48EA-8A1B-0B2452408AB1"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:80f008c557c68f74fe4132b7a67f7b24aa98319ab4b21a3114514a7e39bad16b",
-      "sha256": "f68224a933ea5a550ba40623171c2a9a7bb771d3e92608139535901ebd6814e7",
       "imagePath": "final-166-colors/recolored-selected/101-80f008c557c6.png",
-      "name": "Researched palette 101",
-      "family": "researched palette",
-      "sourceCandidateID": "80f008c557c68f74fe4132b7a67f7b24aa98319ab4b21a3114514a7e39bad16b",
+      "name": "Ketchikan Citadels",
+      "nickname": "Citadels",
       "palette": {
         "league": "NFL",
-        "team": "Green Bay Packers",
         "primary": "#203731",
-        "secondary": "#FFB612"
-      }
+        "secondary": "#FFB612",
+        "team": "Green Bay Packers"
+      },
+      "primaryColorHex": "#203731",
+      "secondaryColorHex": "#FFB612",
+      "sha256": "f68224a933ea5a550ba40623171c2a9a7bb771d3e92608139535901ebd6814e7",
+      "sourceCandidateID": "80f008c557c68f74fe4132b7a67f7b24aa98319ab4b21a3114514a7e39bad16b",
+      "teamStableID": "E8D76C2D-F87A-4503-A1B5-B80193FC4F5B"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:e01686eede82776370570a831b9b11b1f065e3a0b4ebf9e965027a4c07e97589",
-      "sha256": "08f3a3ff2b5aa5a6fe0aac68b2e21a80fcf7d99816330883fde3acc3bb23e485",
       "imagePath": "final-166-colors/recolored-selected/102-e01686eede82.png",
-      "name": "Researched palette 102",
-      "family": "researched palette",
+      "name": "Essex Junction Maritime Orcas",
+      "nickname": "Orcas",
+      "palette": {
+        "league": "NFL",
+        "primary": "#000000",
+        "secondary": "#A5ACAF",
+        "team": "Las Vegas Raiders"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#A5ACAF",
+      "sha256": "08f3a3ff2b5aa5a6fe0aac68b2e21a80fcf7d99816330883fde3acc3bb23e485",
       "sourceCandidateID": "e01686eede82776370570a831b9b11b1f065e3a0b4ebf9e965027a4c07e97589",
-      "palette": {
-        "league": "NFL",
-        "team": "Las Vegas Raiders",
-        "primary": "#000000",
-        "secondary": "#A5ACAF"
-      }
+      "teamStableID": "5EB19F56-8781-43B2-9200-BB201482D59D"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:e4f28f8c0b42fe3ed8720ae3abadf3ece37bd1bcf58381c547f1b102a1ea2b39",
-      "sha256": "656b4b4fbc9582fbcf8065f29409ff6ac2be40207e32831779ef5b314e8dca38",
       "imagePath": "final-166-colors/recolored-selected/103-e4f28f8c0b42.png",
-      "name": "Researched palette 103",
-      "family": "researched palette",
-      "sourceCandidateID": "e4f28f8c0b42fe3ed8720ae3abadf3ece37bd1bcf58381c547f1b102a1ea2b39",
+      "name": "Williamsport A&M Rhinos",
+      "nickname": "Rhinos",
       "palette": {
         "league": "FBS",
-        "team": "Charlotte",
         "primary": "#0C562D",
-        "secondary": "#CFAB7A"
-      }
+        "secondary": "#CFAB7A",
+        "team": "Charlotte"
+      },
+      "primaryColorHex": "#0C562D",
+      "secondaryColorHex": "#CFAB7A",
+      "sha256": "656b4b4fbc9582fbcf8065f29409ff6ac2be40207e32831779ef5b314e8dca38",
+      "sourceCandidateID": "e4f28f8c0b42fe3ed8720ae3abadf3ece37bd1bcf58381c547f1b102a1ea2b39",
+      "teamStableID": "EB5D19AC-E321-4F47-90E4-23FEE97027CF"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:51d5457631452b6117f08679e8328b2e24556e30533dd7ac8358527aca07919e",
-      "sha256": "ccfcea80e8a30c9cf3c04106be3a019eab60b51969b484a5d9fb70b225da570a",
       "imagePath": "final-166-colors/recolored-selected/104-51d545763145.png",
-      "name": "Researched palette 104",
-      "family": "researched palette",
-      "sourceCandidateID": "51d5457631452b6117f08679e8328b2e24556e30533dd7ac8358527aca07919e",
+      "name": "Miles City Vortices",
+      "nickname": "Vortices",
       "palette": {
         "league": "NFL",
-        "team": "Minnesota Vikings",
         "primary": "#4F2683",
-        "secondary": "#FFC62F"
-      }
+        "secondary": "#FFC62F",
+        "team": "Minnesota Vikings"
+      },
+      "primaryColorHex": "#4F2683",
+      "secondaryColorHex": "#FFC62F",
+      "sha256": "ccfcea80e8a30c9cf3c04106be3a019eab60b51969b484a5d9fb70b225da570a",
+      "sourceCandidateID": "51d5457631452b6117f08679e8328b2e24556e30533dd7ac8358527aca07919e",
+      "teamStableID": "F22A5A2B-A734-4FB1-B57D-1D6424D04E56"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:4db7bb421f0ab186160623faa1b5d90e6fa2a0f51ad0a93125559bcf5f19c89c",
-      "sha256": "a60c2842f8c23d13ee259efb0e054161b595a26be3700127701162faa0eb9581",
       "imagePath": "final-166-colors/recolored-selected/105-4db7bb421f0a.png",
-      "name": "Researched palette 105",
-      "family": "researched palette",
-      "sourceCandidateID": "4db7bb421f0ab186160623faa1b5d90e6fa2a0f51ad0a93125559bcf5f19c89c",
+      "name": "Elko Sentinels",
+      "nickname": "Sentinels",
       "palette": {
         "league": "FBS",
-        "team": "Arkansas State",
         "primary": "#E81018",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "Arkansas State"
+      },
+      "primaryColorHex": "#E81018",
+      "secondaryColorHex": "#000000",
+      "sha256": "a60c2842f8c23d13ee259efb0e054161b595a26be3700127701162faa0eb9581",
+      "sourceCandidateID": "4db7bb421f0ab186160623faa1b5d90e6fa2a0f51ad0a93125559bcf5f19c89c",
+      "teamStableID": "FC2EB19D-2F6C-4658-8473-CE9FCB5D5559"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:4c7ff6a1db03bfca83a8c5ef0fc05426dea45d99e30aedf90bc85edb0b26008e",
-      "sha256": "70a3ab3d2c6bc66a07aa66d3c98af10ccecba9bf2afc64e499148a014a3eb48d",
       "imagePath": "final-166-colors/recolored-selected/106-4c7ff6a1db03.png",
-      "name": "Researched palette 106",
-      "family": "researched palette",
-      "sourceCandidateID": "4c7ff6a1db03bfca83a8c5ef0fc05426dea45d99e30aedf90bc85edb0b26008e",
+      "name": "Carefree Tornadoes",
+      "nickname": "Tornadoes",
       "palette": {
         "league": "FBS",
-        "team": "Connecticut",
         "primary": "#001D40",
-        "secondary": "#F1F2F3"
-      }
+        "secondary": "#F1F2F3",
+        "team": "Connecticut"
+      },
+      "primaryColorHex": "#001D40",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "70a3ab3d2c6bc66a07aa66d3c98af10ccecba9bf2afc64e499148a014a3eb48d",
+      "sourceCandidateID": "4c7ff6a1db03bfca83a8c5ef0fc05426dea45d99e30aedf90bc85edb0b26008e",
+      "teamStableID": "FCD34F9B-7C24-472A-B689-0C44A0D33C47"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:061bb48942e1bdb7d44c4db3331d95ea5ae8e57920c5e9cdc395380558e74999",
-      "sha256": "611135b8a0044a033e0de93cb21bafaef99d6b80af3a1cc93cf56ffb6aa472f8",
       "imagePath": "final-166-colors/recolored-selected/107-061bb48942e1.png",
-      "name": "Researched palette 107",
-      "family": "researched palette",
-      "sourceCandidateID": "061bb48942e1bdb7d44c4db3331d95ea5ae8e57920c5e9cdc395380558e74999",
+      "name": "Natchez Maritime Comets",
+      "nickname": "Comets",
       "palette": {
         "league": "FBS",
-        "team": "Army",
         "primary": "#CE9C00",
-        "secondary": "#231F20"
-      }
+        "secondary": "#231F20",
+        "team": "Army"
+      },
+      "primaryColorHex": "#CE9C00",
+      "secondaryColorHex": "#231F20",
+      "sha256": "611135b8a0044a033e0de93cb21bafaef99d6b80af3a1cc93cf56ffb6aa472f8",
+      "sourceCandidateID": "061bb48942e1bdb7d44c4db3331d95ea5ae8e57920c5e9cdc395380558e74999",
+      "teamStableID": "5ECE4678-DCAA-4412-981D-396E9EFACE56"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:11c756a3955896c9ed51e1452d9498c07fe11887ef13710037799360820ede33",
-      "sha256": "d32ad1a0db8727ed0cbd836094192ef90df99888e8d1f471958afd4d00a9b478",
       "imagePath": "final-166-colors/recolored-selected/108-11c756a39558.png",
-      "name": "Researched palette 108",
-      "family": "researched palette",
+      "name": "Pipestone Breakers",
+      "nickname": "Breakers",
+      "palette": {
+        "league": "FBS",
+        "primary": "#003775",
+        "secondary": "#F0F0F0",
+        "team": "Georgia Southern"
+      },
+      "primaryColorHex": "#003775",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "d32ad1a0db8727ed0cbd836094192ef90df99888e8d1f471958afd4d00a9b478",
       "sourceCandidateID": "11c756a3955896c9ed51e1452d9498c07fe11887ef13710037799360820ede33",
-      "palette": {
-        "league": "FBS",
-        "team": "Georgia Southern",
-        "primary": "#003775",
-        "secondary": "#F0F0F0"
-      }
+      "teamStableID": "6504837E-4DE4-4C06-8C9A-2E818B668BC5"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:1218585dfe5d478bd45e53346ac39bf94b03b0609df256510148d76bcd7063f8",
-      "sha256": "0e45e1511a2ace182b52731e9dcae3384999a33ced4904377f5f46abe722b8cd",
       "imagePath": "final-166-colors/remediated/14-1218585dfe5d478bd45e53346ac39bf94b03b0609df256510148d76bcd7063f8.png",
-      "name": "Researched palette 109",
-      "family": "researched palette",
-      "sourceCandidateID": "1218585dfe5d478bd45e53346ac39bf94b03b0609df256510148d76bcd7063f8",
+      "name": "Clayton Poly Geckos",
+      "nickname": "Geckos",
       "palette": {
         "league": "FBS",
-        "team": "Georgia Southern",
         "primary": "#003775",
-        "secondary": "#F0F0F0"
-      }
+        "secondary": "#F0F0F0",
+        "team": "Georgia Southern"
+      },
+      "primaryColorHex": "#003775",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "0e45e1511a2ace182b52731e9dcae3384999a33ced4904377f5f46abe722b8cd",
+      "sourceCandidateID": "1218585dfe5d478bd45e53346ac39bf94b03b0609df256510148d76bcd7063f8",
+      "teamStableID": "65AC24FD-9E0B-4C56-A06A-53A589DAADD4"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:162f3b54ce26ab51d656b3271eedbb21f331aaca9cf492c78dbe21a69ae7777b",
-      "sha256": "fa698d21c5b3df62fbd24d359bdfe3b195f1b091abdc14820805541bd09b9b35",
       "imagePath": "final-166-colors/recolored-selected/110-162f3b54ce26.png",
-      "name": "Researched palette 110",
-      "family": "researched palette",
+      "name": "Gillette Maritime Goshawks",
+      "nickname": "Goshawks",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002244",
+        "secondary": "#C60C30",
+        "team": "New England Patriots"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#C60C30",
+      "sha256": "fa698d21c5b3df62fbd24d359bdfe3b195f1b091abdc14820805541bd09b9b35",
       "sourceCandidateID": "162f3b54ce26ab51d656b3271eedbb21f331aaca9cf492c78dbe21a69ae7777b",
-      "palette": {
-        "league": "NFL",
-        "team": "New England Patriots",
-        "primary": "#002244",
-        "secondary": "#C60C30"
-      }
+      "teamStableID": "66F382C0-4B27-4283-89C4-C43B1F75C729"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:180040216471eb4c202b82633add1a466cd6d58ec0b248e0c9fa561f4dacb38b",
-      "sha256": "35fa568a05015a63fdcfbe347239185bc6e2e8409d2f347f4f611d947598d7fd",
       "imagePath": "final-166-colors/recolored-selected/111-180040216471.png",
-      "name": "Researched palette 111",
-      "family": "researched palette",
+      "name": "Chanute Ursids",
+      "nickname": "Ursids",
+      "palette": {
+        "league": "FBS",
+        "primary": "#18453B",
+        "secondary": "#FFFFFF",
+        "team": "Michigan State"
+      },
+      "primaryColorHex": "#18453B",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "35fa568a05015a63fdcfbe347239185bc6e2e8409d2f347f4f611d947598d7fd",
       "sourceCandidateID": "180040216471eb4c202b82633add1a466cd6d58ec0b248e0c9fa561f4dacb38b",
-      "palette": {
-        "league": "FBS",
-        "team": "Michigan State",
-        "primary": "#18453B",
-        "secondary": "#FFFFFF"
-      }
+      "teamStableID": "6CAF0BE7-40EB-4945-9E4B-DB5ABDD40D8A"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:196ccbdca18f8c0aea75ea3e51f066ef5fdfa22d1bfd0c8ae6b1983b2ba37caf",
-      "sha256": "9224a9ca523ea1cf35e2f28e50bdb30bb213001680e143475aeb513b7e2a23b3",
       "imagePath": "final-166-colors/recolored-selected/112-196ccbdca18f.png",
-      "name": "Researched palette 112",
-      "family": "researched palette",
-      "sourceCandidateID": "196ccbdca18f8c0aea75ea3e51f066ef5fdfa22d1bfd0c8ae6b1983b2ba37caf",
+      "name": "Camas Poly Sharks",
+      "nickname": "Sharks",
       "palette": {
         "league": "FBS",
-        "team": "Virginia Tech",
         "primary": "#74232D",
-        "secondary": "#C2C1BA"
-      }
+        "secondary": "#C2C1BA",
+        "team": "Virginia Tech"
+      },
+      "primaryColorHex": "#74232D",
+      "secondaryColorHex": "#C2C1BA",
+      "sha256": "9224a9ca523ea1cf35e2f28e50bdb30bb213001680e143475aeb513b7e2a23b3",
+      "sourceCandidateID": "196ccbdca18f8c0aea75ea3e51f066ef5fdfa22d1bfd0c8ae6b1983b2ba37caf",
+      "teamStableID": "73490D92-65A6-4A96-BAFF-0C67F093918F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:19a4fea85c955cd476d3911066c60ca5db8d65b5c49a737a73baafda2dbcffdd",
-      "sha256": "73481204452d5a29cb96255346f727e1a47152358d9503bfb91d3700eb744f8c",
       "imagePath": "final-166-colors/remediated/15-19a4fea85c955cd476d3911066c60ca5db8d65b5c49a737a73baafda2dbcffdd.png",
-      "name": "Researched palette 113",
-      "family": "researched palette",
-      "sourceCandidateID": "19a4fea85c955cd476d3911066c60ca5db8d65b5c49a737a73baafda2dbcffdd",
+      "name": "Burlington A&M Kestrels",
+      "nickname": "Kestrels",
       "palette": {
         "league": "FBS",
-        "team": "Georgia State",
         "primary": "#1E539A",
-        "secondary": "#EBEBEB"
-      }
+        "secondary": "#EBEBEB",
+        "team": "Georgia State"
+      },
+      "primaryColorHex": "#1E539A",
+      "secondaryColorHex": "#EBEBEB",
+      "sha256": "73481204452d5a29cb96255346f727e1a47152358d9503bfb91d3700eb744f8c",
+      "sourceCandidateID": "19a4fea85c955cd476d3911066c60ca5db8d65b5c49a737a73baafda2dbcffdd",
+      "teamStableID": "74CBDAB2-62B0-4A15-B1C5-547E005A7E4F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:232f1de644f480133b0aea2cfa2caa967e06de5f6184368a9ea3e137646456a9",
-      "sha256": "b4d420a430ba3f890460478165ea24e72a3a30c41f9f99305de838c421e51533",
       "imagePath": "final-166-colors/recolored-selected/114-232f1de644f4.png",
-      "name": "Researched palette 114",
-      "family": "researched palette",
+      "name": "Rapid City Central Marlins",
+      "nickname": "Marlins",
+      "palette": {
+        "league": "FBS",
+        "primary": "#00122B",
+        "secondary": "#AE9142",
+        "team": "Notre Dame"
+      },
+      "primaryColorHex": "#00122B",
+      "secondaryColorHex": "#AE9142",
+      "sha256": "b4d420a430ba3f890460478165ea24e72a3a30c41f9f99305de838c421e51533",
       "sourceCandidateID": "232f1de644f480133b0aea2cfa2caa967e06de5f6184368a9ea3e137646456a9",
-      "palette": {
-        "league": "FBS",
-        "team": "Notre Dame",
-        "primary": "#00122B",
-        "secondary": "#AE9142"
-      }
+      "teamStableID": "759E3564-09AA-496B-9037-952E6830FA52"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:2b13f193550a37526c709aecc171f118e6622dc0acc21728b9150c3782b31e68",
-      "sha256": "4986167948d7430a6952d072a1b0b3a0a50342278bee5364b0ae62d9fa6e4402",
       "imagePath": "final-166-colors/remediated/16-2b13f193550a37526c709aecc171f118e6622dc0acc21728b9150c3782b31e68.png",
-      "name": "Researched palette 115",
-      "family": "researched palette",
-      "sourceCandidateID": "2b13f193550a37526c709aecc171f118e6622dc0acc21728b9150c3782b31e68",
+      "name": "Pinedale Tech Dragons",
+      "nickname": "Dragons",
       "palette": {
         "league": "FBS",
-        "team": "Hawai'i",
         "primary": "#003420",
-        "secondary": "#FFFFFF"
-      }
+        "secondary": "#FFFFFF",
+        "team": "Hawai'i"
+      },
+      "primaryColorHex": "#003420",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "4986167948d7430a6952d072a1b0b3a0a50342278bee5364b0ae62d9fa6e4402",
+      "sourceCandidateID": "2b13f193550a37526c709aecc171f118e6622dc0acc21728b9150c3782b31e68",
+      "teamStableID": "7DCE509D-76EB-4570-9326-49648DD2DDA2"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:2be87312d7f896b029fd99a33cf7178de3074e5f07b31e6b1ca4479cd891223e",
-      "sha256": "438f8ba92534a920bddd8705723f19226c774df9e59a61be41aa9187e48810d2",
       "imagePath": "final-166-colors/recolored-selected/116-2be87312d7f8.png",
-      "name": "Researched palette 116",
-      "family": "researched palette",
+      "name": "Wilber Sharks",
+      "nickname": "Sharks",
+      "palette": {
+        "league": "FBS",
+        "primary": "#00274C",
+        "secondary": "#FFCB05",
+        "team": "Michigan"
+      },
+      "primaryColorHex": "#00274C",
+      "secondaryColorHex": "#FFCB05",
+      "sha256": "438f8ba92534a920bddd8705723f19226c774df9e59a61be41aa9187e48810d2",
       "sourceCandidateID": "2be87312d7f896b029fd99a33cf7178de3074e5f07b31e6b1ca4479cd891223e",
-      "palette": {
-        "league": "FBS",
-        "team": "Michigan",
-        "primary": "#00274C",
-        "secondary": "#FFCB05"
-      }
+      "teamStableID": "7DEF46FB-1805-44A3-9484-F2589F1712ED"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:2ee505e43ef469a8f6132e2dbb7ce603ec9b8cb50284ebc636c2b37a751fdd05",
-      "sha256": "735a4a23e662621a6d0097e6f367e4f6e519966e5a41ee70e6732dec1f411bff",
       "imagePath": "final-166-colors/remediated/17-2ee505e43ef469a8f6132e2dbb7ce603ec9b8cb50284ebc636c2b37a751fdd05.png",
-      "name": "Researched palette 117",
-      "family": "researched palette",
-      "sourceCandidateID": "2ee505e43ef469a8f6132e2dbb7ce603ec9b8cb50284ebc636c2b37a751fdd05",
+      "name": "Johnstown Hoplites",
+      "nickname": "Hoplites",
       "palette": {
         "league": "FBS",
-        "team": "Indiana",
         "primary": "#7D110C",
-        "secondary": "#EEEDEB"
-      }
+        "secondary": "#EEEDEB",
+        "team": "Indiana"
+      },
+      "primaryColorHex": "#7D110C",
+      "secondaryColorHex": "#EEEDEB",
+      "sha256": "735a4a23e662621a6d0097e6f367e4f6e519966e5a41ee70e6732dec1f411bff",
+      "sourceCandidateID": "2ee505e43ef469a8f6132e2dbb7ce603ec9b8cb50284ebc636c2b37a751fdd05",
+      "teamStableID": "812CEEE7-CE13-45A9-9DC8-C1EB8FA27A6C"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:2faa73be5a239e41472d933a922339effbb7edc0a00ac934120c9c04696302d3",
-      "sha256": "0b71890c68cbc07acd707c5a8dd08a3ccbdc02e8e37d6c036b8fa93db85c3915",
       "imagePath": "final-166-colors/recolored-selected/118-2faa73be5a23.png",
-      "name": "Researched palette 118",
-      "family": "researched palette",
-      "sourceCandidateID": "2faa73be5a239e41472d933a922339effbb7edc0a00ac934120c9c04696302d3",
+      "name": "Ely Poly Engineers",
+      "nickname": "Engineers",
       "palette": {
         "league": "FBS",
-        "team": "Houston",
         "primary": "#C90822",
-        "secondary": "#231F20"
-      }
+        "secondary": "#231F20",
+        "team": "Houston"
+      },
+      "primaryColorHex": "#C90822",
+      "secondaryColorHex": "#231F20",
+      "sha256": "0b71890c68cbc07acd707c5a8dd08a3ccbdc02e8e37d6c036b8fa93db85c3915",
+      "sourceCandidateID": "2faa73be5a239e41472d933a922339effbb7edc0a00ac934120c9c04696302d3",
+      "teamStableID": "886F0CB0-71D2-40A4-AD1E-8D1AF548BE14"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:30b5767ef3badf32a97086f15fc85c4b688a70d178aaf680740dc68810ad3238",
-      "sha256": "b8dfae89f610b675a314eb29904f061b7ff6bdcc5ae1e949bdc70d2abd34b0be",
       "imagePath": "final-166-colors/remediated/18-30b5767ef3badf32a97086f15fc85c4b688a70d178aaf680740dc68810ad3238.png",
-      "name": "Researched palette 119",
-      "family": "researched palette",
-      "sourceCandidateID": "30b5767ef3badf32a97086f15fc85c4b688a70d178aaf680740dc68810ad3238",
+      "name": "Barre Coastal Stonebreakers",
+      "nickname": "Stonebreakers",
       "palette": {
         "league": "FBS",
-        "team": "Iowa",
         "primary": "#000000",
-        "secondary": "#FFE100"
-      }
+        "secondary": "#FFE100",
+        "team": "Iowa"
+      },
+      "primaryColorHex": "#000000",
+      "secondaryColorHex": "#FFE100",
+      "sha256": "b8dfae89f610b675a314eb29904f061b7ff6bdcc5ae1e949bdc70d2abd34b0be",
+      "sourceCandidateID": "30b5767ef3badf32a97086f15fc85c4b688a70d178aaf680740dc68810ad3238",
+      "teamStableID": "88C162AB-213F-44EE-AC3D-F217EDFAB616"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:36a06003c7f20fbc5ae1d870a3114c2c8bbb7c2a746aa4bffa13701e3a2374f7",
-      "sha256": "777c9952785701e1e61842f9b3028eba53860ce09bb690fdd33b8bb786dcaa87",
       "imagePath": "final-166-colors/recolored-selected/120-36a06003c7f2.png",
-      "name": "Researched palette 120",
-      "family": "researched palette",
-      "sourceCandidateID": "36a06003c7f20fbc5ae1d870a3114c2c8bbb7c2a746aa4bffa13701e3a2374f7",
+      "name": "Iron Mountain Orcas",
+      "nickname": "Orcas",
       "palette": {
         "league": "FBS",
-        "team": "San Jos\u00e9 State",
         "primary": "#005893",
-        "secondary": "#FDBA31"
-      }
+        "secondary": "#FDBA31",
+        "team": "San Jos\u00e9 State"
+      },
+      "primaryColorHex": "#005893",
+      "secondaryColorHex": "#FDBA31",
+      "sha256": "777c9952785701e1e61842f9b3028eba53860ce09bb690fdd33b8bb786dcaa87",
+      "sourceCandidateID": "36a06003c7f20fbc5ae1d870a3114c2c8bbb7c2a746aa4bffa13701e3a2374f7",
+      "teamStableID": "8E5802E1-2E34-4C2E-90F1-4D92567B26BD"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:40bda80c556dbb848778c38aeccee08a853a557ba3adf87a011386991d2ef378",
-      "sha256": "2c1a9473bb064ffcd7bbe6d0d24a200eb0977eafa409e6083b60019a59d228c7",
       "imagePath": "final-166-colors/remediated/19-40bda80c556dbb848778c38aeccee08a853a557ba3adf87a011386991d2ef378.png",
-      "name": "Researched palette 121",
-      "family": "researched palette",
-      "sourceCandidateID": "40bda80c556dbb848778c38aeccee08a853a557ba3adf87a011386991d2ef378",
+      "name": "Klamath Falls A&M Shields",
+      "nickname": "Shields",
       "palette": {
         "league": "FBS",
-        "team": "Kansas State",
         "primary": "#633194",
-        "secondary": "#E7D2AD"
-      }
+        "secondary": "#E7D2AD",
+        "team": "Kansas State"
+      },
+      "primaryColorHex": "#633194",
+      "secondaryColorHex": "#E7D2AD",
+      "sha256": "2c1a9473bb064ffcd7bbe6d0d24a200eb0977eafa409e6083b60019a59d228c7",
+      "sourceCandidateID": "40bda80c556dbb848778c38aeccee08a853a557ba3adf87a011386991d2ef378",
+      "teamStableID": "8FA882FD-D69C-4228-858D-172434456DA9"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:46b9887ddace46b231c4b8dfa81f9ca33cfb38d2a0eee69ac0daa5a4b682df78",
-      "sha256": "49830d82f302db4098f8a3086dfcf5b4d5b810b1436f7f3c323835c153f30d2b",
       "imagePath": "final-166-colors/recolored-selected/122-46b9887ddace.png",
-      "name": "Researched palette 122",
-      "family": "researched palette",
-      "sourceCandidateID": "46b9887ddace46b231c4b8dfa81f9ca33cfb38d2a0eee69ac0daa5a4b682df78",
+      "name": "Payson A&M Sabrecats",
+      "nickname": "Sabrecats",
       "palette": {
         "league": "FBS",
-        "team": "Tulane",
         "primary": "#005837",
-        "secondary": "#3BAF29"
-      }
+        "secondary": "#3BAF29",
+        "team": "Tulane"
+      },
+      "primaryColorHex": "#005837",
+      "secondaryColorHex": "#3BAF29",
+      "sha256": "49830d82f302db4098f8a3086dfcf5b4d5b810b1436f7f3c323835c153f30d2b",
+      "sourceCandidateID": "46b9887ddace46b231c4b8dfa81f9ca33cfb38d2a0eee69ac0daa5a4b682df78",
+      "teamStableID": "900EF64D-9234-456E-AA4E-D488C78B968E"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:46ec1789d4e63037a0c3472710febf979fbe929f3ecf69149aa91e2eb6900e44",
-      "sha256": "e92a08706f3ad6deba66af60d1135a170e9ba188c46345e2f7e95b4b1a9ac15d",
       "imagePath": "final-166-colors/recolored-selected/123-46ec1789d4e6.png",
-      "name": "Researched palette 123",
-      "family": "researched palette",
-      "sourceCandidateID": "46ec1789d4e63037a0c3472710febf979fbe929f3ecf69149aa91e2eb6900e44",
+      "name": "Somerset A&M Crocodiles",
+      "nickname": "Crocodiles",
       "palette": {
         "league": "NFL",
-        "team": "Jacksonville Jaguars",
         "primary": "#006778",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "Jacksonville Jaguars"
+      },
+      "primaryColorHex": "#006778",
+      "secondaryColorHex": "#000000",
+      "sha256": "e92a08706f3ad6deba66af60d1135a170e9ba188c46345e2f7e95b4b1a9ac15d",
+      "sourceCandidateID": "46ec1789d4e63037a0c3472710febf979fbe929f3ecf69149aa91e2eb6900e44",
+      "teamStableID": "90369DB3-A0EA-40F6-8A40-5DEF59CFE630"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:582dc4512a4e50f9cdcdd6b96c777cb6dd16dfa2871667d32e536c2bb4123026",
-      "sha256": "22ed553c607c9c714a97792163c753a7110b83bd9c237f13fe8ff7da1259fe75",
       "imagePath": "final-166-colors/recolored-selected/124-582dc4512a4e.png",
-      "name": "Researched palette 124",
-      "family": "researched palette",
-      "sourceCandidateID": "582dc4512a4e50f9cdcdd6b96c777cb6dd16dfa2871667d32e536c2bb4123026",
+      "name": "Grangeville Poly Prowlers",
+      "nickname": "Prowlers",
       "palette": {
         "league": "FBS",
-        "team": "Air Force",
         "primary": "#004A7B",
-        "secondary": "#FFFFFF"
-      }
+        "secondary": "#FFFFFF",
+        "team": "Air Force"
+      },
+      "primaryColorHex": "#004A7B",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "22ed553c607c9c714a97792163c753a7110b83bd9c237f13fe8ff7da1259fe75",
+      "sourceCandidateID": "582dc4512a4e50f9cdcdd6b96c777cb6dd16dfa2871667d32e536c2bb4123026",
+      "teamStableID": "90CFDB4C-A355-4A5A-8B3D-94B9A73A5AB5"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:5c3fabe169af7c73c6d8989cfd87af0183f92186f8751c61ee5df6216d3efb5c",
-      "sha256": "8c13813e97b6b4ad5f8c1638b6368b5f13258494f41ffd8240cb12220d492550",
       "imagePath": "final-166-colors/remediated/20-5c3fabe169af7c73c6d8989cfd87af0183f92186f8751c61ee5df6216d3efb5c.png",
-      "name": "Researched palette 125",
-      "family": "researched palette",
-      "sourceCandidateID": "5c3fabe169af7c73c6d8989cfd87af0183f92186f8751c61ee5df6216d3efb5c",
+      "name": "Adrian Wizards",
+      "nickname": "Wizards",
       "palette": {
         "league": "FBS",
-        "team": "Kent State",
         "primary": "#002445",
-        "secondary": "#F0B510"
-      }
+        "secondary": "#F0B510",
+        "team": "Kent State"
+      },
+      "primaryColorHex": "#002445",
+      "secondaryColorHex": "#F0B510",
+      "sha256": "8c13813e97b6b4ad5f8c1638b6368b5f13258494f41ffd8240cb12220d492550",
+      "sourceCandidateID": "5c3fabe169af7c73c6d8989cfd87af0183f92186f8751c61ee5df6216d3efb5c",
+      "teamStableID": "91F2A57B-E7C9-4E6E-8217-17490CBB784B"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:769a26c17cd84d9c5955cdea6e07c424e1b93944ba5cc04256006090d3511892",
-      "sha256": "7d09d58d3064c52004be8b791d092481957996d4913805fafa7cfcc2fb7c8119",
       "imagePath": "final-166-colors/remediated/21-769a26c17cd84d9c5955cdea6e07c424e1b93944ba5cc04256006090d3511892.png",
-      "name": "Researched palette 126",
-      "family": "researched palette",
-      "sourceCandidateID": "769a26c17cd84d9c5955cdea6e07c424e1b93944ba5cc04256006090d3511892",
+      "name": "Lihue Thunder",
+      "nickname": "Thunder",
       "palette": {
         "league": "FBS",
-        "team": "Maryland",
         "primary": "#D5002B",
-        "secondary": "#FFCD00"
-      }
+        "secondary": "#FFCD00",
+        "team": "Maryland"
+      },
+      "primaryColorHex": "#D5002B",
+      "secondaryColorHex": "#FFCD00",
+      "sha256": "7d09d58d3064c52004be8b791d092481957996d4913805fafa7cfcc2fb7c8119",
+      "sourceCandidateID": "769a26c17cd84d9c5955cdea6e07c424e1b93944ba5cc04256006090d3511892",
+      "teamStableID": "93906BE6-0664-47D6-B43D-818955AE7DC8"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:852c35cd842413d85ae766b4e9f015af34ddb7a16477c95244078f80ada39277",
-      "sha256": "b8268cae59e09d3f9eda6b4f3195a784f390270a19c7a0e1a63a18805c538eb6",
       "imagePath": "final-166-colors/remediated/22-852c35cd842413d85ae766b4e9f015af34ddb7a16477c95244078f80ada39277.png",
-      "name": "Researched palette 127",
-      "family": "researched palette",
-      "sourceCandidateID": "852c35cd842413d85ae766b4e9f015af34ddb7a16477c95244078f80ada39277",
+      "name": "Fairbury Cannoneers",
+      "nickname": "Cannoneers",
       "palette": {
         "league": "FBS",
-        "team": "Miami (OH)",
         "primary": "#A4000C",
-        "secondary": "#F0F0F0"
-      }
+        "secondary": "#F0F0F0",
+        "team": "Miami (OH)"
+      },
+      "primaryColorHex": "#A4000C",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "b8268cae59e09d3f9eda6b4f3195a784f390270a19c7a0e1a63a18805c538eb6",
+      "sourceCandidateID": "852c35cd842413d85ae766b4e9f015af34ddb7a16477c95244078f80ada39277",
+      "teamStableID": "94D568ED-1B87-419B-B8E4-005F63171F1F"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:97f929f34b64344911984c18bd43416e70d8cb9471c7139a73ac460bff401dcc",
-      "sha256": "d294c275e0bf682ba04c7873d14f5f8f1b4754a0722c72ab027ef609d799111a",
       "imagePath": "final-166-colors/remediated/23-97f929f34b64344911984c18bd43416e70d8cb9471c7139a73ac460bff401dcc.png",
-      "name": "Researched palette 128",
-      "family": "researched palette",
-      "sourceCandidateID": "97f929f34b64344911984c18bd43416e70d8cb9471c7139a73ac460bff401dcc",
+      "name": "Lebanon Regional Ursids",
+      "nickname": "Ursids",
       "palette": {
         "league": "NFL",
-        "team": "Denver Broncos",
         "primary": "#002244",
-        "secondary": "#FB4F14"
-      }
+        "secondary": "#FB4F14",
+        "team": "Denver Broncos"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#FB4F14",
+      "sha256": "d294c275e0bf682ba04c7873d14f5f8f1b4754a0722c72ab027ef609d799111a",
+      "sourceCandidateID": "97f929f34b64344911984c18bd43416e70d8cb9471c7139a73ac460bff401dcc",
+      "teamStableID": "9BBB69C9-4FBA-4C26-BFDF-8BAEF98A8682"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:982805e49239a76ed40aab4c8c809ade9ad9201264fcc10a2ee77ebe0b4cbf6f",
-      "sha256": "9d53a990017b85b1d23d8611964e70700128cffcab5d471f85e87b378d755a0d",
       "imagePath": "final-166-colors/recolored-selected/129-982805e49239.png",
-      "name": "Researched palette 129",
-      "family": "researched palette",
-      "sourceCandidateID": "982805e49239a76ed40aab4c8c809ade9ad9201264fcc10a2ee77ebe0b4cbf6f",
+      "name": "Waverly Anchors",
+      "nickname": "Anchors",
       "palette": {
         "league": "FBS",
-        "team": "New Mexico State",
         "primary": "#891216",
-        "secondary": "#000000"
-      }
+        "secondary": "#000000",
+        "team": "New Mexico State"
+      },
+      "primaryColorHex": "#891216",
+      "secondaryColorHex": "#000000",
+      "sha256": "9d53a990017b85b1d23d8611964e70700128cffcab5d471f85e87b378d755a0d",
+      "sourceCandidateID": "982805e49239a76ed40aab4c8c809ade9ad9201264fcc10a2ee77ebe0b4cbf6f",
+      "teamStableID": "9ECF043D-3EFC-4A72-9819-CE233D8C7DDA"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:988248379a3e0d5a7b4fba5abfe6ec4ccaca9815fb49b1641e6f2dde9dfd5c91",
-      "sha256": "8e6b4ab190cd3478dcfd18bd06653d4d7a4933f1ca1b649b91025978ee09d028",
       "imagePath": "final-166-colors/recolored-selected/130-988248379a3e.png",
-      "name": "Researched palette 130",
-      "family": "researched palette",
-      "sourceCandidateID": "988248379a3e0d5a7b4fba5abfe6ec4ccaca9815fb49b1641e6f2dde9dfd5c91",
+      "name": "Cohoes Coastal Tornadoes",
+      "nickname": "Tornadoes",
       "palette": {
         "league": "FBS",
-        "team": "Temple",
         "primary": "#A80532",
-        "secondary": "#A7A9AC"
-      }
+        "secondary": "#A7A9AC",
+        "team": "Temple"
+      },
+      "primaryColorHex": "#A80532",
+      "secondaryColorHex": "#A7A9AC",
+      "sha256": "8e6b4ab190cd3478dcfd18bd06653d4d7a4933f1ca1b649b91025978ee09d028",
+      "sourceCandidateID": "988248379a3e0d5a7b4fba5abfe6ec4ccaca9815fb49b1641e6f2dde9dfd5c91",
+      "teamStableID": "9F0787A8-3784-407F-BCDA-8A2CDEB855FC"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:9e42b5424a0e3dd122ed9ad096655e2610cec52065b1cfb0a7c310cdeec5c98f",
-      "sha256": "4d51714a8db2afd7d318e8fbabdaf73c72b3fbe43407e4e89642bc26f11ce8cf",
       "imagePath": "final-166-colors/recolored-selected/131-9e42b5424a0e.png",
-      "name": "Researched palette 131",
-      "family": "researched palette",
-      "sourceCandidateID": "9e42b5424a0e3dd122ed9ad096655e2610cec52065b1cfb0a7c310cdeec5c98f",
+      "name": "Buckeye State Pinwheels",
+      "nickname": "Pinwheels",
       "palette": {
         "league": "NFL",
-        "team": "Baltimore Ravens",
         "primary": "#241773",
-        "secondary": "#9E7C0C"
-      }
+        "secondary": "#9E7C0C",
+        "team": "Baltimore Ravens"
+      },
+      "primaryColorHex": "#241773",
+      "secondaryColorHex": "#9E7C0C",
+      "sha256": "4d51714a8db2afd7d318e8fbabdaf73c72b3fbe43407e4e89642bc26f11ce8cf",
+      "sourceCandidateID": "9e42b5424a0e3dd122ed9ad096655e2610cec52065b1cfb0a7c310cdeec5c98f",
+      "teamStableID": "A0D5378A-462C-4791-AE53-952A79FCCD62"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:abc928f8ec12f63312772ce45ec1beebc79cee8a56d03e8668c7dd88b1743a00",
-      "sha256": "be8bbcdae69593b6093a5930c3bd5f34b7d21c9844f8f1592568cc92a7d6746d",
       "imagePath": "final-166-colors/remediated/24-abc928f8ec12f63312772ce45ec1beebc79cee8a56d03e8668c7dd88b1743a00.png",
-      "name": "Researched palette 132",
-      "family": "researched palette",
-      "sourceCandidateID": "abc928f8ec12f63312772ce45ec1beebc79cee8a56d03e8668c7dd88b1743a00",
+      "name": "Sulphur Springs A&M Shrikes",
+      "nickname": "Shrikes",
       "palette": {
         "league": "FBS",
-        "team": "Michigan",
         "primary": "#00274C",
-        "secondary": "#FFCB05"
-      }
+        "secondary": "#FFCB05",
+        "team": "Michigan"
+      },
+      "primaryColorHex": "#00274C",
+      "secondaryColorHex": "#FFCB05",
+      "sha256": "be8bbcdae69593b6093a5930c3bd5f34b7d21c9844f8f1592568cc92a7d6746d",
+      "sourceCandidateID": "abc928f8ec12f63312772ce45ec1beebc79cee8a56d03e8668c7dd88b1743a00",
+      "teamStableID": "A11631F5-EF41-4BD0-90A1-34F29549AFBA"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:b2d2751b4b0af46fa4e3ad906b9884e4d342c3c9f6c6c6f0b75d5936670f53d9",
-      "sha256": "3cca8cf3f1ed592ee2f3e41b5077516f6b3d6967f7b310644415d8e0ad432daa",
       "imagePath": "final-166-colors/remediated/25-b2d2751b4b0af46fa4e3ad906b9884e4d342c3c9f6c6c6f0b75d5936670f53d9.png",
-      "name": "Researched palette 133",
-      "family": "researched palette",
-      "sourceCandidateID": "b2d2751b4b0af46fa4e3ad906b9884e4d342c3c9f6c6c6f0b75d5936670f53d9",
+      "name": "Janesville Central Lynx",
+      "nickname": "Lynx",
       "palette": {
         "league": "FBS",
-        "team": "Michigan State",
         "primary": "#18453B",
-        "secondary": "#FFFFFF"
-      }
+        "secondary": "#FFFFFF",
+        "team": "Michigan State"
+      },
+      "primaryColorHex": "#18453B",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "3cca8cf3f1ed592ee2f3e41b5077516f6b3d6967f7b310644415d8e0ad432daa",
+      "sourceCandidateID": "b2d2751b4b0af46fa4e3ad906b9884e4d342c3c9f6c6c6f0b75d5936670f53d9",
+      "teamStableID": "A23E5915-3CDF-4522-9C22-AA9AD1D72EB9"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:c33cd82aefb39ccc9856deb7036d6ebd09e9c0be19b7faaf6606a7c242997cba",
-      "sha256": "c9b6c4a1d3e9eb155e24fda01307d3cf9ee63d21a9ac6780047047d19027c666",
       "imagePath": "final-166-colors/remediated/26-c33cd82aefb39ccc9856deb7036d6ebd09e9c0be19b7faaf6606a7c242997cba.png",
-      "name": "Researched palette 134",
-      "family": "researched palette",
-      "sourceCandidateID": "c33cd82aefb39ccc9856deb7036d6ebd09e9c0be19b7faaf6606a7c242997cba",
+      "name": "Dover A&M Captains",
+      "nickname": "Captains",
       "palette": {
         "league": "FBS",
-        "team": "Mississippi State",
         "primary": "#762123",
-        "secondary": "#C8C8C8"
-      }
+        "secondary": "#C8C8C8",
+        "team": "Mississippi State"
+      },
+      "primaryColorHex": "#762123",
+      "secondaryColorHex": "#C8C8C8",
+      "sha256": "c9b6c4a1d3e9eb155e24fda01307d3cf9ee63d21a9ac6780047047d19027c666",
+      "sourceCandidateID": "c33cd82aefb39ccc9856deb7036d6ebd09e9c0be19b7faaf6606a7c242997cba",
+      "teamStableID": "A3B3903E-148F-481A-8469-00002BEB8BBB"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:d3ed3157936193ae638007b55707e4b7e4ce20ac815fd3cb4f237509522ebc70",
-      "sha256": "ad7ddb553f158f7fc6b83821743c9282ba2e37d067fc9685d5f5248fd5993388",
       "imagePath": "final-166-colors/recolored-selected/135-d3ed31579361.png",
-      "name": "Researched palette 135",
-      "family": "researched palette",
-      "sourceCandidateID": "d3ed3157936193ae638007b55707e4b7e4ce20ac815fd3cb4f237509522ebc70",
+      "name": "Olney Cacti",
+      "nickname": "Cacti",
       "palette": {
         "league": "FBS",
-        "team": "Rutgers",
         "primary": "#D21034",
-        "secondary": "#FFFFFF"
-      }
+        "secondary": "#FFFFFF",
+        "team": "Rutgers"
+      },
+      "primaryColorHex": "#D21034",
+      "secondaryColorHex": "#FFFFFF",
+      "sha256": "ad7ddb553f158f7fc6b83821743c9282ba2e37d067fc9685d5f5248fd5993388",
+      "sourceCandidateID": "d3ed3157936193ae638007b55707e4b7e4ce20ac815fd3cb4f237509522ebc70",
+      "teamStableID": "A490D536-5671-4340-BE18-CD697CEED26A"
     },
     {
-      "id": "researched-recolor:d6624c277d3e4602b528a1632b65ab5064e3aea87672517a80a663db5200c277",
-      "sha256": "f436a998711a6324692b27893bec7a0ee681e458a3d471ad1eccfe261532c4a7",
-      "imagePath": "final-166-colors/recolored-selected/136-d6624c277d3e.png",
-      "name": "Researched palette 136",
       "family": "researched palette",
-      "sourceCandidateID": "d6624c277d3e4602b528a1632b65ab5064e3aea87672517a80a663db5200c277",
+      "id": "researched-recolor:d6624c277d3e4602b528a1632b65ab5064e3aea87672517a80a663db5200c277",
+      "imagePath": "final-166-colors/recolored-selected/136-d6624c277d3e.png",
+      "name": "Geneseo State Wildcatters",
+      "nickname": "Wildcatters",
       "palette": {
         "league": "FBS",
-        "team": "Oregon",
         "primary": "#044520",
-        "secondary": "#FEE123"
-      }
+        "secondary": "#FEE123",
+        "team": "Oregon"
+      },
+      "primaryColorHex": "#044520",
+      "secondaryColorHex": "#FEE123",
+      "sha256": "f436a998711a6324692b27893bec7a0ee681e458a3d471ad1eccfe261532c4a7",
+      "sourceCandidateID": "d6624c277d3e4602b528a1632b65ab5064e3aea87672517a80a663db5200c277",
+      "teamStableID": "A4A0B0B0-62DB-42A3-B145-67E3DD7C1A04"
     },
     {
-      "id": "researched-recolor:e011dd69acf130317eb327d395e2d695d36f86fd10c02caa89b5fbaffb8d6367",
-      "sha256": "a5dda2fd0755afa4465628eb94d96b275ebb41bec45e6ce667c38b73afaedd9a",
-      "imagePath": "final-166-colors/recolored-selected/137-e011dd69acf1.png",
-      "name": "Researched palette 137",
       "family": "researched palette",
-      "sourceCandidateID": "e011dd69acf130317eb327d395e2d695d36f86fd10c02caa89b5fbaffb8d6367",
+      "id": "researched-recolor:e011dd69acf130317eb327d395e2d695d36f86fd10c02caa89b5fbaffb8d6367",
+      "imagePath": "final-166-colors/recolored-selected/137-e011dd69acf1.png",
+      "name": "Webster City Coastal Tornadoes",
+      "nickname": "Tornadoes",
       "palette": {
         "league": "NFL",
-        "team": "Miami Dolphins",
         "primary": "#008E97",
-        "secondary": "#F58220"
-      }
+        "secondary": "#F58220",
+        "team": "Miami Dolphins"
+      },
+      "primaryColorHex": "#008E97",
+      "secondaryColorHex": "#F58220",
+      "sha256": "a5dda2fd0755afa4465628eb94d96b275ebb41bec45e6ce667c38b73afaedd9a",
+      "sourceCandidateID": "e011dd69acf130317eb327d395e2d695d36f86fd10c02caa89b5fbaffb8d6367",
+      "teamStableID": "A80F1424-2952-443A-8737-7DA109C31124"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:e13eb18965b8d02edb002c5931510d16d4d786c890b992834508f52decbed23a",
-      "sha256": "4bcd20c42c97d2e10ad37354d0be1596a021f0c45ace1e9cbb0171e11b26b5f0",
       "imagePath": "final-166-colors/remediated/27-e13eb18965b8d02edb002c5931510d16d4d786c890b992834508f52decbed23a.png",
-      "name": "Researched palette 138",
-      "family": "researched palette",
-      "sourceCandidateID": "e13eb18965b8d02edb002c5931510d16d4d786c890b992834508f52decbed23a",
+      "name": "Sandpoint Regional Goshawks",
+      "nickname": "Goshawks",
       "palette": {
         "league": "FBS",
-        "team": "Navy",
         "primary": "#131630",
-        "secondary": "#B6A77C"
-      }
+        "secondary": "#B6A77C",
+        "team": "Navy"
+      },
+      "primaryColorHex": "#131630",
+      "secondaryColorHex": "#B6A77C",
+      "sha256": "4bcd20c42c97d2e10ad37354d0be1596a021f0c45ace1e9cbb0171e11b26b5f0",
+      "sourceCandidateID": "e13eb18965b8d02edb002c5931510d16d4d786c890b992834508f52decbed23a",
+      "teamStableID": "AD2C6F9A-1B65-4766-8FB1-B27E3B03AD5A"
     },
     {
+      "family": "researched palette",
       "id": "researched-recolor:ed73518aa566397bea31282da43ba77fa3d68078c216ff39d4035459f9f2db38",
-      "sha256": "a4f3ad3727281342f1881009542bfb5328f0a57b5e3abf88fb44f1e474b3dd53",
       "imagePath": "final-166-colors/remediated/28-ed73518aa566397bea31282da43ba77fa3d68078c216ff39d4035459f9f2db38.png",
-      "name": "Researched palette 139",
-      "family": "researched palette",
-      "sourceCandidateID": "ed73518aa566397bea31282da43ba77fa3d68078c216ff39d4035459f9f2db38",
+      "name": "Texarkana Tech Marlins",
+      "nickname": "Marlins",
       "palette": {
         "league": "FBS",
-        "team": "North Carolina",
         "primary": "#99BFE5",
-        "secondary": "#13294B"
-      }
+        "secondary": "#13294B",
+        "team": "North Carolina"
+      },
+      "primaryColorHex": "#99BFE5",
+      "secondaryColorHex": "#13294B",
+      "sha256": "a4f3ad3727281342f1881009542bfb5328f0a57b5e3abf88fb44f1e474b3dd53",
+      "sourceCandidateID": "ed73518aa566397bea31282da43ba77fa3d68078c216ff39d4035459f9f2db38",
+      "teamStableID": "ADE3144D-D5B5-4619-B40D-53EDB4C2D1B1"
     },
     {
-      "id": "researched-recolor:fb043ca18d390b0c1475da6b172d7f1bd8c72bf2c47f26a67075f588feaff663",
-      "sha256": "7709ce1a89ec30099f68b348fff1a14b717292f192be515e9ac91aa74d28cd7e",
-      "imagePath": "final-166-colors/remediated/29-fb043ca18d390b0c1475da6b172d7f1bd8c72bf2c47f26a67075f588feaff663.png",
-      "name": "Researched palette 140",
       "family": "researched palette",
-      "sourceCandidateID": "fb043ca18d390b0c1475da6b172d7f1bd8c72bf2c47f26a67075f588feaff663",
+      "id": "researched-recolor:fb043ca18d390b0c1475da6b172d7f1bd8c72bf2c47f26a67075f588feaff663",
+      "imagePath": "final-166-colors/remediated/29-fb043ca18d390b0c1475da6b172d7f1bd8c72bf2c47f26a67075f588feaff663.png",
+      "name": "Elmira Prowlers",
+      "nickname": "Prowlers",
       "palette": {
         "league": "FBS",
-        "team": "Notre Dame",
         "primary": "#00122B",
-        "secondary": "#AE9142"
-      }
+        "secondary": "#AE9142",
+        "team": "Notre Dame"
+      },
+      "primaryColorHex": "#00122B",
+      "secondaryColorHex": "#AE9142",
+      "sha256": "7709ce1a89ec30099f68b348fff1a14b717292f192be515e9ac91aa74d28cd7e",
+      "sourceCandidateID": "fb043ca18d390b0c1475da6b172d7f1bd8c72bf2c47f26a67075f588feaff663",
+      "teamStableID": "B0196DF2-F075-4EAB-9A45-E39466DFAF14"
     },
     {
+      "family": "large animal",
       "id": "final-fill:01-elephant",
+      "imagePath": "final-166-fill/batch-01/final-candidates/01-elephant.png",
+      "name": "Emporia Elephants",
+      "nickname": "Elephants",
+      "primaryColorHex": "#1B3A8A",
+      "secondaryColorHex": "#A5F24C",
       "sha256": "cd24fcf370348bfe1fa6bc1325c6b4b3d2f723e9ce01c4344e5ba1b1ac405ffc",
+      "teamStableID": "B3ECE286-AE16-4B98-81CB-BFA603AC1091"
+    },
+    {
+      "family": "large animal",
+      "id": "final-fill:02-hippopotamus",
+      "imagePath": "final-166-fill/batch-01/final-candidates/02-hippopotamus.png",
+      "name": "Houlton Valley Hippos",
+      "nickname": "Hippos",
+      "primaryColorHex": "#FF6B57",
+      "secondaryColorHex": "#064F5C",
+      "sha256": "d97dd7b3e983270101979612e8747231900a0df01016092223209ca5dfdbc8a3",
+      "teamStableID": "B7AE9F0A-6FA7-40FA-9934-6D6B21DF2D49"
+    },
+    {
+      "family": "large animal",
+      "id": "final-fill:03-giraffe",
+      "imagePath": "final-166-colors/remediated/30-03-giraffe.png",
+      "name": "Bridgeport Poly Giraffes",
+      "nickname": "Giraffes",
+      "palette": {
+        "league": "FBS",
+        "primary": "#044520",
+        "secondary": "#FEE123",
+        "team": "Oregon"
+      },
+      "primaryColorHex": "#044520",
+      "secondaryColorHex": "#FEE123",
+      "sha256": "0c9578d55163104205eb465122ec6b0d9e9b775b4c7915cfd3a73be12bae73dc",
+      "sourceImagePath": "final-166-fill/batch-01/final-candidates/03-giraffe.png",
+      "teamStableID": "BF72B120-52D0-42A5-9152-136626721018"
+    },
+    {
+      "family": "large animal",
+      "id": "final-fill:04-gorilla",
+      "imagePath": "final-166-fill/batch-01/final-candidates/04-gorilla.png",
+      "name": "Terre Haute A&M Gorillas",
+      "nickname": "Gorillas",
+      "primaryColorHex": "#08264C",
+      "secondaryColorHex": "#FF6A00",
+      "sha256": "c6eb83f16f72e6adc0231b66ce56b70169594816e489766c7982e5910222f478",
+      "teamStableID": "C07AC0D1-16CE-4510-B262-83DB4CAD3E38"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:05-jaguar",
+      "imagePath": "final-166-colors/recolored-new/05-jaguar.png",
+      "name": "Lewisburg Oncas",
+      "nickname": "Oncas",
+      "palette": {
+        "league": "NFL",
+        "primary": "#003594",
+        "secondary": "#FFD100",
+        "team": "Los Angeles Rams"
+      },
+      "primaryColorHex": "#003594",
+      "secondaryColorHex": "#FFD100",
+      "sha256": "dc81089217199be4511793cdf9d491ddebb71eb1a0e1057a0f4218318276e45a",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/05-jaguar.png",
+      "teamStableID": "C28B0A9D-F937-4F64-BD4A-517AFC174BC1"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:06-leopard",
+      "imagePath": "final-166-colors/recolored-new/06-leopard.png",
+      "name": "Springville Maritime Leopards",
+      "nickname": "Leopards",
+      "palette": {
+        "league": "NFL",
+        "primary": "#A71930",
+        "secondary": "#000000",
+        "team": "Atlanta Falcons"
+      },
+      "primaryColorHex": "#A71930",
+      "secondaryColorHex": "#000000",
+      "sha256": "5b02556a0afd6ebd12fc7000f652a84033dfee3bdcfada901604bfc35f6f77ef",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/06-leopard.png",
+      "teamStableID": "C2A1B50D-C824-46F7-9CFB-BD477BF5ABAD"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:07-snow-leopard",
+      "imagePath": "final-166-colors/recolored-new/07-snow-leopard.png",
+      "name": "Savanna Snow Leopards",
+      "nickname": "Snow Leopards",
+      "palette": {
+        "league": "FBS",
+        "primary": "#004B85",
+        "secondary": "#BB2F4C",
+        "team": "Florida Atlantic"
+      },
+      "primaryColorHex": "#004B85",
+      "secondaryColorHex": "#BB2F4C",
+      "sha256": "5d6975c422a4f834423bd490d1f53795727d8dd5d0671cd201382f673f4eb8d0",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/07-snow-leopard.png",
+      "teamStableID": "C3412C59-7F59-4D90-8015-CBD76155AAF6"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:08-clouded-leopard",
+      "imagePath": "final-166-colors/recolored-new/08-clouded-leopard.png",
+      "name": "Waimea Coastal Clouded Leopards",
+      "nickname": "Clouded Leopards",
+      "palette": {
+        "league": "NFL",
+        "primary": "#97233F",
+        "secondary": "#000000",
+        "team": "Arizona Cardinals"
+      },
+      "primaryColorHex": "#97233F",
+      "secondaryColorHex": "#000000",
+      "sha256": "5da28f17228a340b8e9a069a326a8d5834ae5ea7ce8ddfdda84e6f1abfc98c47",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/08-clouded-leopard.png",
+      "teamStableID": "CB7833BC-70FE-42C0-943A-61D73AADC350"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:09-cheetah",
+      "imagePath": "final-166-colors/recolored-new/09-cheetah.png",
+      "name": "Baggs Cheetahs",
+      "nickname": "Cheetahs",
+      "palette": {
+        "league": "FBS",
+        "primary": "#03244D",
+        "secondary": "#F1F2F3",
+        "team": "Auburn"
+      },
+      "primaryColorHex": "#03244D",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "130c4c1cf90a33b72800639bb353f5f968fc78ec1e67a24954106e58822ca28c",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/09-cheetah.png",
+      "teamStableID": "CBDF8F99-B7C6-4B27-B545-E5FDC61EB999"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:10-serval",
+      "imagePath": "final-166-colors/recolored-new/10-serval.png",
+      "name": "Scottsbluff State Servals",
+      "nickname": "Servals",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002244",
+        "secondary": "#B0B7BC",
+        "team": "Dallas Cowboys"
+      },
+      "primaryColorHex": "#002244",
+      "secondaryColorHex": "#B0B7BC",
+      "sha256": "ac657ac723a62c18944b3996e245dbfb68a853e6464f9a01149ed4a032fa0119",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/10-serval.png",
+      "teamStableID": "CF442D44-8E80-4045-8888-B1EC5CC934E4"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:11-caracal",
+      "imagePath": "final-166-colors/recolored-new/11-caracal.png",
+      "name": "McCook Caracals",
+      "nickname": "Caracals",
+      "palette": {
+        "league": "FBS",
+        "primary": "#004371",
+        "secondary": "#EE3B33",
+        "team": "Tulsa"
+      },
+      "primaryColorHex": "#004371",
+      "secondaryColorHex": "#EE3B33",
+      "sha256": "f53fe6e240299671ff77c56df68b9b3e7815eb10eb23f4e8c3ac82c8530158b4",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/11-caracal.png",
+      "teamStableID": "CFC2D13A-E399-42B8-8450-11D1C91934FD"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:12-ocelot",
+      "imagePath": "final-166-colors/recolored-new/12-ocelot.png",
+      "name": "Lock Haven Regional Ocelots",
+      "nickname": "Ocelots",
+      "palette": {
+        "league": "FBS",
+        "primary": "#003D7D",
+        "secondary": "#D1D5D8",
+        "team": "Rice"
+      },
+      "primaryColorHex": "#003D7D",
+      "secondaryColorHex": "#D1D5D8",
+      "sha256": "649888e51f240a410a9e54f48f431c18500fa4e5531d02edd7acdc97344d82b0",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/12-ocelot.png",
+      "teamStableID": "D01A0E13-7818-4053-ABDE-4C27F590D24E"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:13-margay",
+      "imagePath": "final-166-colors/recolored-new/13-margay.png",
+      "name": "Ada Margays",
+      "nickname": "Margays",
+      "palette": {
+        "league": "FBS",
+        "primary": "#942139",
+        "secondary": "#F1F2F3",
+        "team": "Arizona State"
+      },
+      "primaryColorHex": "#942139",
+      "secondaryColorHex": "#F1F2F3",
+      "sha256": "be1c4536a8bbab91a786d67838d7ae22263207f7d5190fcc663a15982d260979",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/13-margay.png",
+      "teamStableID": "D4F46917-036A-4BBC-9FA1-98D66B8F1819"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:14-fishing-cat",
+      "imagePath": "final-166-colors/recolored-new/14-fishing-cat.png",
+      "name": "Williston Central Fishing Cats",
+      "nickname": "Fishing Cats",
+      "palette": {
+        "league": "FBS",
+        "primary": "#00853D",
+        "secondary": "#000000",
+        "team": "North Texas"
+      },
+      "primaryColorHex": "#00853D",
+      "secondaryColorHex": "#000000",
+      "sha256": "04712f3d2599658bfd59f79337648f78ef6033c11601c96c1f9df8a7a75b6098",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/14-fishing-cat.png",
+      "teamStableID": "D554FEAB-87BE-441E-808E-80D5D751162C"
+    },
+    {
+      "family": "wild cat",
+      "id": "final-fill:15-pallas-cat",
+      "imagePath": "final-166-colors/recolored-new/15-pallas-cat.png",
+      "name": "Holly Springs Coastal Pallas Cats",
+      "nickname": "Pallas Cats",
+      "palette": {
+        "league": "NFL",
+        "primary": "#002C5F",
+        "secondary": "#A5ACAF",
+        "team": "Indianapolis Colts"
+      },
+      "primaryColorHex": "#002C5F",
+      "secondaryColorHex": "#A5ACAF",
+      "sha256": "b441aa1c5c250e191d69a833315a16802a89c7cb9064be7c709d52aec5952798",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/15-pallas-cat.png",
+      "teamStableID": "D851E5D2-C6A4-40CF-8308-5FA0947078EF"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:16-fractured-halo",
+      "imagePath": "final-166-colors/recolored-new/16-fractured-halo.png",
+      "name": "New Ulm Halos",
+      "nickname": "Halos",
+      "palette": {
+        "league": "FBS",
+        "primary": "#9E7E38",
+        "secondary": "#000000",
+        "team": "Wake Forest"
+      },
+      "primaryColorHex": "#9E7E38",
+      "secondaryColorHex": "#000000",
+      "sha256": "2b162c316a28c8c8eed2c7e4ee3f06b99a83495e66ddd5da0c938cfd57c22dba",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/16-fractured-halo.png",
+      "teamStableID": "DB188E3A-70F3-449E-A094-00D189ECF16B"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:17-split-prism",
+      "imagePath": "final-166-colors/remediated/31-17-split-prism.png",
+      "name": "Weatherford Prisms",
+      "nickname": "Prisms",
+      "palette": {
+        "league": "FBS",
+        "primary": "#000000",
+        "secondary": "#FFCD00",
+        "team": "Appalachian State"
+      },
+      "primaryColorHex": "#000000",
+      "refinementSourceImagePath": "final-166-colors/refined-source/17-split-prism.png",
+      "secondaryColorHex": "#FFCD00",
+      "sha256": "0ceb27e2560308a7589368232836f3f0fb097c1daa48a75d6a3c43cbf5878b1c",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/17-split-prism.png",
+      "teamStableID": "DEC9D295-AA77-4D57-8CEC-E3E92EFDC219"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:18-iron-loop",
+      "imagePath": "final-166-colors/recolored-new/18-iron-loop.png",
+      "name": "Rangeley Links",
+      "nickname": "Links",
+      "palette": {
+        "league": "NFL",
+        "primary": "#007BC7",
+        "secondary": "#FFC20E",
+        "team": "Los Angeles Chargers"
+      },
+      "primaryColorHex": "#007BC7",
+      "secondaryColorHex": "#FFC20E",
+      "sha256": "defdb70ed5b0d4841df515e5ef7178a3f98e42abf1682ebf2956b56bca87bbba",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/18-iron-loop.png",
+      "teamStableID": "E0853162-478C-4A88-8FCC-5720801797FB"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:19-signal-spire",
+      "imagePath": "final-166-colors/remediated/32-19-signal-spire.png",
+      "name": "Penn Yan Spires",
+      "nickname": "Spires",
+      "palette": {
+        "league": "FBS",
+        "primary": "#00331B",
+        "secondary": "#F0F0F0",
+        "team": "Eastern Michigan"
+      },
+      "primaryColorHex": "#00331B",
+      "refinementSourceImagePath": "final-166-colors/refined-source/19-signal-spire.png",
+      "secondaryColorHex": "#F0F0F0",
+      "sha256": "32e5f8e6ef2d8a2f67b6316fe51145d34c6a77aa557c1dd0c2991caebdb8fcd7",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/19-signal-spire.png",
+      "teamStableID": "E2034539-439C-471E-82C2-4E04DCE73B42"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:20-folded-bolt",
+      "imagePath": "final-166-colors/recolored-new/20-folded-bolt.png",
+      "name": "Ocean City Agricultural Bolts",
+      "nickname": "Bolts",
+      "palette": {
+        "league": "FBS",
+        "primary": "#F20017",
+        "secondary": "#F5F1E7",
+        "team": "Nebraska"
+      },
+      "primaryColorHex": "#F20017",
+      "secondaryColorHex": "#F5F1E7",
+      "sha256": "ed60eaafb6bf67360d8d90704f4cfa84eec2abc4e30fbc89fed3551d589b29a1",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/20-folded-bolt.png",
+      "teamStableID": "E287BED9-67CC-4457-8619-9A7BBC9998F3"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:21-orbit-knot",
+      "imagePath": "final-166-colors/remediated/33-21-orbit-knot.png",
+      "name": "Eastport Knots",
+      "nickname": "Knots",
+      "palette": {
+        "league": "FBS",
+        "primary": "#CE9C00",
+        "secondary": "#231F20",
+        "team": "Army"
+      },
+      "primaryColorHex": "#CE9C00",
+      "refinementSourceImagePath": "final-166-colors/refined-source/21-orbit-knot.png",
+      "secondaryColorHex": "#231F20",
+      "sha256": "f4f4178ac000cc10d3b4a9a1eafc1e85a98f152aed2ab1451daa79e1a4bea49c",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/21-orbit-knot.png",
+      "teamStableID": "E335B640-25F6-4A29-A0C8-EB8A69A0960A"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:22-fracture-crest",
+      "imagePath": "final-166-colors/remediated/34-22-fracture-crest.png",
+      "name": "Gallipolis Poly Shards",
+      "nickname": "Shards",
+      "palette": {
+        "league": "FBS",
+        "primary": "#88001A",
+        "secondary": "#A39161",
+        "team": "Boston College"
+      },
+      "primaryColorHex": "#88001A",
+      "refinementSourceImagePath": "final-166-colors/refined-source/22-fracture-crest.png",
+      "secondaryColorHex": "#A39161",
+      "sha256": "4faa6413883dce1774c003ef30921435aab9b858c4a6e7f984b45820391e410f",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/22-fracture-crest.png",
+      "teamStableID": "E7F41714-0989-41A4-B322-379A36119847"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:23-arc-gate",
+      "imagePath": "final-166-colors/recolored-new/23-arc-gate.png",
+      "name": "Falmouth Maritime Gatekeepers",
+      "nickname": "Gatekeepers",
+      "palette": {
+        "league": "NFL",
+        "primary": "#003F2D",
+        "secondary": "#000000",
+        "team": "New York Jets"
+      },
+      "primaryColorHex": "#003F2D",
+      "secondaryColorHex": "#000000",
+      "sha256": "e9152ffece99cca3f1b4c6e6b2d51933a885d1c78a06f21b27787c3761c97774",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/23-arc-gate.png",
+      "teamStableID": "EA82FD9D-8540-464A-BF06-EA0374CDBDB3"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:24-delta-coil",
+      "imagePath": "final-166-colors/remediated/35-24-delta-coil.png",
+      "name": "Leesburg Deltas",
+      "nickname": "Deltas",
+      "palette": {
+        "league": "FBS",
+        "primary": "#004B85",
+        "secondary": "#BB2F4C",
+        "team": "Florida Atlantic"
+      },
+      "primaryColorHex": "#004B85",
+      "refinementSourceImagePath": "final-166-colors/refined-source/24-delta-coil.png",
+      "secondaryColorHex": "#BB2F4C",
+      "sha256": "433d1e40aec81c5d1405138d267041c5bc8129fa2c9c7a23a0404dce35ea6a9c",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/24-delta-coil.png",
+      "teamStableID": "F565417A-C5DA-40AC-BEF3-FE5B0EE0B8F7"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:25-hinge-burst",
+      "imagePath": "final-166-colors/recolored-new/25-hinge-burst.png",
+      "name": "Red Lodge State Starbursts",
+      "nickname": "Starbursts",
+      "palette": {
+        "league": "FBS",
+        "primary": "#7D110C",
+        "secondary": "#EEEDEB",
+        "team": "Indiana"
+      },
+      "primaryColorHex": "#7D110C",
+      "secondaryColorHex": "#EEEDEB",
+      "sha256": "d7c32052e0aaa38e782115094919088757582f57c69767e756c3e8561c535886",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/25-hinge-burst.png",
+      "teamStableID": "FCC35CCD-6BB6-4320-9190-9239ECE10D62"
+    },
+    {
+      "family": "abstract",
+      "id": "final-fill:26-offset-monolith",
+      "imagePath": "final-166-colors/recolored-new/26-offset-monolith.png",
+      "name": "Delavan Tech Monoliths",
+      "nickname": "Monoliths",
+      "palette": {
+        "league": "FBS",
+        "primary": "#031522",
+        "secondary": "#FFC423",
+        "team": "California"
+      },
+      "primaryColorHex": "#031522",
+      "secondaryColorHex": "#FFC423",
+      "sha256": "250c47f15ad0795921c7a968d1cc183c3a5c5aa1e6e95841cde61b4e83047e7e",
+      "sourceImagePath": "final-166-fill/batch-02/final-candidates/26-offset-monolith.png",
+      "teamStableID": "FF88B667-1155-4033-8E70-AEFC3087A0F0"
+    }
+  ],
+  "paletteResearch": "color-research/football-color-sample-100.json",
+  "schemaVersion": 1,
+  "selectedCandidateIDs": [],
+  "sourceFillCandidates": [
+    {
+      "family": "large animal",
+      "id": "final-fill:01-elephant",
       "imagePath": "final-166-fill/batch-01/final-candidates/01-elephant.png",
       "name": "Elephant",
-      "family": "large animal"
+      "sha256": "cd24fcf370348bfe1fa6bc1325c6b4b3d2f723e9ce01c4344e5ba1b1ac405ffc"
     },
     {
+      "family": "large animal",
       "id": "final-fill:02-hippopotamus",
-      "sha256": "d97dd7b3e983270101979612e8747231900a0df01016092223209ca5dfdbc8a3",
       "imagePath": "final-166-fill/batch-01/final-candidates/02-hippopotamus.png",
       "name": "Hippopotamus",
-      "family": "large animal"
+      "sha256": "d97dd7b3e983270101979612e8747231900a0df01016092223209ca5dfdbc8a3"
     },
     {
-      "id": "final-fill:03-giraffe",
-      "sha256": "0c9578d55163104205eb465122ec6b0d9e9b775b4c7915cfd3a73be12bae73dc",
-      "imagePath": "final-166-colors/remediated/30-03-giraffe.png",
-      "name": "Giraffe",
       "family": "large animal",
-      "palette": {
-        "league": "FBS",
-        "team": "Oregon",
-        "primary": "#044520",
-        "secondary": "#FEE123"
-      },
-      "sourceImagePath": "final-166-fill/batch-01/final-candidates/03-giraffe.png"
+      "id": "final-fill:03-giraffe",
+      "imagePath": "final-166-fill/batch-01/final-candidates/03-giraffe.png",
+      "name": "Giraffe",
+      "sha256": "e94648663af158df9ebf07e661d2e78f6db924b98c8988f357bff72e78c83ffd"
     },
     {
+      "family": "large animal",
       "id": "final-fill:04-gorilla",
-      "sha256": "c6eb83f16f72e6adc0231b66ce56b70169594816e489766c7982e5910222f478",
       "imagePath": "final-166-fill/batch-01/final-candidates/04-gorilla.png",
       "name": "Gorilla",
-      "family": "large animal"
+      "sha256": "c6eb83f16f72e6adc0231b66ce56b70169594816e489766c7982e5910222f478"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:05-jaguar",
-      "sha256": "dc81089217199be4511793cdf9d491ddebb71eb1a0e1057a0f4218318276e45a",
-      "imagePath": "final-166-colors/recolored-new/05-jaguar.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/05-jaguar.png",
       "name": "Jaguar",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/05-jaguar.png",
-      "palette": {
-        "league": "NFL",
-        "team": "Los Angeles Rams",
-        "primary": "#003594",
-        "secondary": "#FFD100"
-      }
+      "sha256": "99aeb2b8239ae27360536f771fe21e2d4bc3ca525e34b26f06896ed619db2e31"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:06-leopard",
-      "sha256": "5b02556a0afd6ebd12fc7000f652a84033dfee3bdcfada901604bfc35f6f77ef",
-      "imagePath": "final-166-colors/recolored-new/06-leopard.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/06-leopard.png",
       "name": "Leopard",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/06-leopard.png",
-      "palette": {
-        "league": "NFL",
-        "team": "Atlanta Falcons",
-        "primary": "#A71930",
-        "secondary": "#000000"
-      }
+      "sha256": "55040f293142d84e6e967d8ea4c4ea93dd426014bfc798072ae8bf7c02b52d17"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:07-snow-leopard",
-      "sha256": "5d6975c422a4f834423bd490d1f53795727d8dd5d0671cd201382f673f4eb8d0",
-      "imagePath": "final-166-colors/recolored-new/07-snow-leopard.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/07-snow-leopard.png",
       "name": "Snow Leopard",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/07-snow-leopard.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Florida Atlantic",
-        "primary": "#004B85",
-        "secondary": "#BB2F4C"
-      }
+      "sha256": "ced97190c1d726f68f267c053355306abf75b714f5114b5f1e97fdfb363d4bf1"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:08-clouded-leopard",
-      "sha256": "5da28f17228a340b8e9a069a326a8d5834ae5ea7ce8ddfdda84e6f1abfc98c47",
-      "imagePath": "final-166-colors/recolored-new/08-clouded-leopard.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/08-clouded-leopard.png",
       "name": "Clouded Leopard",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/08-clouded-leopard.png",
-      "palette": {
-        "league": "NFL",
-        "team": "Arizona Cardinals",
-        "primary": "#97233F",
-        "secondary": "#000000"
-      }
+      "sha256": "7ded05390eac3fa4744f9f358c07d30ea6305637fa1def760736d4e9a3fff709"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:09-cheetah",
-      "sha256": "130c4c1cf90a33b72800639bb353f5f968fc78ec1e67a24954106e58822ca28c",
-      "imagePath": "final-166-colors/recolored-new/09-cheetah.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/09-cheetah.png",
       "name": "Cheetah",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/09-cheetah.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Auburn",
-        "primary": "#03244D",
-        "secondary": "#F1F2F3"
-      }
+      "sha256": "74c3fbb7705d274bb196b788b0395c98b6f8e2849c4c59d73bd834081f227c19"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:10-serval",
-      "sha256": "ac657ac723a62c18944b3996e245dbfb68a853e6464f9a01149ed4a032fa0119",
-      "imagePath": "final-166-colors/recolored-new/10-serval.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/10-serval.png",
       "name": "Serval",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/10-serval.png",
-      "palette": {
-        "league": "NFL",
-        "team": "Dallas Cowboys",
-        "primary": "#002244",
-        "secondary": "#B0B7BC"
-      }
+      "sha256": "e2128bd518df0f2216d6b61136aeab49dbde0266016a6bae71281f01e05e2fb8"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:11-caracal",
-      "sha256": "f53fe6e240299671ff77c56df68b9b3e7815eb10eb23f4e8c3ac82c8530158b4",
-      "imagePath": "final-166-colors/recolored-new/11-caracal.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/11-caracal.png",
       "name": "Caracal",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/11-caracal.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Tulsa",
-        "primary": "#004371",
-        "secondary": "#EE3B33"
-      }
+      "sha256": "519d0699fd58fd817b41c0e208924235e23905e268e4a040257808a0b0d3e609"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:12-ocelot",
-      "sha256": "649888e51f240a410a9e54f48f431c18500fa4e5531d02edd7acdc97344d82b0",
-      "imagePath": "final-166-colors/recolored-new/12-ocelot.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/12-ocelot.png",
       "name": "Ocelot",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/12-ocelot.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Rice",
-        "primary": "#003D7D",
-        "secondary": "#D1D5D8"
-      }
+      "sha256": "0e7e2eb1d687dd1d0ad10fc5f38bba4984bea99fa5fe11e10ca52cf0cd6039dd"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:13-margay",
-      "sha256": "be1c4536a8bbab91a786d67838d7ae22263207f7d5190fcc663a15982d260979",
-      "imagePath": "final-166-colors/recolored-new/13-margay.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/13-margay.png",
       "name": "Margay",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/13-margay.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Arizona State",
-        "primary": "#942139",
-        "secondary": "#F1F2F3"
-      }
+      "sha256": "6207dca645ff84b337d091c2fea52b9b5ba9540c2b08860990853b43d2a5ad59"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:14-fishing-cat",
-      "sha256": "04712f3d2599658bfd59f79337648f78ef6033c11601c96c1f9df8a7a75b6098",
-      "imagePath": "final-166-colors/recolored-new/14-fishing-cat.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/14-fishing-cat.png",
       "name": "Fishing Cat",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/14-fishing-cat.png",
-      "palette": {
-        "league": "FBS",
-        "team": "North Texas",
-        "primary": "#00853D",
-        "secondary": "#000000"
-      }
+      "sha256": "20b3f573b809ba1348cf218ecc91e9e3eb051726151e2a52b25b342e7a2e5a20"
     },
     {
+      "family": "wild cat",
       "id": "final-fill:15-pallas-cat",
-      "sha256": "b441aa1c5c250e191d69a833315a16802a89c7cb9064be7c709d52aec5952798",
-      "imagePath": "final-166-colors/recolored-new/15-pallas-cat.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/15-pallas-cat.png",
       "name": "Pallas Cat",
-      "family": "wild cat",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/15-pallas-cat.png",
-      "palette": {
-        "league": "NFL",
-        "team": "Indianapolis Colts",
-        "primary": "#002C5F",
-        "secondary": "#A5ACAF"
-      }
+      "sha256": "cc6f52234a4597e06036b67f0c92cf4ff67fc2cfa190d0d55d5d42a641638242"
     },
     {
+      "family": "abstract",
       "id": "final-fill:16-fractured-halo",
-      "sha256": "2b162c316a28c8c8eed2c7e4ee3f06b99a83495e66ddd5da0c938cfd57c22dba",
-      "imagePath": "final-166-colors/recolored-new/16-fractured-halo.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/16-fractured-halo.png",
       "name": "Fractured Halo",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/16-fractured-halo.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Wake Forest",
-        "primary": "#9E7E38",
-        "secondary": "#000000"
-      }
+      "sha256": "ac6b88f2212dce254013f6b35b8839e1c44ea9e460e95a23f630efeee65eb9e4"
     },
     {
+      "family": "abstract",
       "id": "final-fill:17-split-prism",
-      "sha256": "0ceb27e2560308a7589368232836f3f0fb097c1daa48a75d6a3c43cbf5878b1c",
-      "imagePath": "final-166-colors/remediated/31-17-split-prism.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/17-split-prism.png",
       "name": "Split Prism",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/17-split-prism.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Appalachian State",
-        "primary": "#000000",
-        "secondary": "#FFCD00"
-      },
-      "refinementSourceImagePath": "final-166-colors/refined-source/17-split-prism.png"
+      "sha256": "85c43128ba0549c0899b8472c3e086c21ecd1699899a9a9fc519e7537bac1530"
     },
     {
+      "family": "abstract",
       "id": "final-fill:18-iron-loop",
-      "sha256": "defdb70ed5b0d4841df515e5ef7178a3f98e42abf1682ebf2956b56bca87bbba",
-      "imagePath": "final-166-colors/recolored-new/18-iron-loop.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/18-iron-loop.png",
       "name": "Iron Loop",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/18-iron-loop.png",
-      "palette": {
-        "league": "NFL",
-        "team": "Los Angeles Chargers",
-        "primary": "#007BC7",
-        "secondary": "#FFC20E"
-      }
+      "sha256": "44f2084b5f7bdca78cfb0a8e11766abdef49e815aef928f50b46693e0e122ffb"
     },
     {
+      "family": "abstract",
       "id": "final-fill:19-signal-spire",
-      "sha256": "32e5f8e6ef2d8a2f67b6316fe51145d34c6a77aa557c1dd0c2991caebdb8fcd7",
-      "imagePath": "final-166-colors/remediated/32-19-signal-spire.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/19-signal-spire.png",
       "name": "Signal Spire",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/19-signal-spire.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Eastern Michigan",
-        "primary": "#00331B",
-        "secondary": "#F0F0F0"
-      },
-      "refinementSourceImagePath": "final-166-colors/refined-source/19-signal-spire.png"
+      "sha256": "d846ad0217e351a11bec855228f23787cc73b2c85877a134570d06b5d508d2f8"
     },
     {
+      "family": "abstract",
       "id": "final-fill:20-folded-bolt",
-      "sha256": "ed60eaafb6bf67360d8d90704f4cfa84eec2abc4e30fbc89fed3551d589b29a1",
-      "imagePath": "final-166-colors/recolored-new/20-folded-bolt.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/20-folded-bolt.png",
       "name": "Folded Bolt",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/20-folded-bolt.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Nebraska",
-        "primary": "#F20017",
-        "secondary": "#F5F1E7"
-      }
+      "sha256": "24e037d863e1ab0592d44a4d5d1390fc032fa754fd048dd6586e70a3a026db32"
     },
     {
+      "family": "abstract",
       "id": "final-fill:21-orbit-knot",
-      "sha256": "f4f4178ac000cc10d3b4a9a1eafc1e85a98f152aed2ab1451daa79e1a4bea49c",
-      "imagePath": "final-166-colors/remediated/33-21-orbit-knot.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/21-orbit-knot.png",
       "name": "Orbit Knot",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/21-orbit-knot.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Army",
-        "primary": "#CE9C00",
-        "secondary": "#231F20"
-      },
-      "refinementSourceImagePath": "final-166-colors/refined-source/21-orbit-knot.png"
+      "sha256": "6788919d2cde69d51cb948b3eefc9fd1a7edfda841260271b4a5d2faf4c62805"
     },
     {
+      "family": "abstract",
       "id": "final-fill:22-fracture-crest",
-      "sha256": "4faa6413883dce1774c003ef30921435aab9b858c4a6e7f984b45820391e410f",
-      "imagePath": "final-166-colors/remediated/34-22-fracture-crest.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/22-fracture-crest.png",
       "name": "Fracture Crest",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/22-fracture-crest.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Boston College",
-        "primary": "#88001A",
-        "secondary": "#A39161"
-      },
-      "refinementSourceImagePath": "final-166-colors/refined-source/22-fracture-crest.png"
+      "sha256": "d9c3612f341958e26f14e2eb3d2bb8dceaa968d5bf025d5ea180eceaff92b679"
     },
     {
+      "family": "abstract",
       "id": "final-fill:23-arc-gate",
-      "sha256": "e9152ffece99cca3f1b4c6e6b2d51933a885d1c78a06f21b27787c3761c97774",
-      "imagePath": "final-166-colors/recolored-new/23-arc-gate.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/23-arc-gate.png",
       "name": "Arc Gate",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/23-arc-gate.png",
-      "palette": {
-        "league": "NFL",
-        "team": "New York Jets",
-        "primary": "#003F2D",
-        "secondary": "#000000"
-      }
+      "sha256": "b7e0a57d91fb5b2d3c714716a464825f8735b234f9702865a1a9830b8ad69c98"
     },
     {
+      "family": "abstract",
       "id": "final-fill:24-delta-coil",
-      "sha256": "433d1e40aec81c5d1405138d267041c5bc8129fa2c9c7a23a0404dce35ea6a9c",
-      "imagePath": "final-166-colors/remediated/35-24-delta-coil.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/24-delta-coil.png",
       "name": "Delta Coil",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/24-delta-coil.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Florida Atlantic",
-        "primary": "#004B85",
-        "secondary": "#BB2F4C"
-      },
-      "refinementSourceImagePath": "final-166-colors/refined-source/24-delta-coil.png"
+      "sha256": "30be1b18b888983887257a8f4ce47fae015a627264239bae1feba5e4b545cd1d"
     },
     {
+      "family": "abstract",
       "id": "final-fill:25-hinge-burst",
-      "sha256": "d7c32052e0aaa38e782115094919088757582f57c69767e756c3e8561c535886",
-      "imagePath": "final-166-colors/recolored-new/25-hinge-burst.png",
+      "imagePath": "final-166-fill/batch-02/final-candidates/25-hinge-burst.png",
       "name": "Hinge Burst",
-      "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/25-hinge-burst.png",
-      "palette": {
-        "league": "FBS",
-        "team": "Indiana",
-        "primary": "#7D110C",
-        "secondary": "#EEEDEB"
-      }
+      "sha256": "2406bd21f4bb024b55e2b28180d73c44266cb382c03a7839300f5e69a7171316"
     },
     {
-      "id": "final-fill:26-offset-monolith",
-      "sha256": "250c47f15ad0795921c7a968d1cc183c3a5c5aa1e6e95841cde61b4e83047e7e",
-      "imagePath": "final-166-colors/recolored-new/26-offset-monolith.png",
-      "name": "Offset Monolith",
       "family": "abstract",
-      "sourceImagePath": "final-166-fill/batch-02/final-candidates/26-offset-monolith.png",
-      "palette": {
-        "league": "FBS",
-        "team": "California",
-        "primary": "#031522",
-        "secondary": "#FFC423"
-      }
+      "id": "final-fill:26-offset-monolith",
+      "imagePath": "final-166-fill/batch-02/final-candidates/26-offset-monolith.png",
+      "name": "Offset Monolith",
+      "sha256": "775f53315ea4595f68d4cba169b7b48538070ee77b6628c864eac79846a703df"
     }
   ],
   "sourceSelectedCandidateIDs": [
@@ -2452,190 +3301,5 @@
     "e13eb18965b8d02edb002c5931510d16d4d786c890b992834508f52decbed23a",
     "ed73518aa566397bea31282da43ba77fa3d68078c216ff39d4035459f9f2db38",
     "fb043ca18d390b0c1475da6b172d7f1bd8c72bf2c47f26a67075f588feaff663"
-  ],
-  "sourceFillCandidates": [
-    {
-      "id": "final-fill:01-elephant",
-      "sha256": "cd24fcf370348bfe1fa6bc1325c6b4b3d2f723e9ce01c4344e5ba1b1ac405ffc",
-      "imagePath": "final-166-fill/batch-01/final-candidates/01-elephant.png",
-      "name": "Elephant",
-      "family": "large animal"
-    },
-    {
-      "id": "final-fill:02-hippopotamus",
-      "sha256": "d97dd7b3e983270101979612e8747231900a0df01016092223209ca5dfdbc8a3",
-      "imagePath": "final-166-fill/batch-01/final-candidates/02-hippopotamus.png",
-      "name": "Hippopotamus",
-      "family": "large animal"
-    },
-    {
-      "id": "final-fill:03-giraffe",
-      "sha256": "e94648663af158df9ebf07e661d2e78f6db924b98c8988f357bff72e78c83ffd",
-      "imagePath": "final-166-fill/batch-01/final-candidates/03-giraffe.png",
-      "name": "Giraffe",
-      "family": "large animal"
-    },
-    {
-      "id": "final-fill:04-gorilla",
-      "sha256": "c6eb83f16f72e6adc0231b66ce56b70169594816e489766c7982e5910222f478",
-      "imagePath": "final-166-fill/batch-01/final-candidates/04-gorilla.png",
-      "name": "Gorilla",
-      "family": "large animal"
-    },
-    {
-      "id": "final-fill:05-jaguar",
-      "sha256": "99aeb2b8239ae27360536f771fe21e2d4bc3ca525e34b26f06896ed619db2e31",
-      "imagePath": "final-166-fill/batch-02/final-candidates/05-jaguar.png",
-      "name": "Jaguar",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:06-leopard",
-      "sha256": "55040f293142d84e6e967d8ea4c4ea93dd426014bfc798072ae8bf7c02b52d17",
-      "imagePath": "final-166-fill/batch-02/final-candidates/06-leopard.png",
-      "name": "Leopard",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:07-snow-leopard",
-      "sha256": "ced97190c1d726f68f267c053355306abf75b714f5114b5f1e97fdfb363d4bf1",
-      "imagePath": "final-166-fill/batch-02/final-candidates/07-snow-leopard.png",
-      "name": "Snow Leopard",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:08-clouded-leopard",
-      "sha256": "7ded05390eac3fa4744f9f358c07d30ea6305637fa1def760736d4e9a3fff709",
-      "imagePath": "final-166-fill/batch-02/final-candidates/08-clouded-leopard.png",
-      "name": "Clouded Leopard",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:09-cheetah",
-      "sha256": "74c3fbb7705d274bb196b788b0395c98b6f8e2849c4c59d73bd834081f227c19",
-      "imagePath": "final-166-fill/batch-02/final-candidates/09-cheetah.png",
-      "name": "Cheetah",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:10-serval",
-      "sha256": "e2128bd518df0f2216d6b61136aeab49dbde0266016a6bae71281f01e05e2fb8",
-      "imagePath": "final-166-fill/batch-02/final-candidates/10-serval.png",
-      "name": "Serval",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:11-caracal",
-      "sha256": "519d0699fd58fd817b41c0e208924235e23905e268e4a040257808a0b0d3e609",
-      "imagePath": "final-166-fill/batch-02/final-candidates/11-caracal.png",
-      "name": "Caracal",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:12-ocelot",
-      "sha256": "0e7e2eb1d687dd1d0ad10fc5f38bba4984bea99fa5fe11e10ca52cf0cd6039dd",
-      "imagePath": "final-166-fill/batch-02/final-candidates/12-ocelot.png",
-      "name": "Ocelot",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:13-margay",
-      "sha256": "6207dca645ff84b337d091c2fea52b9b5ba9540c2b08860990853b43d2a5ad59",
-      "imagePath": "final-166-fill/batch-02/final-candidates/13-margay.png",
-      "name": "Margay",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:14-fishing-cat",
-      "sha256": "20b3f573b809ba1348cf218ecc91e9e3eb051726151e2a52b25b342e7a2e5a20",
-      "imagePath": "final-166-fill/batch-02/final-candidates/14-fishing-cat.png",
-      "name": "Fishing Cat",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:15-pallas-cat",
-      "sha256": "cc6f52234a4597e06036b67f0c92cf4ff67fc2cfa190d0d55d5d42a641638242",
-      "imagePath": "final-166-fill/batch-02/final-candidates/15-pallas-cat.png",
-      "name": "Pallas Cat",
-      "family": "wild cat"
-    },
-    {
-      "id": "final-fill:16-fractured-halo",
-      "sha256": "ac6b88f2212dce254013f6b35b8839e1c44ea9e460e95a23f630efeee65eb9e4",
-      "imagePath": "final-166-fill/batch-02/final-candidates/16-fractured-halo.png",
-      "name": "Fractured Halo",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:17-split-prism",
-      "sha256": "85c43128ba0549c0899b8472c3e086c21ecd1699899a9a9fc519e7537bac1530",
-      "imagePath": "final-166-fill/batch-02/final-candidates/17-split-prism.png",
-      "name": "Split Prism",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:18-iron-loop",
-      "sha256": "44f2084b5f7bdca78cfb0a8e11766abdef49e815aef928f50b46693e0e122ffb",
-      "imagePath": "final-166-fill/batch-02/final-candidates/18-iron-loop.png",
-      "name": "Iron Loop",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:19-signal-spire",
-      "sha256": "d846ad0217e351a11bec855228f23787cc73b2c85877a134570d06b5d508d2f8",
-      "imagePath": "final-166-fill/batch-02/final-candidates/19-signal-spire.png",
-      "name": "Signal Spire",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:20-folded-bolt",
-      "sha256": "24e037d863e1ab0592d44a4d5d1390fc032fa754fd048dd6586e70a3a026db32",
-      "imagePath": "final-166-fill/batch-02/final-candidates/20-folded-bolt.png",
-      "name": "Folded Bolt",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:21-orbit-knot",
-      "sha256": "6788919d2cde69d51cb948b3eefc9fd1a7edfda841260271b4a5d2faf4c62805",
-      "imagePath": "final-166-fill/batch-02/final-candidates/21-orbit-knot.png",
-      "name": "Orbit Knot",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:22-fracture-crest",
-      "sha256": "d9c3612f341958e26f14e2eb3d2bb8dceaa968d5bf025d5ea180eceaff92b679",
-      "imagePath": "final-166-fill/batch-02/final-candidates/22-fracture-crest.png",
-      "name": "Fracture Crest",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:23-arc-gate",
-      "sha256": "b7e0a57d91fb5b2d3c714716a464825f8735b234f9702865a1a9830b8ad69c98",
-      "imagePath": "final-166-fill/batch-02/final-candidates/23-arc-gate.png",
-      "name": "Arc Gate",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:24-delta-coil",
-      "sha256": "30be1b18b888983887257a8f4ce47fae015a627264239bae1feba5e4b545cd1d",
-      "imagePath": "final-166-fill/batch-02/final-candidates/24-delta-coil.png",
-      "name": "Delta Coil",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:25-hinge-burst",
-      "sha256": "2406bd21f4bb024b55e2b28180d73c44266cb382c03a7839300f5e69a7171316",
-      "imagePath": "final-166-fill/batch-02/final-candidates/25-hinge-burst.png",
-      "name": "Hinge Burst",
-      "family": "abstract"
-    },
-    {
-      "id": "final-fill:26-offset-monolith",
-      "sha256": "775f53315ea4595f68d4cba169b7b48538070ee77b6628c864eac79846a703df",
-      "imagePath": "final-166-fill/batch-02/final-candidates/26-offset-monolith.png",
-      "name": "Offset Monolith",
-      "family": "abstract"
-    }
-  ],
-  "paletteResearch": "color-research/football-color-sample-100.json"
+  ]
 }

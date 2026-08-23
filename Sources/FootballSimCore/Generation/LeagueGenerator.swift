@@ -268,6 +268,13 @@ public enum LeagueGenerator {
             }
         }
 
+        CanonicalTeamBranding.apply(
+            seed: seed,
+            programmes: &programmes,
+            proTeams: &proTeams,
+            identities: &identities
+        )
+
         return GeneratedWorld(
             league: League(id: leagueID, seed: seed, conferences: conferences, divisions: divisions),
             map: map,
