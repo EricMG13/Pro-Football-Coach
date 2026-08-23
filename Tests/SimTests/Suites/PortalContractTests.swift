@@ -108,7 +108,7 @@ private func portalOffer(
             position: admissionEvidence.position,
             estimatedOverall: admissionEvidence.estimatedOverall,
             estimatedAttributes: Dictionary(uniqueKeysWithValues:
-                admissionEvidence.position.ratedAttributes.map {
+                CollegePortalPolicyV1.ratedAttributes(for: admissionEvidence.position).map {
                     ($0, Rating(admissionOverall))
                 }
             ),
@@ -920,7 +920,8 @@ func runPortalContractTests() {
                 position: .wideReceiver,
                 estimatedOverall: Rating(70),
                 estimatedAttributes: Dictionary(uniqueKeysWithValues:
-                    Position.wideReceiver.ratedAttributes.map { ($0, Rating(70)) }
+                    CollegePortalPolicyV1.ratedAttributes(for: .wideReceiver)
+                        .map { ($0, Rating(70)) }
                 ),
                 estimatedPotential: offer.knowledge.estimatedPotential,
                 confidence: offer.knowledge.confidence,
@@ -1635,6 +1636,52 @@ func runPortalContractTests() {
                 expect(false, "two same-season transfers decoded into one career")
             } catch {
                 expect(true)
+            }
+        }
+
+        test("frozen portal policy tables diverge from live rules only where recorded") {
+            // CollegePortalPolicyV1 freezes its own copies of two tables so a schema-six career
+            // record stays decodable when a balance pass moves the live rules. A freeze that
+            // nothing watches is indistinguishable from a table someone forgot to update, so both
+            // sides are enumerated here by construction over Position.allCases: a new position, or
+            // a new divergence at an existing one, fails this test naming the position rather than
+            // tripping CollegePortalKnowledgeSnapshot's precondition and killing the process.
+            let knownAttributeDivergence: [Position: Set<Attribute>] = [
+                // 3bba7c9 gave receivers vision and elusiveness because a receiver with the ball is
+                // a carrier. Portal scouting therefore estimates them on 12 of the 14 attributes
+                // the match engine rates them on; closing that needs a knowledge schema bump.
+                .wideReceiver: [.vision, .elusiveness],
+                .tightEnd: [.vision, .elusiveness],
+            ]
+            let knownRosterDivergence: [Position: Int] = [
+                // SharedRules raised both floors after the frozen copy was taken: linebacker on
+                // 2026-08-20 for the third starter the defence fields, running back on 2026-08-22
+                // for the reserve carrier the run resolver picks. Both were raised because nothing
+                // compared the constant against the formation -- see the note on
+                // SharedRules.minimumPlayableRosterByPosition.
+                .runningBack: 1,
+                .linebacker: 2,
+            ]
+            for position in Position.allCases {
+                let frozen = Set(CollegePortalPolicyV1.ratedAttributes(for: position))
+                let live = Set(position.ratedAttributes)
+                expect(!frozen.isEmpty, "\(position) has no frozen portal knowledge attributes")
+                expectEqual(
+                    frozen.subtracting(live),
+                    [],
+                    "\(position) scouts an attribute the match engine does not rate"
+                )
+                expectEqual(
+                    live.subtracting(frozen),
+                    knownAttributeDivergence[position] ?? [],
+                    "\(position) rates an attribute portal scouting cannot see"
+                )
+                expectEqual(
+                    CollegePortalPolicyV1.minimumPlayableRosterByPosition[position],
+                    knownRosterDivergence[position]
+                        ?? SharedRules.minimumPlayableRosterByPosition[position],
+                    "\(position) frozen roster floor drifted from SharedRules"
+                )
             }
         }
     }

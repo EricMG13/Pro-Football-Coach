@@ -280,7 +280,10 @@ func runPortalPolicyTests() {
             expectEqual(first, second)
             expectEqual(first.confidence, expectedConfidence)
             expectEqual(first.evidenceCount, expectedEvidence)
-            expectEqual(Set(first.estimatedAttributes.keys), Set(first.position.ratedAttributes))
+            expectEqual(
+                Set(first.estimatedAttributes.keys),
+                Set(CollegePortalPolicyV1.ratedAttributes(for: first.position))
+            )
             expectEqual(
                 first.estimatedOverall.value,
                 first.estimatedAttributes.values.reduce(0) { $0 + $1.value }

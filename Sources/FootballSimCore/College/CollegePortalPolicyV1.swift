@@ -98,7 +98,7 @@ public enum CollegePortalPolicyV1 {
     static let springCalendarWeek = 1
     static let maximumGamesPerSeason = 16
     static let rosterLimit = 105
-    static let minimumPlayableRosterByPosition: [Position: Int] = [
+    package static let minimumPlayableRosterByPosition: [Position: Int] = [
         .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
         .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
         .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 2,
