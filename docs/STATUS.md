@@ -38,7 +38,21 @@ The honest picture: what exists, what is verified, what is not.
 > `SnapResolver` edit is a proven no-op (`tackler` and `defender` are the same object on attempt
 > zero) — but the reproductions are the evidence, not the reasoning.
 >
-> **ESCALATED, not fixed — the recorded tackler.** `Assignment.assign` builds `pursuit` as
+> **RESOLVED 2026-08-23 (`6aaaacb`) — the recorded tackler.** Escalated first, then fixed on the
+> owner's instruction, with the recalibration it forced rather than without it. Pursuit is now
+> ordered by the play; `breakTackleThreshold` moves 0.46 → 0.60, picked on the **tuning** ladder and
+> reported against the **holdout**, where the failing set is *identical* to before — the same seven
+> bands on the same edges, college 2 of 8 and pro 5 of 17 either way. No band was touched. Both
+> fingerprints re-pinned (only the college one moved on the recalibration; the pro game at seed
+> 12,345 has no carry in the window the threshold crossed). Measured on the defender the animation
+> draws converging: **1 distinct defender and 1 position before, 9 defenders across all five
+> defensive positions after.** Linebackers still take only 1 of 93 — only the first man in the list
+> is recorded when the carrier does not break a tackle, and on a run that is a lineman, so a
+> linebacker surfaces only after a break. Real defences are led in tackles by their linebackers;
+> closing that is another calibration cycle and a refinement rather than a defect. The original
+> escalation text follows.
+>
+> **Original escalation (2026-08-22).** `Assignment.assign` builds `pursuit` as
 > `ranked(defense)`, best-first and blind to the play, and `yardsAfterContact` always starts its
 > break-tackle chain at index zero. So the highest-rated defender on the field is the recorded
 > tackler on **every snap of a game**: 200 of 200 measured tackles went to one position. Whoever is

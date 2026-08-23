@@ -81,7 +81,7 @@ Tests: no actor is still on a snap that had a carrier; no actor other than the r
 within `pursuitStandoffYards` of the end spot; the recorded tackler still ends exactly on it; a
 carrier who won his duel still has nobody reach him.
 
-### 3. T1 — ESCALATED, NOT FIXED
+### 3. T1 — FIXED 2026-08-23 (`6aaaacb`), after being escalated first
 
 The mechanism stated here was wrong. `tackler` is `pursuit.first` and `defender` is
 `pursuit[min(attempt, count - 1)]`, which on attempt zero are the same man, so swapping them is a
@@ -91,13 +91,30 @@ The defect is one level up, in `Assignment.assign`: `pursuit` is `ranked(defense
 blind to the play — so the highest-rated defender on the field is first in the chain on every snap
 of a game.
 
-**Not fixed, and this is the owner's call.** Whoever is first in that list is whose `tackling` the
-leverage reads, so any reordering moves the yardage distribution and the calibration bands with it.
-Modelling pursuit by run gap, coverage and target is real engine work with its own gate; riding it
-in on an animation fix would bury a calibration move in a commit nobody would think to look in.
+Escalated first because whoever is first in that list is whose `tackling` the leverage reads, so any
+reordering moves the yardage distribution and the calibration bands with it. The owner then asked
+for it, and it landed with the calibration work it needed rather than without.
 
-Done instead: the misleading `tackler` alias removed, and the defect written down at the line that
-causes it with what it would take to fix it (`825a959`).
+**What shipped.** Pursuit is ordered by the play: a run is met by the front seven and by the part of
+it the ball is going at, a catch by the secondary, and the resolver hoists the man actually beaten
+on the route because for a catch it knows exactly who that was. The near side of the gap leads, so a
+run left and a run right are met by different people. Kicks unchanged.
+
+**The recalibration it forced.** Removing the bias made the offence better, because
+`breakTackleThreshold` had been fitted on top of it: pro rush yards 111 → 128 per team-game, pro
+explosive runs 0.119 → 0.152 against a 0.130 ceiling, college points and combined totals through
+their upper edges. The threshold moves 0.46 → 0.60, chosen as the minimum of a bracketed grid on the
+**tuning** ladder and reported against the **holdout** — where the failing set is identical to
+before, the same seven bands on the same edges. No band was touched.
+
+**Measured, on the defender the animation actually draws converging:** 1 distinct defender and 1
+position before, **9 distinct defenders across all five defensive positions** after.
+
+**Remaining skew, named rather than hidden:** linebackers take only 1 of 93 in that sample. Only the
+first man in the list is recorded on a snap the carrier does not break, and the first man on a run is
+a lineman, so linebackers surface only after a broken tackle. Real defences are led in tackles by
+their linebackers. Fixing that means putting the fitter ahead of the lineman on inside runs, which is
+another calibration cycle; it is a refinement of a working model, not a defect in it.
 
 ### 4. T2 — position shorthand on the tokens
 
