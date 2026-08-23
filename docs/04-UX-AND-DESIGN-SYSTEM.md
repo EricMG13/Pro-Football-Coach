@@ -861,6 +861,28 @@ three-production-uses record or an explicit provisional mark); screen-local impl
 and this section must stay synchronised with `Sources/ProFootballCoachUI/`, enforced through the
 existing `ContractTests.swift` source-contract pattern.
 
+**Measured against the tree, 2026-08-23.** The 1:1 claim above is the target, not the state, and the
+enforcement named in the previous paragraph does not exist yet — `ContractTests.swift` exercises
+several of these components individually by name, but nothing walks this table, so a registry entry
+with no type fails nothing. Of the 23 entries:
+
+- **Four ship under exactly the registry name:** 1 `CoachWorldRouteButton`, 2
+  `CoachWorldActionButtonStyle`, 4 `CoachWorldBlankPhotoPlate`, 20 `ScoreBug`.
+- **Seven ship under a `CoachWorld` prefix this table does not use:** 6 `CoachWorldIdentityBand`, 11
+  `CoachWorldDeltaMark`, 12 `CoachWorldConfidenceTag`, 14 `CoachWorldMeter`, 15 `CoachWorldOpposedBar`,
+  17 `CoachWorldStatusChip`, 19 `CoachWorldAgendaRow`. The prefix is the convention the code settled
+  on; the table is what did not follow.
+- **One ships under a different name:** 21 ships as `MatchLowerThird`, not `LowerThird`.
+- **Eleven have no type under either spelling:** 3 `coachWorldDeskSurface`, 5 `WorldStrip`, 7
+  `DenseTable`, 8 `ColumnSet`, 9 `ListControls`, 10 `RatingBadge`, 13 `VerdictLine`, 16 `FormLine`,
+  18 `RoleToken`, 22 `CallInCard`, 23 `EmptyState` / `ErrorBanner` / `InterruptedState`. Nine of the
+  eleven are the screen-local implementations the paragraph above already books as owing extraction;
+  3 and 13 are not, and are simply unbuilt.
+
+Reconciling the names is a rename plus the walking test, and it is P11/M8 work. Until that test
+exists, this list is the record and it goes stale the day the tree moves — which is the argument for
+the test, not for the list.
+
 ### 6.6 The symbol register
 
 *Added 2026-08-12, closing the defect the personnel-proof review names as F-02 and §5: every sheet
