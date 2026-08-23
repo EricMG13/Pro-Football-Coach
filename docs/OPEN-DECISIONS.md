@@ -110,6 +110,17 @@ The harness counts call-in events and multiplies by the presentation constants i
 need a human. The human protocol (§6.0 §8) sets the per-decision seconds it multiplies by, and
 until it runs, those constants are **ASSUMPTION** and labelled so in `03`.
 
+**Instrument status, 2026-08-23: `AgencyBudgetTests` does not exist, and its removal was
+deliberate.** It was registered as a `ReleaseGateID` case in `Tests/SimTests/SuiteCatalog.swift`
+with a `nil` runner — a gate that named itself and ran nothing — until commit `91a108d`
+("test: remove unimplemented release gates", 2026-08-19) deleted the case and moved the claim it
+backed into `PRODUCT.md`'s **Unverified product targets** table, where it now reads "AgencyBudgetTests
+is not implemented; owner measurement remains open". Nothing in the tree counts call-ins per game or
+measures match minutes: `PerformanceBudgetTests` is D4 host evidence that prints timings with no
+pass/fail threshold, and `SharedRules.callInsPerGameRange` is the 12...40 constant, not a
+measurement of it. **This falsifier therefore cannot fire**, which by this register's own opening
+rule makes it decoration until the harness is written.
+
 ### Cost of reversal
 
 **Low within B↔C, high toward A or D.** B and C differ by a rate constant. Moving to A requires a
@@ -393,6 +404,15 @@ median coach tenure exceeds 9 seasons (nothing threatens the player) or falls be
 capricious); or if job security is observed unchanged across more than 4 consecutive weeks while
 results are moving.
 
+**Instrument status, 2026-08-23: `JeopardyTests` has never existed.** `git log --all -S` finds the
+name in no commit under `Sources/` or `Tests/`, on any branch. The *mechanism* is tested —
+`Tests/SimTests/Suites/CareerArcTests.swift` covers `markFired`, in-season firing, the vacated seat
+and integrity after a firing — but the distributional bar above is measured nowhere: no run samples
+200 seeded careers for median tenure, and nothing watches job security against moving results. `05`
+lists this suite among P9's gates, and P9 has not been declared done, so this is a gate still owed
+rather than one quietly dropped. Recorded here because a falsifier whose instrument does not exist
+cannot fire, and this register's opening rule calls that decoration.
+
 **Cost of reversal: medium.**
 
 ---
@@ -444,6 +464,22 @@ P5.
 
 **Falsifier — instrument: `CoordinatorAITests`, `RosterAITests`, `AdaptationTests`.** Each bar above
 is directly a test. Falsified when a bar fails.
+
+**Instrument status, 2026-08-23: none of the three exists.** `git log --all -S` finds no commit
+introducing any of the names under `Sources/` or `Tests/`. Measured against the three bars:
+
+- **Coordinator AI** — nothing measures it.
+- **Roster AI** — the legality half *is* covered, by a different instrument than the one named
+  here: `--pro-soak` asserts `WorldIntegrity.check` at every season checkpoint, and
+  `WorldIntegrity.checkProfessionalCap` is one of its limbs, so an AI team ending a season illegal
+  fails the soak. The quality half is not: nothing in the tree computes rating-per-dollar or
+  rating-per-scholarship (`grep` for `ratingPer`, `perDollar`, `perScholarship` returns nothing).
+- **Opponent game-plan AI** — nothing measures adaptation; no counter-rate instrument exists.
+
+`05` lists all three among P10's gates and P10 has not run, so these are owed rather than dropped.
+It is worth stating plainly anyway, because the anti-cut rule above says naming these as gates is
+the only defence P5 allows — and a gate that exists only as a name in two documents is not that
+defence.
 
 **Cost of reversal: high.** D1's model depends on the coordinator being trustworthy enough to hand
 105 snaps to.
@@ -657,6 +693,10 @@ the 17e remain unsourced and are recorded as gaps, not guessed.
 - `SmallestDeviceLayoutTest`, two-tier: every registry surface renders at the install floor
   (844 × 390) with no clipping and all controls reachable, and at the promise floor (852 × 393) at
   full budget. Red at either tier falsifies the chosen window.
+  **Status 2026-08-23: it does not exist**, under this or any other spelling. It was a
+  `ReleaseGateID` case with a `nil` runner until commit `91a108d` deleted it on 2026-08-19, and no
+  `scripts/verify.sh` lane runs it. `docs/06-AUDIT-DISPOSITION.md` §2 row 23 and `05`'s P11a entry
+  gate name it too; all three sites now say so.
 - `PerformanceBudgetTests` plus the D4 Instruments trace on the oldest promised device at shipping
   scale. If the budgets fail on the A17-Pro class, the choice bought nothing and is falsified.
 - The density claim: one proof screen rendered at 844 × 390 and 852 × 393 side by side. If any

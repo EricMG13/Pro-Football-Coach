@@ -162,10 +162,19 @@ Weekly job security against expectation; four stakeholder groups with triggers; 
 system; firing in-season; the carousel that cannot dead-end; the promotion arc and what carries
 across.
 **Gates:** G1, G2, G4, G7, `JeopardyTests`, `CareerArcTests`.
+**Gate status, 2026-08-23:** `CareerArcTests` ships
+(`Tests/SimTests/Suites/CareerArcTests.swift`, dispatched from `main.swift`). `JeopardyTests` has
+never existed under any spelling, on any branch — the firing *mechanism* is covered inside
+`CareerArcTests`, but D8's distributional bar (median tenure across 200 seeded careers, job security
+against moving results) is measured nowhere. The phase cannot pass its own gate list as written.
 
 ### P10 — AI quality (D10)
 Coordinator AI, roster AI, opponent game-plan AI — each against its stated bar.
 **Gates:** G1, G2, G4, G5, G7, plus `CoordinatorAITests`, `RosterAITests`, `AdaptationTests`.
+**Gate status, 2026-08-23:** none of the three exists, on any branch. The one bar with real
+coverage is roster legality, asserted by `WorldIntegrity.check` inside `--pro-soak` rather than by
+`RosterAITests`; roster quality, coordinator quality and opponent adaptation are unmeasured. See
+D10 in `docs/OPEN-DECISIONS.md` for the per-bar breakdown.
 **These bars are gates, not polish.** AI quality is what gets cut when a schedule slips, and naming
 it here is the only defence P5 allows.
 
