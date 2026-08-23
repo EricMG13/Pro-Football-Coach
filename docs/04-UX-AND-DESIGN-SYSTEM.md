@@ -651,6 +651,27 @@ folds into §6.5's registry rather than starting a parallel one.
 | Staff voice | monogram avatar plus quoted advice, 11 pt in `content.secondary`, curly quotes, em dash for the turn |
 | Committing action | one per screen, bottom-right in the thumb arc: gold field, `.action` radius, `glow-gold`, 14 pt/700 uppercase verb |
 
+**The 1:1 mapping is a claim about substance, not spelling — measured 2026-08-23.** All eight
+patterns ship, in `Sources/ProFootballCoachUI/FloodlitPatterns.swift`, but **none of them ships
+under the name this table uses**, and the same prefix drift §6.5 records for the component registry
+applies here:
+
+- **Six ship under a `Floodlit` prefix:** `FloodlitRow`, `FloodlitCard`, `FloodlitLabel3`,
+  `FloodlitPill` / `FloodlitFlag`, `FloodlitStaffVoice`, `FloodlitCommittingAction`.
+- **Glass panel is not a type at all.** It ships as the `coachWorldFloodlitPanel` view modifier,
+  which is the right shape for a treatment applied to arbitrary content, and this table's "names map
+  1:1 onto Swift types" cannot describe it.
+- **The arc family's four names resolve two ways, and one does not resolve.** `ArcGauge`,
+  `AttributeDial` and `ShareBar` ship as `FloodlitArcGauge`, `FloodlitAttributeDial` and
+  `FloodlitShareBar`. **`ValueRing` matches no type anywhere in the tree** — one comment in
+  `RosterView.swift` uses the word and nothing else does. `FloodlitPatterns.swift`'s own header says
+  the arc family's smallest and largest steps are `CoachWorldRatingRing` and `CoachWorldMeter`,
+  which both ship; whether `ValueRing` was meant as a third name for `CoachWorldRatingRing` or as a
+  fourth step nobody built is not decidable from the tree, and is an owner question rather than a
+  documentation one.
+
+Reconciling the spellings is the same rename plus walking test §6.5 books, and it is P11/M8 work.
+
 **Costs, not recommendations.** Every option on a decision surface carries a cost in clock time, an
 attributed staff voice, and an exposure, then a consequence with a real arrow (`Gains four → fourth
 and three`). The interface never says which to pick. This is §4.4's rejection of invented authority
