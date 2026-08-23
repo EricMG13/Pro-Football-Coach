@@ -18,15 +18,24 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
     @State private var openPlayerID: UUID?
     @State private var pendingRelease: ProManagementReadModel.PlayerRow?
 
+    /// The canonical destination this rendering *is*.
+    ///
+    /// One view serves two of them: Cap & Contracts is 34 and Roster Cuts & Transactions is 36,
+    /// and each wrapper passes its own. Neither is an alias of the other -- the contract gives
+    /// both their own row -- so neither may carry the other's stamp.
+    public let canonicalID: Int
+
     public init(
         model: ProManagementReadModel,
         title: String = "CAP & CONTRACTS",
+        canonicalID: Int = 34,
         statusMessage: String? = nil,
         onAction: @escaping (ProManagementAction) -> Void,
         onClose: @escaping () -> Void
     ) {
         self.model = model
         self.title = title
+        self.canonicalID = canonicalID
         self.statusMessage = statusMessage
         self.onAction = onAction
         self.onClose = onClose
@@ -57,6 +66,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
             )
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: canonicalID) }
     }
 
     private var scrollContent: some View {

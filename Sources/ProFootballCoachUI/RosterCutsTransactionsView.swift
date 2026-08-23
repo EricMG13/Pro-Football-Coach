@@ -25,7 +25,7 @@ public struct RosterCutsTransactionsView: View, CoachWorldChromedSurface {
     }
 
     public var body: some View {
-        ProManagementView(model: model, title: "ROSTER CUTS & TRANSACTIONS",
+        ProManagementView(model: model, title: "ROSTER CUTS & TRANSACTIONS", canonicalID: 36,
                           statusMessage: statusMessage, onAction: onAction, onClose: onClose)
             .floodlitChrome(chrome, onNavigate: onNavigateChrome)
             .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)

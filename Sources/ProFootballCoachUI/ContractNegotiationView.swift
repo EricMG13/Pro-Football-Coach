@@ -40,6 +40,7 @@ public struct ContractNegotiationView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 35) }
     }
 
     private var scrollContent: some View {

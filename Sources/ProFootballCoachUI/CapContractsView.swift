@@ -25,7 +25,7 @@ public struct CapContractsView: View, CoachWorldChromedSurface {
     }
 
     public var body: some View {
-        ProManagementView(model: model, title: "CAP & CONTRACTS",
+        ProManagementView(model: model, title: "CAP & CONTRACTS", canonicalID: 34,
                           statusMessage: statusMessage, onAction: onAction, onClose: onClose)
             .floodlitChrome(chrome, onNavigate: onNavigateChrome)
             .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)

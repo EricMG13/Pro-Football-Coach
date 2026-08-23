@@ -11,6 +11,14 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
     public let model: ProOffseasonReadModel
     public let title: String
     public let focus: CoachWorldScreenID
+    /// The canonical destination this rendering *is*, which is not the same thing as `focus`.
+    ///
+    /// `focus` selects which board section shows, and the three aliases pass their own screen as
+    /// the focus -- so deriving identity from it would stamp 37, 38 and 40 on surfaces the
+    /// contract gives no identity of their own. Defaulted to 62 so those aliases inherit Pro
+    /// Offseason; Draft Room passes 39, because it is canonical in its own right and only
+    /// delegates its draft phase here.
+    public let canonicalID: Int
     public let statusMessage: String?
     public let onAction: (ProMarketAction) -> Void
     public let onClose: () -> Void
@@ -29,6 +37,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         model: ProOffseasonReadModel,
         title: String = "PRO OFFSEASON",
         focus: CoachWorldScreenID = .proOffseason,
+        canonicalID: Int = 62,
         statusMessage: String? = nil,
         onAction: @escaping (ProMarketAction) -> Void,
         onClose: @escaping () -> Void
@@ -36,6 +45,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         self.model = model
         self.title = title
         self.focus = focus
+        self.canonicalID = canonicalID
         self.statusMessage = statusMessage
         self.onAction = onAction
         self.onClose = onClose
@@ -62,6 +72,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
             )
         }
         .onChange(of: focus) { _, _ in openID = nil }
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: canonicalID) }
         .onChange(of: model.phase) { _, _ in openID = nil }
         .accessibilitySortPriority(100)
     }
