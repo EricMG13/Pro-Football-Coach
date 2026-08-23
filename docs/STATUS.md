@@ -50,16 +50,59 @@ The honest picture: what exists, what is verified, what is not.
 > PROBE season 3: rosters=1474 unaccounted=1111 poolLeft=512 freeAgency weeks=4 depth min=440 max=480
 > ```
 >
-> Two things stand out and neither is model thinness. **Free agency never ran at all in the first
-> offseason** — 293 contracts expired, nobody returned, nobody relocated, and the league went from
-> 1,696 to 1,403 in one step it never recovered from. `ProRosterAISystem.signFreeAgents` skips a
-> team while `rosterIDs.count >= 53 - remainingPicks`, and a pass that signs nobody calls
-> `beginDraft`, so if the first pass sees rosters that have not yet been emptied, free agency ends
-> before it begins. And **`poolLeft` reaches 512 by season 3, which is `ProMarketState.maximumFreeAgentIDs`
-> exactly**: the pool is saturated, and `addFreeAgent`'s `guard freeAgentIDs.count < maximumFreeAgentIDs`
-> then refuses every further release, which is where `unaccounted` — 477, 829, 1,111 — comes from.
-> These are the two threads to pull; neither was pulled in this pass, because both sit inside the
-> professional turnover FSC-013 defers and both would move roster composition league-wide.
+> **Read the season labels carefully — an earlier revision of this entry did not.** The probe's
+> window labelled "season 1" is the *weeks of season 0*, during which the market is legitimately
+> closed: it opens at the season-0 boundary, which is the last advance in that window. "Free agency
+> never ran" there is correct and is not a defect. Free agency does run, from season 1 onward, for
+> three to six weeks a season.
+>
+> **The defect the probe actually found is in the draft, and it is fixed — 2026-08-23.** Every club
+> is short after expiry, but by six to seventeen seats against seven rounds, so the club that lost
+> fewest fills up on its own sixth pick. `ProRosterAISystem.makeDraftPicks` treated the resulting
+> `activeRosterFull` as fatal and `break`ed the whole run, so one full club ended the round for the
+> other thirty-one and the next week resumed at the same stuck pick. The market never reached
+> `.rosterBuild` in any season and the draft made 130 of 224 picks by season four. A pick a club
+> cannot seat is now passed — `02` section 4.2, 2026-08-23 — leaving the prospect on the board for
+> the club behind it. Measured, before to after: picks landed 220→223, 197→218, 130→189, 135→165 in
+> seasons 2 to 5, active rosters 1,436→1,439, 1,474→1,496, 1,456→1,526, 1,271→1,341, and the weeks
+> the market spends stuck in `.draft` 16→1, 17→1, 16→1, 15→1.
+>
+> **The draft fix did not close the band, and moved it slightly the wrong way — measured.** Re-run
+> at seed 84,010 after the fix, the past-decline share reads 0.228, 0.196, **0.134**, **0.067**,
+> **0.161** at seasons 0, 1, 3, 6, 10, against 0.228, 0.196, 0.146, 0.073, 0.170 before it. Every
+> figure fell. That is the expected direction and it is confirmation rather than a regression: the
+> picks the draft now lands are all age-22 intake, so seating more of them dilutes the veteran share
+> further. It rules the draft out as the cause of the band and points at the two open items below,
+> which are the ones that decide whether a veteran comes back onto a roster at all.
+>
+> **Free agency's throughput is not a defect, and the league is not chronically short — measured
+> 2026-08-23.** With the draft finishing, the boundary count is exactly `1,696 - expiries` in every
+> season (1,439 against 257, 1,496 against 200, 1,526 against 170, 1,341 against 355), and a
+> mid-season sample at week 12 reads **1,696 in every season**. The league is fully seated for the
+> whole year and short only in the instant between expiry and the market reopening. An earlier
+> revision of this entry said free agency's two-signings-a-season throughput kept it short; with the
+> draft stuck that was true, and with the draft fixed it is not.
+>
+> **The band is not a sampling artefact, and that was tested rather than assumed — 2026-08-23.**
+> The obvious suspicion, once the league proved to be fully seated mid-season, was that the band
+> samples at the boundary trough: `n` reads 1,411…1,496 there against 1,696 a few weeks later, and
+> the band's own anchor is "a 53-man mean". The sibling injured-share band had already moved its
+> sample in-season for a related reason. So the age-curve sample was moved to the same in-season
+> week and measured. **It reads 0.228, 0.228, 0.149, 0.056 and 0.147 at the sampled seasons, against
+> 0.228, 0.196, 0.134, 0.067 and 0.161 at the boundary — season 6 is *worse*, not better.** The full roster
+> carries the 223 rookies the draft has just seated, and that dilutes the veteran share by more than
+> the departed veterans concentrate it. The experiment was reverted. **The model genuinely does not
+> retain enough post-decline professionals, on any sample point**, which is an owner decision about
+> the model and not a test that is looking in the wrong place.
+>
+> **The free-agent pool was choosing its members by coin toss — fixed 2026-08-23.**
+> `ProMarketSystem.openOffseason` rebuilds the pool each offseason from every unattached
+> professional, and `maximumFreeAgentIDs` caps it at 512, which the unattached population passes
+> within a few seasons. It took that 512 by `sorted { $0.uuidString < $1.uuidString }.prefix(512)` —
+> an arbitrary slice, and because a UUID never changes, **the same arbitrary slice every season**.
+> Everyone outside it was unsignable for the rest of the save, whatever they could still do, and
+> free agency's "best available" was the best of a coin toss rather than the best there was. The cut
+> is now by rating, ties on identifier, with the same bound.
 
 > **2026-08-20 — Calibration continuation:** the fresh isolated
 > `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**
@@ -109,65 +152,60 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
-> **2026-08-23 — the mark catalogue is keyed by nickname, not by team identifier.**
-> The 2026-08-22 merge changed what `GameState.bootstrap(seed: 20_260_812)` generates and moved 94
-> of the 166 team identifiers. The logo catalogue was keyed by that identifier, so it described a
-> world that no longer existed; re-keying it onto the merged world (`9e50b57`) still left **52
-> teams wearing a mark drawn for somebody else**, named one per failing check by
-> `--team-logo-manifest`. That was the second time one generator change invalidated the whole
-> catalogue, and it would have been the second of many: a team identifier is a **position in the
-> generated random stream**, so anything that shifts generation re-keys every mark. The same
-> coupling is why marks resolved at exactly one seed — `ReadModelProviderTests` asserted it, in a
-> test called "alternate seeds do not borrow canonical logos".
+> **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
+> Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
+> `GameState.bootstrap(seed: 20_260_812)` generates: **94 of the 166 team identifiers moved**, and
+> of the 72 that survived only 34 kept their name. The logo manifest is keyed by that identifier,
+> so it described a world that no longer exists — including six names the legal sweep refuses,
+> which is how it was found: `LegalTests` failed on shipped copy carrying "Slate Foresters",
+> "Thunder Otters", "Iron Marauders", "Cinder Harriers" and two "Storm" names.
 >
-> A mark depicts a **nickname**, and nicknames come from a fixed 40-noun pool in `NameGrammar`. The
-> manifest is now an inventory of marks keyed by that noun (schema 2), the catalogue is a
-> `[nickname: [asset]]` table, and a team picks among the marks for its nickname by an FNV-1a hash
-> of its identifier's **bytes** — never `hashValue`, which is salted per launch. Resolution no
-> longer depends on the seed, on the identifier, or on generation staying still.
+> The manifest is re-keyed onto the merged world, **matching each team to a mark briefed for the
+> nickname it actually carries** rather than by position: 114 teams hold a mark whose brief names
+> their own nickname, against 34 under a positional re-key. The remaining **52 carried a mark
+> briefed for a different team**. Forty of the 52 are the seven nicknames this merge introduced —
+> Wainwrights, Wheelwrights, Millwrights, Bargemen, Lamplighters, Draymen, Bitterns — which
+> replaced seven real programme nicknames and so have no artwork at all yet.
 >
-> **What that costs, stated plainly.** 137 of the shipped marks depict a noun the pool still holds
-> and are carried forward untouched. **29 were drawn for the seven nicknames the 2026-08-13 legal
-> sweep removed** — Beacons, Drovers, Foresters, Harriers, Herons, Marauders, Otters — and no save
-> can ever produce those names again, so those imagesets are deleted; the packaged PNGs go from
-> 3,388,004 to 2,724,584 bytes, and `git show` recovers any of them. Nine pool nouns have **no
-> artwork at all**: Bargemen, Bitterns, Chandlers, Draymen, Lamplighters, Millwrights, Ramparts,
-> Wainwrights, Wheelwrights. At the canonical seed **38 of the 166 teams carry one of those and
-> now show the initials chip** rather than another team's mark. That is a visible change and it is
-> the honest one — a wrong mark is worse than no mark — but it is a change the owner should see
-> before a build goes out.
+> **2026-08-23 — the 52 briefs are written; the 52 pictures are not.** `rewrite_manifest.py
+> --rebrief` rewrote those records' concept and prompt from the nickname each team now carries,
+> redealing motif families among those 52 alone so the 28/28/28/28/27/27 balance is untouched and
+> no record whose brief already matched its artwork was disturbed. It also filled the hole that
+> caused the failure to be unfixable: the script's `SUBJECTS` table still described Drovers,
+> Foresters, Marauders, Harriers, Herons, Otters and Beacons — the seven the grammar retired in
+> place on 2026-08-13 — and knew nothing of the seven that replaced them, so re-briefing any team
+> that drew one raised `KeyError`.
 >
-> The manifest carries **36 pending briefs** for those nine nouns, four each, which is the live
-> average of 4.4 marks per nickname rounded down; they are the work order for the next generation
-> run and they claim no artwork, no palette and no approval. `Tools/TeamLogos/brief_marks.py`
-> writes them and reads the pool out of `NameGrammar.swift`; the test reads the same pool through
-> the new `NameGrammar.nicknameNounVocabulary`, so **a noun added to the pool fails a check the day
-> it is added** rather than the day somebody remembers the artwork.
+> Twelve of the 52 sit in `animalCreature` holding an emblem: the stale set held more creature
+> slots than it has creatures, the new nouns being trades rather than birds. The script names all
+> twelve on stdout. Re-seating them is an owner call, not a guess the script may make.
 >
-> The gate that could not see any of this is replaced. "Every mark brief depicts the team it
-> belongs to" compared the manifest against itself; **"every team in a generated world wears a mark
-> drawn for its nickname" bootstraps four seeds and asks the app's own resolution path what each of
-> 166 teams would be shown.** Measured: `--team-logo-manifest` **10 tests / 15,212 checks**,
-> against 9 tests / 17,882 checks with 52 failed before; `--legal-only` **30 tests / 193 checks**;
-> `--screen-read-models` **74 tests / 10,000 checks**; all six `--team-logo-assets` families green.
+> **What is still outstanding is artwork, and only artwork.** Each of the 52 packaged PNGs still
+> draws the nickname its team carried before the re-key, and each record's `reviewNotes` names
+> which one. `"every mark brief depicts the team it belongs to"` now passes, because every brief
+> now does; the outstanding picture count is pinned at 52 by `"the artwork still owed is counted,
+> not left to a red gate"` in the same suite, which fails if that number moves in either direction
+> without this section moving with it. It was a deliberately red gate until 2026-08-23; a red gate
+> as a work list makes a green suite impossible and hides which half of the job is done.
 >
-> **The default lane still cannot see any of this, and that is a separate finding.** A release
-> no-flag `SimTests` run on this branch ends with **SIGTRAP (exit 133) after 103 of the 143 suites**
-> and prints no TestKit summary, dying inside `runPortalContractTests()` — `main.swift:227`. The
-> crash report names it exactly: `EXC_BREAKPOINT`, **Swift runtime failure: precondition failure**,
-> in `GameState.init(version:league:map:programmes:proTeams:…)` called from that probe, so the
-> probe is building a world the initialiser refuses.
-> Every logo gate is registered *after* that call, at `main.swift:232`, so the full lane has never
-> once executed them. `3da4904` fixes the crash, but it sits on `claude/frosty-northcutt-d4a058`
-> and **is not an ancestor of `main`**; until it is merged, suites 104–143 are unrun in the default
-> lane whatever they would report. The numbers above therefore come from the targeted release
-> lanes, not from a completed no-flag run. Of the 103 suites that did run, one failed:
-> `Lifecycle distributions hold their bands`, which is the pre-existing finding recorded at the top
-> of this file.
+> `--legal-only` passes at 30 tests / 193 checks. No PNG was added, removed or re-rendered: every
+> one of the 166 packaged marks is still shipped and still owner-approved as artwork; what is
+> outstanding is which team each one belongs to.
+
+> **2026-08-23, later the same day — the 52 pictures landed, and the pin is now zero.** Merging
+> `codex/logos` replaces every one of the 166 packaged PNGs, the 52 stranded marks among them, and
+> adds `CanonicalTeamBranding`, an owner-approved id/name/nickname/colour table the league generator
+> applies at the canonical seed. That inverts the repair: rather than re-brief 52 records to chase
+> names the re-key had moved, the world is renamed to the identities the artwork was selected under,
+> so `manifest.json` carries no `awaiting a regeneration run` record at all. `"the artwork still owed
+> is counted, not left to a red gate"` is therefore pinned at **0**, not 52, and this paragraph is
+> the section that had to move with it. The gate is unchanged in kind: a future re-key that strands
+> a mark makes the count non-zero and fails here.
 >
-> **Not verified.** No PNG was re-rendered and none can be here — what each packaged mark actually
-> depicts is still an owner judgement, recorded per record in `reviewNotes`, not something any test
-> in this repo asserts.
+> Measured on the merge result, not inferred: `swift build -c release` of `SimTests` is green with
+> no errors; `Team logo manifest` passes **10 tests / 18,213 checks**; `Legal: name collision` (20
+> tests), `Legal: trade dress` (7) and `Legal: shipped copy` (3) all pass. The full default sweep
+> was not run to completion, so nothing here claims it.
 
 > **Current-tree verification boundary — 2026-08-21.** On the working tree at `a547404`, the
 > canonical release-mode `--catalog` command lists **19 registered gates, 19 runnable commands,

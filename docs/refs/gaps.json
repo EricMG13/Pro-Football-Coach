@@ -1,0 +1,1334 @@
+{
+  "floor": [
+    844.0,
+    390.0
+  ],
+  "viewport": [
+    291.0,
+    241.0
+  ],
+  "surfaces": [
+    {
+      "id": "coachingHQ",
+      "number": 8,
+      "name": "Coaching HQ",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 3,
+      "commit": "Advance to Saturday",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "INTERACTION",
+          "text": "No move between HQ and any surface is designed; the mock cuts instantly.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Attention items are hand-listed rather than derived from what the week actually owes.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "inbox",
+      "number": 9,
+      "name": "Inbox",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 6,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "A read message has no designed state; only the list is drawn.",
+          "blocks": false
+        },
+        {
+          "kind": "INTERACTION",
+          "text": "Filing, replying and marking unread are all unmodelled.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "opponentReportFilmRoom",
+      "number": 10,
+      "name": "Opponent Report / Film Room",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 16,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/OpponentFilmView.swift",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Tendencies are static; the engine records no per-opponent play log to derive them from.",
+          "blocks": false
+        },
+        {
+          "kind": "SCREEN",
+          "text": "No clip or diagram view -- the 'film' in Film Room is a table.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "gamePlan",
+      "number": 11,
+      "name": "Game Plan",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 5,
+      "commit": "Lock game plan",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "RULE",
+          "text": "Nothing states which read models a locked plan invalidates.",
+          "blocks": false
+        },
+        {
+          "kind": "SCREEN",
+          "text": "The scheme book this draws from is an alias, so its own editing surface is not drawn.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "practicePlan",
+      "number": 12,
+      "name": "Practice Plan",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 5,
+      "commit": "Set the week",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Fatigue and injury risk are printed but the engine exposes no per-block model behind them.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "teamHealth",
+      "number": 13,
+      "name": "Team Health",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 15,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Return weeks are point estimates; no confidence is modelled or drawn.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "matchDay",
+      "number": 14,
+      "name": "Match Day",
+      "family": "weeklyCommand",
+      "lean": "MATCH_DAY",
+      "status": "BUILT",
+      "cells": 8,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "EventBadge is constructed on no branch, so every fixture paints as a regular-season game.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "The field draws the spot and the line to gain from two integers; no play state feeds them, and there are no players on it.",
+          "blocks": false
+        },
+        {
+          "kind": "ART",
+          "text": "Occasion branding needs three declared Broadcast variants: regular 44, elimination 48, final 52.",
+          "blocks": false
+        },
+        {
+          "kind": "SCREEN",
+          "text": "Halftime, end of game and opponent possession are separate surfaces; only live play is drawn.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "aftermath",
+      "number": 15,
+      "name": "Aftermath",
+      "family": "weeklyCommand",
+      "lean": "BROADCAST",
+      "status": "BUILT",
+      "cells": 3,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "No competition mark exists, so a conference win and a non-conference win look identical.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "gameDetailBoxScore",
+      "number": 47,
+      "name": "Game Detail / Box Score",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 12,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "No drive chart; the engine records drive outcomes but nothing draws them.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "whileYouWereAway",
+      "number": 67,
+      "name": "While You Were Away",
+      "family": "weeklyCommand",
+      "lean": "DESK",
+      "status": "MISSING",
+      "cells": 6,
+      "commit": null,
+      "evidence": "no Swift case; source inventory M5",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Automation halts on a threshold and hands control back; nothing renders what happened in between.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "No delegation policy exists -- no area enum, no assignment, no persistence -- so every handled line here is unbacked.",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "Invisible delegation is indistinguishable from a bug, which is why this surface is not optional.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "roster",
+      "number": 16,
+      "name": "Roster",
+      "family": "personnel",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 72,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "INTERACTION",
+          "text": "Sorting and filtering are drawn as column heads but no sort state is modelled.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Form is a single signed integer; the engine has no rolling window behind it.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Ratings are point values. `04` 6.4 requires a rating the simulation has not earned to be drawn as a RANGE whose width is the confidence, and Unseen where nothing has been observed. The scouting-confidence model does not exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "depthChart",
+      "number": 17,
+      "name": "Depth Chart",
+      "family": "personnel",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 22,
+      "commit": "Publish depth chart",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Drop is the rating gap to the backup; nothing states what an acceptable drop is.",
+          "blocks": false
+        },
+        {
+          "kind": "SCREEN",
+          "text": "Personnel packages is an alias, so the grouping this chart implies has no surface.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "playerProfile",
+      "number": 18,
+      "name": "Player Profile",
+      "family": "personnel",
+      "lean": "DOSSIER",
+      "status": "BUILT",
+      "cells": 6,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "The person plate is blank: no player likeness exists and none is planned.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Ceiling is drawn as a point, but the model holds a range.",
+          "blocks": false
+        },
+        {
+          "kind": "RULE",
+          "text": "A Dossier that bands a rating cannot also commit at the install floor: `04` 2.1 gives the head 180-220, 6.4 requires the band table beside the banded figure, and 4.5a leaves 241 pt once a commit bar is reserved. The three do not fit together. Drawn without the bar, routing to the committing surface instead -- an owner question, not a drawing choice.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "Ratings are point values. `04` 6.4 requires a rating the simulation has not earned to be drawn as a RANGE whose width is the confidence, and Unseen where nothing has been observed. The scouting-confidence model does not exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "developmentPlan",
+      "number": 19,
+      "name": "Development Plan",
+      "family": "personnel",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 6,
+      "commit": "Commit the plan",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "The empty state is the only designed non-happy state in the whole app (CollegeOffseasonView.emptyState).",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "staffRoom",
+      "number": 20,
+      "name": "Staff Room",
+      "family": "personnel",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 6,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Staff market and profile is an alias into this list; a coach has no dossier of their own.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Staff influence on development is not exposed anywhere the player can read it.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "compare",
+      "number": 68,
+      "name": "Compare",
+      "family": "personnel",
+      "lean": "DESK",
+      "status": "MISSING",
+      "cells": 8,
+      "commit": null,
+      "evidence": "no Swift case; source inventory M6",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "One of Football Manager's core verbs and one of Madden's depth-chart affordances; no registry screen performs it.",
+          "blocks": true
+        },
+        {
+          "kind": "INTERACTION",
+          "text": "Choosing the second subject has no designed picker.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Ratings are point values. `04` 6.4 requires a rating the simulation has not earned to be drawn as a RANGE whose width is the confidence, and Unseen where nothing has been observed. The scouting-confidence model does not exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "recruitingBoard",
+      "number": 24,
+      "name": "Recruiting Board",
+      "family": "recruiting",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 49,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Interest is a three-band label; the engine holds a continuous value nothing surfaces.",
+          "blocks": false
+        },
+        {
+          "kind": "INTERACTION",
+          "text": "No board reordering or shortlisting gesture is designed.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "prospectProfile",
+      "number": 25,
+      "name": "Prospect Profile",
+      "family": "recruiting",
+      "lean": "DOSSIER",
+      "status": "BUILT",
+      "cells": 8,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "Blank photo plate; prospects have no likeness and will not get one.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Rival interest is a count, not a named set, so the pressure is unreadable.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Ratings are point values. `04` 6.4 requires a rating the simulation has not earned to be drawn as a RANGE whose width is the confidence, and Unseen where nothing has been observed. The scouting-confidence model does not exist (07 GAP-06), so the gap is declared rather than the precision faked.",
+          "blocks": false
+        },
+        {
+          "kind": "RULE",
+          "text": "A Dossier that bands a rating cannot also commit at the install floor: `04` 2.1 gives the head 180-220, 6.4 requires the band table beside the banded figure, and 4.5a leaves 241 pt once a commit bar is reserved. The three do not fit together. Drawn without the bar, routing to the committing surface instead -- an owner question, not a drawing choice.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "shortlist",
+      "number": 26,
+      "name": "Shortlist",
+      "family": "recruiting",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 6,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "INTERACTION",
+          "text": "Removing from the shortlist has no designed confirmation.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "contactVisitPlanner",
+      "number": 27,
+      "name": "Contact & Visit Planner",
+      "family": "recruiting",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 10,
+      "commit": "Book the week",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "RULE",
+          "text": "Contact cost is drawn but the rules module does not define a per-action tariff.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "classOverview",
+      "number": 28,
+      "name": "Class Overview",
+      "family": "recruiting",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 12,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Conference average is drawn but no cross-programme aggregate is computed.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "signingDay",
+      "number": 29,
+      "name": "Signing Day",
+      "family": "recruiting",
+      "lean": "BROADCAST",
+      "status": "PARTIAL",
+      "cells": 4,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/CollegeOffseasonView.swift -- no focus parameter",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Delegates to CollegeOffseasonView, which takes no focus, so this number renders the offseason hub.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "Nothing fires signing day, and nothing guarantees nothing fires on a routine week.",
+          "blocks": true
+        },
+        {
+          "kind": "ART",
+          "text": "The jersey lockup replaces the portrait the product may never draw; no lockup component exists.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "collegeOffseason",
+      "number": 61,
+      "name": "College Offseason",
+      "family": "recruiting",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 8,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Four registry numbers alias here and the view takes no focus, so all four are this screen.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "capContracts",
+      "number": 34,
+      "name": "Cap & Contracts",
+      "family": "proManagement",
+      "lean": "DESK",
+      "status": "PARTIAL",
+      "cells": 11,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/ProManagementView.swift:90 -- title only, no focus",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Renders byte-identical to Roster Cuts; the view cannot tell the two numbers apart.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "No per-year cap projection exists, so a multi-year decision has nothing behind it.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "contractNegotiation",
+      "number": 35,
+      "name": "Contract Negotiation",
+      "family": "proManagement",
+      "lean": "DOSSIER",
+      "status": "BUILT",
+      "cells": 10,
+      "commit": "Send the offer",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Agent position is drawn as a fixed counter-offer; no negotiation model produces it.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "rosterCutsTransactions",
+      "number": 36,
+      "name": "Roster Cuts & Transactions",
+      "family": "proManagement",
+      "lean": "DESK",
+      "status": "PARTIAL",
+      "cells": 10,
+      "commit": "Confirm the cuts",
+      "evidence": "Sources/ProFootballCoachUI/ProManagementView.swift:90 -- no transactions collection in the read model",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "ProManagementReadModel holds no transactions collection; this list cannot be real.",
+          "blocks": true
+        },
+        {
+          "kind": "SCREEN",
+          "text": "Identical to Cap & Contracts for the same reason.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "draftRoom",
+      "number": 39,
+      "name": "Draft Room",
+      "family": "proManagement",
+      "lean": "BROADCAST",
+      "status": "WRAPPER",
+      "cells": 3,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/ProOffseasonView.swift",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "One of the four ceremony surfaces the source calls unbuilt; three registry numbers alias into the same parent view.",
+          "blocks": true
+        },
+        {
+          "kind": "INTERACTION",
+          "text": "The clock is a ceremony device and no timed state exists; a pick cannot expire.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "proOffseason",
+      "number": 62,
+      "name": "Pro Offseason",
+      "family": "proManagement",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 8,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Three registry numbers alias here -- scouting board, draft board, free agency -- and the parent has one view.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "worldSearch",
+      "number": 7,
+      "name": "World Search",
+      "family": "league",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 6,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "INTERACTION",
+          "text": "The query field has no designed empty, typing or no-results state.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "leagueMap",
+      "number": 41,
+      "name": "League Map",
+      "family": "league",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 20,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "There is no map. Real geography exists in the world model but nothing plots it.",
+          "blocks": false
+        },
+        {
+          "kind": "ART",
+          "text": "Wants a competition mark at 24 px beside the title; none exists on any branch.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "teamProgrammeProfile",
+      "number": 42,
+      "name": "Team / Programme Profile",
+      "family": "league",
+      "lean": "DOSSIER",
+      "status": "BUILT",
+      "cells": 8,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "Wants a competition mark at 24 px beside the title; none exists on any branch.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "standings",
+      "number": 43,
+      "name": "Standings",
+      "family": "league",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 42,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "Wants a competition mark at 24 px beside the title; none exists on any branch.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Tiebreakers are computed but the order they were applied in is not shown.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "schedule",
+      "number": 44,
+      "name": "Schedule",
+      "family": "league",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 18,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "Wants a competition mark at 24 px beside the title; none exists on any branch.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "rankingsPlayoffPicture",
+      "number": 45,
+      "name": "Rankings & Playoff Picture",
+      "family": "league",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 14,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/CompetitionOverviewView.swift",
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "Wants a competition mark at 24 px beside the title; none exists on any branch.",
+          "blocks": false
+        },
+        {
+          "kind": "DATA",
+          "text": "Ranking movement week to week is not retained, so no delta can be drawn.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "bracketPostseason",
+      "number": 46,
+      "name": "Bracket / Postseason",
+      "family": "league",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 15,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/CompetitionOverviewView.swift",
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "A bracket without a competition mark is unbranded; the surface cannot say which competition it is.",
+          "blocks": true
+        },
+        {
+          "kind": "SCREEN",
+          "text": "No bracket geometry -- the postseason is a table of pairings.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "statisticsLeaders",
+      "number": 48,
+      "name": "Statistics & Leaders",
+      "family": "league",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 20,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "INTERACTION",
+          "text": "Category is a column, not a control; the player cannot change what is ranked.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "awardsHonours",
+      "number": 49,
+      "name": "Awards & Honours",
+      "family": "league",
+      "lean": "BROADCAST",
+      "status": "BUILT",
+      "cells": 3,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "ART",
+          "text": "Wants a competition mark at 24 px beside the title; none exists on any branch.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "news",
+      "number": 50,
+      "name": "News",
+      "family": "league",
+      "lean": "DESK",
+      "status": "PARTIAL",
+      "cells": 6,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/NewsView.swift:124 -- the detail pane is a deliberate dead end",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Tapping a story reaches a pane that deliberately shows nothing (NewsView.swift:124).",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "The feed has no stated bound, and unbounded feeds took the prior build's saves to 8.3 MB.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "realignmentEvent",
+      "number": 51,
+      "name": "Realignment Event",
+      "family": "league",
+      "lean": "BROADCAST",
+      "status": "PARTIAL",
+      "cells": 3,
+      "commit": null,
+      "evidence": "swaps.prefix(2) caps the event at two moves",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Capped at swaps.prefix(2); a realignment larger than two moves cannot be shown.",
+          "blocks": true
+        },
+        {
+          "kind": "ART",
+          "text": "Wants a competition mark at 24 px beside the title; none exists on any branch.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "championshipResult",
+      "number": 64,
+      "name": "Championship Result",
+      "family": "league",
+      "lean": "BROADCAST",
+      "status": "MISSING",
+      "cells": 3,
+      "commit": null,
+      "evidence": "no Swift case; source inventory M2",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "The fifth sanctioned ceremony has no registry case at all.",
+          "blocks": true
+        },
+        {
+          "kind": "ART",
+          "text": "The surface exists to show a competition, and no competition mark exists on any branch.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "EventBadge is constructed nowhere, so a final cannot be distinguished from week 3.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "titleContinue",
+      "number": 1,
+      "name": "Title / Continue",
+      "family": "career",
+      "lean": "BROADCAST",
+      "status": "PARTIAL",
+      "cells": 3,
+      "commit": "Continue",
+      "evidence": "no read model; two bare ProgressViews are the only states",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "No read model backs this surface; what it shows is assembled in the view.",
+          "blocks": true
+        },
+        {
+          "kind": "SCREEN",
+          "text": "Loading is a bare ProgressView and failure has no state at all.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "settingsAccessibility",
+      "number": 6,
+      "name": "Settings & Accessibility",
+      "family": "career",
+      "lean": "DESK",
+      "status": "PARTIAL",
+      "cells": 6,
+      "commit": null,
+      "evidence": "no read model",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "No read model; every value here is a view-local default.",
+          "blocks": true
+        },
+        {
+          "kind": "SCREEN",
+          "text": "Screen 6 covers accessibility only. Appearance -- theme, density, identity display -- is a separate sheet with no surface.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "careerHub",
+      "number": 52,
+      "name": "Career Hub",
+      "family": "career",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 5,
+      "commit": null,
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Five registry numbers alias here -- job board, offer, job security, carousel, appointment -- served by one switch.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "stakeholders",
+      "number": 54,
+      "name": "Stakeholders",
+      "family": "career",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 5,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/CareerHubView.swift -- switch focus, sixty lines",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "Mood is a label with no model; nothing changes it and nothing reads it back.",
+          "blocks": true
+        },
+        {
+          "kind": "SCREEN",
+          "text": "Sixty lines, and no moment where expectations are actually set.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "promotionDecision",
+      "number": 55,
+      "name": "Promotion Decision",
+      "family": "career",
+      "lean": "BROADCAST",
+      "status": "WRAPPER",
+      "cells": 3,
+      "commit": "Accept the pro job",
+      "evidence": "Sources/ProFootballCoachUI/CareerHubView.swift -- switch focus",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "One of the four ceremony surfaces the source calls unbuilt.",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "The promotion arc is a v1 feature and this is its only surface; what carries across tiers is not stated.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "recordBook",
+      "number": 57,
+      "name": "Record Book",
+      "family": "career",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 12,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/LegacyHistoryView.swift -- 175 lines, four concepts, two record kinds",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "LegacyHistoryView supplies two record kinds for four concepts.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "rivalries",
+      "number": 58,
+      "name": "Rivalries",
+      "family": "career",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 8,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/LegacyHistoryView.swift -- 175 lines, four concepts, two record kinds",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "No rivalry record kind exists; this is derived from the schedule at read time.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "No stored series, so no form and no 'their last five'.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "careerLine",
+      "number": 59,
+      "name": "Career Line",
+      "family": "career",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 12,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/LegacyHistoryView.swift -- 175 lines, four concepts, two record kinds",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "No career record kind; the line is assembled in the view from season state.",
+          "blocks": true
+        },
+        {
+          "kind": "SCREEN",
+          "text": "There is no line -- the career arc is a table.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "coachingTree",
+      "number": 60,
+      "name": "Coaching Tree",
+      "family": "career",
+      "lean": "DESK",
+      "status": "WRAPPER",
+      "cells": 4,
+      "commit": null,
+      "evidence": "Sources/ProFootballCoachUI/LegacyHistoryView.swift -- 175 lines, four concepts, two record kinds",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "No tree structure is modelled; staff moves are not retained across seasons.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "responsibilities",
+      "number": 63,
+      "name": "Responsibilities",
+      "family": "career",
+      "lean": "DESK",
+      "status": "MISSING",
+      "cells": 4,
+      "commit": "Set the thresholds",
+      "evidence": "no Swift case; source inventory M1",
+      "gaps": [
+        {
+          "kind": "DATA",
+          "text": "No area enum, no assignment, no persistence, no surface. Every ownership line drawn in this system is unbacked without it.",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "The interrupt thresholds that end a cruise are undefined, so delegation cannot be handed back.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "Declining a coordinator costs nothing, so the ownership model is theatre.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "seasonExpectations",
+      "number": 65,
+      "name": "Season Expectations",
+      "family": "career",
+      "lean": "DOSSIER",
+      "status": "MISSING",
+      "cells": 11,
+      "commit": null,
+      "evidence": "no Swift case; source inventory M3",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Set at season start, judged at season end; Stakeholders has no moment where expectations are actually set.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "No approval rating persists between seasons, and no board request is modelled.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "seasonReview",
+      "number": 66,
+      "name": "Season Review",
+      "family": "career",
+      "lean": "BROADCAST",
+      "status": "MISSING",
+      "cells": 3,
+      "commit": null,
+      "evidence": "no Swift case; source inventory M4",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Aftermath is per-match. A season has no ending -- no wrap, no verdict, no record delta.",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "For a career game whose whole arc is college to pro, this is the most conspicuous hole in the loop.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "saveContinuity",
+      "number": 69,
+      "name": "Save & Continuity",
+      "family": "career",
+      "lean": "DESK",
+      "status": "MISSING",
+      "cells": 10,
+      "commit": null,
+      "evidence": "no Swift case; source inventory M7",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "A Continuity-v3 design sheet exists on the design-references branch with no screen to land on.",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "What happens when a save is from an older build is undefined; GameState.schemaVersion is 13 and migration has no surface.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "appearance",
+      "number": 70,
+      "name": "Appearance",
+      "family": "career",
+      "lean": "DESK",
+      "status": "MISSING",
+      "cells": 4,
+      "commit": null,
+      "evidence": "no Swift case; source inventory M8",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Appearance-v3 is a separate sheet from Accessibility-v3; nothing owns theme, density and identity display.",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "The palette is dark only, so a theme control has nothing to switch between yet.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "teaching",
+      "number": 72,
+      "name": "Teaching",
+      "family": "career",
+      "lean": "DESK",
+      "status": "OVERLAY",
+      "cells": 4,
+      "commit": null,
+      "evidence": "Teaching-v3.dc.html on the design-references branch; no registry entry",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Carries no CoachWorldScreenID. The registry enumerates screens by construction and is airtight for screens; it never modelled a surface that is not one.",
+          "blocks": true
+        },
+        {
+          "kind": "INTERACTION",
+          "text": "The benchmark is a browsable encyclopedia with its own back and forward navigation and a live panel showing your own instance of the concept.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "failure",
+      "number": 73,
+      "name": "Failure",
+      "family": "career",
+      "lean": "DESK",
+      "status": "OVERLAY",
+      "cells": 4,
+      "commit": null,
+      "evidence": "failure-v3.dc.html is one of the eight canon sheets; no registry screen corresponds",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Carries no CoachWorldScreenID. The registry enumerates screens by construction and is airtight for screens; it never modelled a surface that is not one. A whole canon design sheet describes a class of surface the product cannot navigate to.",
+          "blocks": true
+        },
+        {
+          "kind": "DATA",
+          "text": "The codebase has four failure states in total, and only one of them has a designed equivalent.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "systemState",
+      "number": 74,
+      "name": "System State",
+      "family": "career",
+      "lean": "DESK",
+      "status": "OVERLAY",
+      "cells": 6,
+      "commit": null,
+      "evidence": "CoachWorldSystemState exists with empty, loading and error kinds; no surface owns them",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Carries no CoachWorldScreenID. The registry enumerates screens by construction and is airtight for screens; it never modelled a surface that is not one.",
+          "blocks": true
+        },
+        {
+          "kind": "RULE",
+          "text": "No sheet governs when each kind appears, so the component ships with no policy behind it.",
+          "blocks": true
+        }
+      ]
+    },
+    {
+      "id": "newCareerCoachIdentity",
+      "number": 2,
+      "name": "New Career & Coach Identity",
+      "family": "entry",
+      "lean": "DESK",
+      "status": "BUILT",
+      "cells": 4,
+      "commit": "Start the career",
+      "evidence": null,
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "NewCareerSetupView.errorMessage is one of four failure states in the whole codebase and has no design.",
+          "blocks": false
+        },
+        {
+          "kind": "INTERACTION",
+          "text": "No move from here into the first Coaching HQ is designed.",
+          "blocks": false
+        }
+      ]
+    },
+    {
+      "id": "firstRun",
+      "number": 71,
+      "name": "First Run",
+      "family": "entry",
+      "lean": "DESK",
+      "status": "OVERLAY",
+      "cells": 4,
+      "commit": null,
+      "evidence": "FirstRun-v3.dc.html on the design-references branch; no registry entry",
+      "gaps": [
+        {
+          "kind": "SCREEN",
+          "text": "Carries no CoachWorldScreenID. The first hour of a management game is where it is lost, and nothing owns it.",
+          "blocks": true
+        },
+        {
+          "kind": "INTERACTION",
+          "text": "No move from here into the first Coaching HQ is designed.",
+          "blocks": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# The deliverable is a published artifact, not checked-in HTML (owner decision).
+# Regenerate with `python3 Tools/refs/build.py --both`.
+*.html

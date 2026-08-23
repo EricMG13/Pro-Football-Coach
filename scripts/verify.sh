@@ -87,14 +87,32 @@ run_command() {
 run_sim() {
     local label="$1"
     shift
+    local log="$lane_root/logs/$label.log"
+    local status=0
     # SimTests is a plain executable target that @testable imports ProFootballCoachUI (03b section
     # 5: "the ported TestKit harness, run as an executable target" -- not a recognised .testTarget,
     # so SwiftPM has no reason to infer testability the way `swift test` would). -c release does not
     # enable it by default the way debug builds happen to, so a release run fails every target that
     # @testable imports anything with "module ... was not compiled for testing" unless asked for
     # explicitly.
-    run_command "$label" swift run --scratch-path "$lane_root/scratch" -c release \
-        -Xswiftc -enable-testing SimTests "$@"
+    swift run --scratch-path "$lane_root/scratch" -c release \
+        -Xswiftc -enable-testing SimTests "$@" 2>&1 | tee "$log" || status=$?
+    # A run is complete only if it printed TestKit's terminal summary. `TestKit.test` records a
+    # thrown error as a failed check, but a Swift `precondition` is SIGTRAP: it kills the process
+    # mid-run, prints nothing, and leaves an ordinary non-zero status. Without this the lane reports
+    # a red suite and says nothing about the suites that never ran -- which is how 40 of 143 went
+    # unexercised between 2026-08-20 and 2026-08-23 while every release claim quoted the full run.
+    if ! grep -qE '^[0-9]+ tests, [0-9]+ checks$' "$log"; then
+        bad "$label — TRUNCATED: no TestKit summary, so every suite after the last one reported \
+never ran (see $log)"
+        return 1
+    fi
+    if [ "$status" -eq 0 ]; then
+        ok "$label"
+    else
+        bad "$label — see $log"
+    fi
+    return "$status"
 }
 
 note "toolchain"

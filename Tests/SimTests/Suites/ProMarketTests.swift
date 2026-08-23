@@ -89,6 +89,71 @@ func runProMarketTests() {
             expect(WorldIntegrity.check(drafted).isValid)
         }
 
+        test("a club with no seat passes its pick and the draft carries on") {
+            // The defect this replaces: `makeDraftPicks` stopped the whole run on the first
+            // `activeRosterFull`, so one full club ended the round for every club behind it. Live,
+            // that left the market in `.draft` for fifteen weeks a season and the draft making 130
+            // of 224 picks by season four (`--pro-movement-probe`, seed 96,001).
+            //
+            // The fixture is the extreme of the real shape: every club full except one, which is
+            // given exactly three seats. A stopping draft makes zero picks here; a passing one makes
+            // three and finishes.
+            var state = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_140))
+            let seated = try require(state.proMarket.draftOrder.first)
+            removeProRosterPlayers(count: 3, teamID: seated, in: &state)
+            state = try ProMarketSystem.beginDraft(in: state)
+            for teamID in state.proTeams.ids where teamID != seated {
+                expectEqual(state.proTeams[teamID]?.rosterIDs.count, ProRules.activeRosterLimit,
+                            "the fixture left a second club with room")
+            }
+
+            let transition = try ProRosterAISystem.process(at: state.calendar, in: state)
+            let market = transition.state.proMarket
+
+            expectEqual(market.phase, .rosterBuild, "the draft did not finish")
+            expectEqual(transition.signedPlayerIDs.count, 3)
+            expectEqual(market.draftedProspectIDs.count, 3)
+            expectEqual(transition.passedPicks, ProRules.draftPickCount - 3)
+            expectEqual(market.passedPickCount, ProRules.draftPickCount - 3)
+            expectEqual(market.nextPick, ProRules.draftPickCount)
+            expectEqual(transition.stoppedBecause, nil, "the draft stopped for an unhandled reason")
+            expectEqual(transition.state.proTeams[seated]?.rosterIDs.count,
+                        ProRules.activeRosterLimit)
+            expect(WorldIntegrity.check(transition.state).isValid,
+                   "a market holding passed picks failed root integrity")
+            expectEqual(try SaveEnvelope.decode(
+                GameState.self,
+                from: SaveEnvelope.encode(transition.state)
+            ), transition.state)
+
+            // A pass spends the pick, not the player: the three the seated club took are the three
+            // best in the class, because every club that passed ahead of it left them on the board.
+            let bestThree = state.proMarket.draftClass
+                .sorted {
+                    $0.player.overall.value == $1.player.overall.value
+                        ? $0.id.uuidString < $1.id.uuidString
+                        : $0.player.overall.value > $1.player.overall.value
+                }
+                .prefix(3)
+                .map(\.id)
+            expectEqual(Set(transition.signedPlayerIDs), Set(bestThree),
+                        "a passed pick took its prospect off the board with it")
+        }
+
+        test("a market saved before passed picks existed decodes as none passed") {
+            let opened = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_141))
+            let encoded = try JSONEncoder().encode(opened.proMarket)
+            var object = try require(
+                try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+            )
+            expect(object.removeValue(forKey: "passedPickCount") != nil,
+                   "the field is not written, so this test proves nothing")
+            let stripped = try JSONSerialization.data(withJSONObject: object)
+            let decoded = try JSONDecoder().decode(ProMarketState.self, from: stripped)
+            expectEqual(decoded.passedPickCount, 0)
+            expectEqual(decoded, opened.proMarket)
+        }
+
         test("an unattached professional can sign in free agency") {
             var state = GameState.bootstrap(seed: 60_104)
             let teamID = try require(state.proTeams.ids.first)

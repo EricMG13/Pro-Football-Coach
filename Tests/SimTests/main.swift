@@ -61,6 +61,10 @@ if CommandLine.arguments.contains("--catalog") {
     runProDraftStallProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
+} else if CommandLine.arguments.contains("--export-team-logo-manifest") {
+    try runTeamLogoManifestExport()
+} else if CommandLine.arguments.contains("--force-export-team-logo-manifest") {
+    try runTeamLogoManifestExport(force: true)
 } else if CommandLine.arguments.contains("--team-logo-manifest") {
     runTeamLogoManifestTests()
 } else if let index = CommandLine.arguments.firstIndex(of: "--team-logo-assets"),

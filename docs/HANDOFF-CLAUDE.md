@@ -28,21 +28,43 @@ measurement of two things at once: active professional rosters hold 1,411…1,53
 veteran tail retires out before the drafted cohorts reach decline. `--pro-soak` already asserts the
 roster-legality half and is already red for it.
 
-**Do not widen the band.** `--pro-movement-probe` already names two threads, and they are defects
-rather than design questions:
+**Do not widen the band.** `--pro-movement-probe` found three things. One is not a defect, one is
+fixed, and one is open.
 
-1. **Free agency never runs in the first offseason.** The probe prints it in those words: season 1
-   expires 293 contracts, returns nobody, relocates nobody, and the league drops 1,696 → 1,403 in
-   one step. `signFreeAgents` skips a team while `rosterIDs.count >= 53 - remainingPicks`, and a
-   pass that signs nobody calls `beginDraft` — so a first pass that sees rosters not yet emptied
-   ends free agency before it begins.
-2. **The free-agent pool saturates.** `poolLeft` reaches 512 by season 3, which is
-   `ProMarketState.maximumFreeAgentIDs` exactly. Past that, `addFreeAgent`'s bound refuses every
-   further release, and the probe's `unaccounted` count — 477, 829, 1,111 — is the players that
-   leaves nowhere.
+**Not a defect — read the probe's season labels.** Its window labelled "season 1" is the weeks of
+season 0, when the market is legitimately closed; it opens at the season-0 boundary. "Free agency
+never ran" there is correct. An earlier revision of this file called that the bug. It is not.
 
-Neither was pulled in this pass: both sit inside the professional turnover FSC-013 defers, and both
-move roster composition league-wide. Start here rather than at the band.
+**Fixed, 2026-08-23 — the draft could not finish.** Expiry leaves clubs six to seventeen seats short
+against seven rounds, so the club that lost fewest filled up on its own sixth pick, and
+`makeDraftPicks` treated the `activeRosterFull` as fatal: one full club ended the round for the
+other thirty-one, and the next week resumed at the same stuck pick. The market never reached
+`.rosterBuild` in any season and the draft made 130 of 224 picks by season four. A pick a club
+cannot seat is now passed (`02` section 4.2), leaving the prospect on the board for the club behind
+it. Picks landed went 220→223, 197→218, 130→189, 135→165 across seasons 2 to 5, active rosters
+1,436→1,439, 1,474→1,496, 1,456→1,526 and 1,271→1,341, and the weeks stuck in `.draft` 16→1.
+
+**The draft fix did not close the band, and nudged it the other way.** After it, the past-decline
+share reads 0.228, 0.196, 0.134, **0.067**, 0.161 against 0.228, 0.196, 0.146, 0.073, 0.170 before.
+Every figure fell, which is the expected direction: the extra picks are all age-22 intake. It rules
+the draft out as the band's cause and points squarely at the two items below.
+
+**Free agency's throughput is not a defect (2026-08-23).** With the draft finishing, the boundary
+count is exactly `1,696 - expiries` every season and a week-12 sample reads 1,696 in every season.
+The league is fully seated all year and short only in the instant between expiry and the market
+reopening. An earlier revision of this file said otherwise; with the draft stuck that was true.
+
+**The band is not a sampling artefact — tested 2026-08-23, do not retry this.** The league is fully
+seated mid-season (1,696) and short only at the boundary the band samples (1,411…1,496), so the
+age-curve sample was moved in-season and measured. It came back 0.228, 0.228, 0.149, **0.056**,
+0.147 against 0.228, 0.196, 0.134, 0.067, 0.161 at the boundary — season 6 *worse*, because a full roster carries
+the 223 rookies the draft has just seated. Reverted. The model does not retain enough post-decline
+professionals on any sample point.
+
+**The free-agent pool picked its members by coin toss — fixed 2026-08-23.** `openOffseason` capped
+the pool at `maximumFreeAgentIDs` (512) with `sorted { $0.uuidString < ... }.prefix(512)`, so once
+the unattached population passed 512 it kept the same arbitrary slice every season and everyone else
+was unsignable for the rest of the save. Cut by rating now, ties on identifier, same bound.
 
 ---
 

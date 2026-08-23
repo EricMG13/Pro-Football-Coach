@@ -867,14 +867,6 @@ public enum NameGrammar {
         "Curlews", "Goshawks", "Martens", "Wyverns",
     ]
 
-    /// Every noun a generated nickname can end in.
-    ///
-    /// Public because the team mark catalogue is keyed by it. A mark depicts a nickname, so this
-    /// pool is the complete set of marks the game can ever need -- and reading it here rather than
-    /// letting the catalogue keep its own copy is what makes a noun added to the pool a failing
-    /// check on the day it is added, instead of on the day somebody remembers the artwork.
-    public static var nicknameNounVocabulary: [String] { nicknameNouns }
-
     /// Every **word** this grammar can put into a generated name.
     ///
     /// Words, not morphemes, because `Blocklist.blocks` splits on word boundaries and that is the

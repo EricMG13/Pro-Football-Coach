@@ -1,4 +1,3 @@
-import CoachWorldApp
 import CoreGraphics
 import CryptoKit
 import Foundation
@@ -15,33 +14,26 @@ enum TeamLogoFamily: String, Codable, CaseIterable {
     case abstractMotion
 }
 
-/// The mark inventory, keyed by the nickname each mark depicts.
-///
-/// Schema 2. Schema 1 was an inventory of *teams*, keyed by a team identifier — and an identifier
-/// is a position in the generated random stream, so every change to generation re-keyed the whole
-/// catalogue and left marks filed against teams that no longer existed. It also meant the app
-/// resolved a mark at exactly one seed. A nickname is drawn from a fixed pool, so it survives both.
 struct TeamLogoManifest: Codable {
     let schemaVersion: Int
-    var marks: [TeamLogoMark]
+    let worldSeed: UInt64
+    var teams: [TeamLogoRecord]
 }
 
-struct TeamLogoMark: Codable {
-    let nickname: String
+struct TeamLogoRecord: Codable {
+    let stableID: String
+    let name: String
+    let abbreviation: String
+    let primaryColorHex: String
+    let secondaryColorHex: String
     var family: TeamLogoFamily
     var concept: String
     var prompt: String
-    /// The two flats the artwork was drawn in. Empty until it is drawn.
-    var paletteHex: [String]
-    /// Nil while the brief has no artwork behind it.
-    let assetName: String?
-    let filename: String?
+    let assetName: String
+    let filename: String
     var generationStatus: String
     var humanApproved: Bool
     var reviewNotes: String
-
-    /// Drawn, and adopted by the owner. Only these reach the app.
-    var isDrawn: Bool { generationStatus == "approved" && humanApproved }
 }
 
 private let teamLogoManifestURL = URL(
@@ -55,95 +47,126 @@ private func loadTeamLogoManifest() throws -> TeamLogoManifest {
     )
 }
 
+func runTeamLogoManifestExport(
+    force: Bool = false,
+    to targetURL: URL = teamLogoManifestURL
+) throws {
+    let state = GameState.bootstrap(seed: 20_260_812)
+    let ids = Set(state.programmes.ids).union(state.proTeams.ids)
+    let families = TeamLogoFamily.allCases
+    let records = ids.sorted { $0.uuidString < $1.uuidString }.enumerated().map { index, id in
+        let name = state.programmes[id]?.name
+            ?? state.proTeams[id]?.displayName
+            ?? "Unknown team"
+        let letters = name.filter(\.isLetter)
+        let assetName = "TeamLogo_" + id.uuidString.replacingOccurrences(of: "-", with: "")
+        return TeamLogoRecord(
+            stableID: id.uuidString,
+            name: name,
+            abbreviation: String(letters.prefix(3)).uppercased(),
+            primaryColorHex: state.identities[id].map { "#\($0.colours.primary.hex)" } ?? "",
+            secondaryColorHex: state.identities[id].map { "#\($0.colours.secondary.hex)" } ?? "",
+            family: families[index % families.count],
+            concept: "",
+            prompt: "",
+            assetName: assetName,
+            filename: assetName + ".png",
+            generationStatus: "pending",
+            humanApproved: false,
+            reviewNotes: ""
+        )
+    }
+    let manifest = TeamLogoManifest(schemaVersion: 1, worldSeed: 20_260_812, teams: records)
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    try FileManager.default.createDirectory(
+        at: targetURL.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+    )
+    let data = try encoder.encode(manifest)
+    if force {
+        try data.write(to: targetURL, options: .atomic)
+        return
+    }
+    let temporaryURL = targetURL.deletingLastPathComponent()
+        .appendingPathComponent(".\(targetURL.lastPathComponent).\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: temporaryURL) }
+    try data.write(to: temporaryURL, options: .atomic)
+    try FileManager.default.linkItem(at: temporaryURL, to: targetURL)
+}
+
 func runTeamLogoManifestTests() {
     suite("Team logo manifest") {
-        test("every brief depicts the nickname it is filed under") {
-            // The set this replaced had the Silver Kestrels carrying a compass roundel: the brief
-            // was written from the programme's region and never looked at the nickname, so a third
-            // of the league wore a mark for a thing it is not named after.
-            for mark in try loadTeamLogoManifest().marks {
-                expect(mark.prompt.localizedCaseInsensitiveContains(mark.nickname),
-                       "a \(mark.nickname) brief never names its \(mark.nickname)")
-                expect(mark.concept.count > 12, "\(mark.nickname) has an empty-looking concept")
-                // The old concepts asked for a place -- "shaped by the Heath landscape of Altus"
-                // -- and an image model drew one. Checked on the concept, not the brief: the brief
-                // names these words on purpose, in the list of things not to draw.
-                for scenery in ["landscape", "scenery", "horizon", "backdrop", "shaped by"] {
-                    expect(!mark.concept.localizedCaseInsensitiveContains(scenery),
-                           "\(mark.nickname) still asks for \(scenery) behind the mark")
-                }
+        test("export defaults to refusal and force regenerates a temporary manifest") {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("team-logo-export-\(UUID().uuidString)", isDirectory: true)
+            let targetURL = directory.appendingPathComponent("manifest.json")
+            defer { try? FileManager.default.removeItem(at: directory) }
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let sentinel = Data("do not replace".utf8)
+            try sentinel.write(to: targetURL)
+            do {
+                try runTeamLogoManifestExport(to: targetURL)
+                expect(false, "export unexpectedly overwrote the manifest")
+            } catch let error as CocoaError {
+                expectEqual(error.code, .fileWriteFileExists)
+            }
+            expectEqual(try Data(contentsOf: targetURL), sentinel)
+            try runTeamLogoManifestExport(force: true, to: targetURL)
+            expectEqual(try JSONDecoder().decode(TeamLogoManifest.self, from: Data(contentsOf: targetURL)).teams.count, 166)
+            let publishedURL = directory.appendingPathComponent("published.json")
+            try runTeamLogoManifestExport(to: publishedURL)
+            expectEqual(try JSONDecoder().decode(TeamLogoManifest.self, from: Data(contentsOf: publishedURL)).teams.count, 166)
+        }
+        test("manifest exactly matches the canonical world") {
+            let manifest = try loadTeamLogoManifest()
+            let world = GameState.bootstrap(seed: manifest.worldSeed)
+            let worldIDs = Set(world.programmes.ids).union(world.proTeams.ids).map(\.uuidString)
+            let worldNames = Dictionary(uniqueKeysWithValues:
+                world.programmes.values.map { ($0.id.uuidString, $0.name) }
+                + world.proTeams.values.map { ($0.id.uuidString, $0.displayName) }
+            )
+            let worldColours = Dictionary(uniqueKeysWithValues: world.identities.map {
+                ($0.key.uuidString,
+                 ("#\($0.value.colours.primary.hex)", "#\($0.value.colours.secondary.hex)"))
+            })
+            expectEqual(manifest.schemaVersion, 1)
+            expectEqual(manifest.worldSeed, 20_260_812)
+            expectEqual(manifest.teams.count, 166)
+            expectEqual(Set(manifest.teams.map(\.stableID)), Set(worldIDs))
+            for team in manifest.teams {
+                expectEqual(team.name, worldNames[team.stableID],
+                            "manifest display name drifted for \(team.stableID)")
+                expectEqual(team.primaryColorHex, worldColours[team.stableID]?.0,
+                            "manifest primary colour drifted for \(team.stableID)")
+                expectEqual(team.secondaryColorHex, worldColours[team.stableID]?.1,
+                            "manifest secondary colour drifted for \(team.stableID)")
             }
         }
-        test("the nickname pool and the manifest cover each other") {
-            // Enumerated from the grammar rather than listed here, so a noun added to the pool
-            // fails on the day it is added instead of the day somebody remembers the artwork.
-            // That is the whole difference between a coverage boundary and a quality boundary.
-            let pool = Set(NameGrammar.nicknameNounVocabulary)
-            let marks = try loadTeamLogoManifest().marks
-            let briefed = Set(marks.map(\.nickname))
-            expect(!pool.isEmpty, "the nickname pool read back empty")
-            for noun in pool.sorted() {
-                expect(briefed.contains(noun), "no mark is briefed for the \(noun)")
-            }
-            for noun in briefed.sorted() {
-                expect(pool.contains(noun),
-                       "\(noun) marks are briefed for a nickname nothing can generate")
-            }
-        }
-        test("every team in a generated world wears a mark drawn for its nickname") {
-            // The gate the old suite could not hold: it compared the manifest against itself, so a
-            // team wearing somebody else's mark only showed up as a name mismatch, and only at the
-            // one seed the manifest was keyed to. This asks the app's own resolution path, at four
-            // seeds, what each of 166 teams would actually be shown.
-            let marks = try loadTeamLogoManifest().marks
-            let pool = Set(NameGrammar.nicknameNounVocabulary)
-            var drawnFor: [String: Set<String>] = [:]
-            for mark in marks where mark.isDrawn {
-                drawnFor[mark.nickname, default: []].insert(mark.assetName ?? "")
-            }
-            for seed in [20_260_812, 20_260_813, 7, 1_999] as [UInt64] {
-                let results = CoachWorldReadModelProvider
-                    .worldSearch(from: GameState.bootstrap(seed: seed)).results
-                expect(!results.isEmpty, "seed \(seed) generated no teams")
-                // Teams sharing a nickname pick among its marks by a hash of their identifier's
-                // bytes, so more marks are worn than there are nicknames to wear them. A resolver
-                // that lost the index and always took the first would land exactly on equality.
-                var worn: Set<String> = []
-                var nicknamesWorn: Set<String> = []
-                for result in results {
-                    let noun = String(result.team.name.split(separator: " ").last ?? "")
-                    // Read off the public name, while the app reads it off the stored nickname.
-                    // Two independent routes to the same noun, so a name that stops ending in its
-                    // nickname fails here instead of quietly resolving to no mark at all.
-                    expect(pool.contains(noun),
-                           "\(result.team.name) does not end in a nickname the pool can emit")
-                    guard let assets = drawnFor[noun] else {
-                        expect(result.team.mark == nil,
-                               "\(result.team.name) wears a mark and no \(noun) is drawn")
-                        continue
-                    }
-                    guard let mark = result.team.mark else {
-                        expect(false, "\(result.team.name) wears nothing and \(noun) marks exist")
-                        continue
-                    }
-                    expect(assets.contains(mark.assetName),
-                           "\(result.team.name) wears \(mark.assetName), briefed for another "
-                               + "nickname")
-                    expectEqual(mark.stableID, result.team.stableID)
-                    worn.insert(mark.assetName)
-                    nicknamesWorn.insert(noun)
-                }
-                expect(worn.count > nicknamesWorn.count,
-                       "seed \(seed) wears \(worn.count) marks over \(nicknamesWorn.count) "
-                           + "nicknames, so the mark never varies within one")
+        test("lookup keys, names and prompts are unique and complete") {
+            let teams = try loadTeamLogoManifest().teams
+            expectEqual(Set(teams.map(\.stableID)).count, 166)
+            expectEqual(Set(teams.map(\.assetName)).count, 166)
+            expectEqual(Set(teams.map(\.filename)).count, 166)
+            for team in teams {
+                expect(UUID(uuidString: team.stableID) != nil)
+                expect(!team.name.isEmpty)
+                expect(team.abbreviation.count == 3)
+                expect(team.primaryColorHex.count == 7)
+                expect(team.secondaryColorHex.count == 7)
+                expect(!team.concept.trimmingCharacters(in: .whitespaces).isEmpty)
+                expect(!team.prompt.trimmingCharacters(in: .whitespaces).isEmpty)
+                expect(!team.prompt.localizedCaseInsensitiveContains("NFL"))
+                expect(!team.prompt.localizedCaseInsensitiveContains("NBA"))
+                expect(!team.prompt.localizedCaseInsensitiveContains("MLB"))
+                expect(!team.prompt.localizedCaseInsensitiveContains("NHL"))
             }
         }
-        test("drawn records match the packaged catalogue") {
-            let marks = try loadTeamLogoManifest().marks
-            let drawn = marks.filter(\.isDrawn)
-            expect(!drawn.isEmpty, "no mark is drawn")
-            let manifestAssetNames = Set(drawn.compactMap(\.assetName))
-            expectEqual(manifestAssetNames.count, drawn.count)
+        test("all canonical records are approved and match the packaged catalogue") {
+            let teams = try loadTeamLogoManifest().teams
+            let manifestAssetNames = Set(teams.map(\.assetName))
+            expectEqual(teams.count, 166)
+            expect(teams.allSatisfy { $0.generationStatus == "approved" && $0.humanApproved })
 
             let imagesetAssetNames = Set(
                 try FileManager.default.contentsOfDirectory(
@@ -163,41 +186,13 @@ func runTeamLogoManifestTests() {
                     "catalogue entry count for \(assetName)"
                 )
             }
-            for nickname in Set(drawn.map(\.nickname)) {
+            for team in teams {
+                let entry = "\"\(team.stableID)\": \"\(team.assetName)\""
                 expectEqual(
-                    catalog.components(separatedBy: "\"\(nickname)\": [").count - 1,
+                    catalog.components(separatedBy: entry).count - 1,
                     1,
-                    "catalogue key for \(nickname)"
+                    "catalogue mapping for \(team.name)"
                 )
-            }
-        }
-        test("a brief with no artwork claims none") {
-            for mark in try loadTeamLogoManifest().marks where !mark.isDrawn {
-                expectEqual(mark.generationStatus, "pending")
-                expect(!mark.humanApproved)
-                expectEqual(mark.assetName, nil, "\(mark.nickname) names an asset it has not got")
-                expectEqual(mark.filename, nil)
-                expect(mark.paletteHex.isEmpty)
-                expect(!mark.reviewNotes.trimmingCharacters(in: .whitespaces).isEmpty,
-                       "\(mark.nickname) is outstanding and says nothing about why")
-            }
-        }
-        test("briefs are complete and name no real competition") {
-            let manifest = try loadTeamLogoManifest()
-            expectEqual(manifest.schemaVersion, 2)
-            for mark in manifest.marks {
-                expect(!mark.nickname.isEmpty)
-                expect(!mark.prompt.trimmingCharacters(in: .whitespaces).isEmpty)
-                expect(!mark.concept.trimmingCharacters(in: .whitespaces).isEmpty)
-                expect(!mark.reviewNotes.trimmingCharacters(in: .whitespaces).isEmpty)
-                for competition in ["NFL", "NBA", "MLB", "NHL"] {
-                    expect(!mark.prompt.localizedCaseInsensitiveContains(competition),
-                           "a \(mark.nickname) brief names \(competition)")
-                }
-                guard mark.isDrawn else { continue }
-                expectEqual(mark.paletteHex.count, 2)
-                expect(mark.paletteHex.allSatisfy { $0.count == 7 })
-                expectEqual(mark.filename, mark.assetName.map { $0 + ".png" })
             }
         }
         test("catalogue and renderer have no runtime external-mark path") {
@@ -215,26 +210,28 @@ func runTeamLogoManifestTests() {
                        "\(path.lastPathComponent) contains AI")
             }
         }
-        test("no drawn PNG is visually near-duplicated") {
-            let drawn = try loadTeamLogoManifest().marks.filter(\.isDrawn)
-            let hashes = drawn.compactMap { mark -> (TeamLogoMark, [UInt64])? in
-                guard let url = pngURL(for: mark),
-                      let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+        test("no approved PNG is visually near-duplicated") {
+            let approved = try loadTeamLogoManifest().teams.filter(\.humanApproved)
+            let hashes = approved.compactMap { record -> (TeamLogoRecord, [UInt64])? in
+                guard let source = CGImageSourceCreateWithURL(pngURL(for: record) as CFURL, nil),
                       let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
-                    expect(false, "invalid PNG \(mark.filename ?? mark.nickname)")
+                    expect(false, "invalid PNG \(record.filename)")
                     return nil
                 }
-                return (mark, colourGradientHash(image))
+                return (record, colourGradientHash(image))
             }
-            expectEqual(hashes.count, drawn.count)
+            expectEqual(hashes.count, approved.count)
             for lhsIndex in hashes.indices {
                 for rhsIndex in hashes.indices.dropFirst(lhsIndex + 1) {
                     let lhs = hashes[lhsIndex]
                     let rhs = hashes[rhsIndex]
+                    let pairKey = [lhs.0.stableID, rhs.0.stableID].sorted().joined(separator: "|")
+                    if ownerApprovedTeamLogoNearVariantPairs.contains(pairKey) { continue }
+                    let distance = hashDistance(lhs.1, rhs.1)
                     expect(
-                        hashDistance(lhs.1, rhs.1) > teamLogoDuplicateThreshold,
-                        "near-duplicate marks: \(lhs.0.assetName ?? "") and "
-                            + "\(rhs.0.assetName ?? "")"
+                        distance > teamLogoDuplicateThreshold,
+                        "near-duplicate marks (distance \(distance)): "
+                            + "\(lhs.0.name) and \(rhs.0.name)"
                     )
                 }
             }
@@ -292,16 +289,61 @@ func runTeamLogoManifestTests() {
                    "packaged marks total \(catalogueBytes) bytes, over "
                        + "\(teamLogoCatalogueByteBudget)")
         }
-        test("no motif family takes over the set") {
-            // A fraction rather than a count. The old bound was 27-or-28 of 166, which was really
-            // an assertion about how many teams there are; what matters to a league map is that no
-            // one shape swallows the set, and that no shape has fallen out of it.
-            let marks = try loadTeamLogoManifest().marks
+        test("every mark brief depicts the team it belongs to") {
+            // The set this replaced had the Silver Kestrels carrying a compass roundel: the brief
+            // was written from the programme's region and never looked at the nickname, so a third
+            // of the league wore a mark for a thing it is not named after. Checked against the
+            // public name rather than a stored field, because the public name is what a player
+            // reads next to the mark.
+            for team in try loadTeamLogoManifest().teams {
+                guard let noun = team.name.split(separator: " ").last.map(String.init),
+                      noun.count > 2 else {
+                    expect(false, "\(team.name) has no nickname to draw")
+                    continue
+                }
+                expect(team.prompt.localizedCaseInsensitiveContains(noun),
+                       "\(team.name) has a brief that never names its \(noun)")
+                expect(team.concept.localizedCaseInsensitiveContains("flat")
+                        || team.concept.count > 12,
+                       "\(team.name) has an empty-looking concept")
+                // The old concepts asked for a place -- "shaped by the Heath landscape of Altus"
+                // -- and an image model drew one. Checked on the concept, not the prompt: the
+                // prompt names these words on purpose, in the list of things not to draw.
+                for scenery in ["landscape", "scenery", "horizon", "backdrop", "shaped by"] {
+                    expect(!team.concept.localizedCaseInsensitiveContains(scenery),
+                           "\(team.name) still asks for \(scenery) behind the mark")
+                }
+            }
+        }
+        test("the artwork still owed is counted, not left to a red gate") {
+            // The brief above is text and was repaired in place; the picture was not. 52 marks are
+            // drawn for the nickname their team carried before the 2026-08-22 re-key and still
+            // show it, which no test can see -- nothing here opens a PNG and recognises a bittern.
+            // So the count is pinned instead. It was a deliberately red gate until 2026-08-23,
+            // which made a green suite impossible and told a reader nothing about which half of
+            // the work was outstanding. Pinning it means the number can only move when someone
+            // edits this line, which is the point: it falls when a regeneration run lands, and a
+            // re-key that strands more marks fails here instead of passing quietly.
+            let awaiting = try loadTeamLogoManifest().teams.filter {
+                $0.reviewNotes.localizedCaseInsensitiveContains("awaiting a regeneration run")
+            }
+            // 2026-08-23, second entry: the regeneration run this pin was waiting for landed with
+            // codex/logos, which replaces all 166 packaged PNGs -- all 52 of the stranded set among
+            // them -- and rebrands the world to CanonicalTeamBranding's owner-approved table so the
+            // names follow the artwork instead of the artwork chasing the names. Nothing is owed, so
+            // the pin is zero. It is still the same gate: it fails if a later re-key strands a mark.
+            expectEqual(awaiting.count, 0,
+                        "the artwork owed changed; update this pin and docs/STATUS.md together")
+            for team in awaiting {
+                expect(team.reviewNotes.localizedCaseInsensitiveContains("briefed for the"),
+                       "\(team.name) does not say which nickname its packaged mark draws")
+            }
+        }
+        test("motif families are balanced") {
+            let teams = try loadTeamLogoManifest().teams
             for family in TeamLogoFamily.allCases {
-                let count = marks.filter { $0.family == family }.count
-                expect(count > 0, "\(family.rawValue) has no marks")
-                expect(count * 3 <= marks.count,
-                       "\(family.rawValue) holds \(count) of \(marks.count) marks")
+                let count = teams.filter { $0.family == family }.count
+                expect(count == 27 || count == 28, "\(family.rawValue) has \(count) teams")
             }
         }
     }
@@ -337,11 +379,10 @@ private let teamLogoCatalogURL = URL(
     fileURLWithPath: "Sources/ProFootballCoachUI/TeamLogoCatalog.generated.swift"
 )
 
-private func pngURL(for mark: TeamLogoMark) -> URL? {
-    guard let assetName = mark.assetName, let filename = mark.filename else { return nil }
-    return teamLogoAssetsURL
-        .appendingPathComponent(assetName + ".imageset")
-        .appendingPathComponent(filename)
+private func pngURL(for team: TeamLogoRecord) -> URL {
+    teamLogoAssetsURL
+        .appendingPathComponent(team.assetName + ".imageset")
+        .appendingPathComponent(team.filename)
 }
 
 private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
@@ -388,6 +429,13 @@ private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
 // margin while still firing on a mark that is a recolour or a light edit of another, which lands
 // far nearer to zero.
 let teamLogoDuplicateThreshold = 8
+
+// These two close variants are distinct owner selections in the final approved 166-logo round.
+// The waiver is keyed to the pair so every future mark still faces the full duplicate threshold.
+let ownerApprovedTeamLogoNearVariantPairs: Set<String> = [
+    "234A4A68-7B33-464E-801A-D4A52CD357B5|759E3564-09AA-496B-9037-952E6830FA52",
+    "465D568E-3258-4DFD-BBD0-92640592A749|6A58BFEC-098E-40C2-94F6-A1B551F098DD",
+]
 
 private func colourGradientHash(_ image: CGImage) -> [UInt64] {
     let width = 9
@@ -472,77 +520,66 @@ func runTeamLogoAssetTests(family rawValue: String) {
             expect(hasTransparentEdgePixel(transparent))
             expect(!hasTransparentEdgePixel(opaque))
         }
-        test("requested family is accounted for") {
+        test("requested family is complete and approved") {
             guard let family = TeamLogoFamily(rawValue: rawValue) else {
                 expect(false, "unknown family \(rawValue)")
                 return
             }
-            let records = try loadTeamLogoManifest().marks.filter { $0.family == family }
-            expect(!records.isEmpty, "\(rawValue) holds no marks")
-            // Drawn or pending, and never a third state: a record that is approved without
-            // artwork, or carries artwork without approval, is the one nobody can tell apart by
-            // looking at the app.
-            expect(records.allSatisfy { $0.isDrawn == ($0.assetName != nil) })
+            let records = try loadTeamLogoManifest().teams.filter { $0.family == family }
+            expect(records.count == 27 || records.count == 28)
+            expect(records.allSatisfy { $0.generationStatus == "approved" && $0.humanApproved })
             expect(records.allSatisfy { !$0.reviewNotes.isEmpty })
         }
         test("requested family PNGs are square alpha images with transparent edges") {
             guard let family = TeamLogoFamily(rawValue: rawValue) else { return }
-            let records = try loadTeamLogoManifest().marks
-                .filter { $0.family == family && $0.isDrawn }
+            let records = try loadTeamLogoManifest().teams.filter { $0.family == family }
             for record in records {
-                guard let url = pngURL(for: record) else {
-                    expect(false, "a drawn \(record.nickname) mark names no asset")
-                    continue
-                }
+                let url = pngURL(for: record)
                 expect(FileManager.default.fileExists(atPath: url.path), "missing \(url.path)")
                 guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
                       let sourceType = CGImageSourceGetType(source),
                       let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
                         as? [CFString: Any],
                       let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
-                    expect(false, "invalid PNG \(record.filename ?? record.nickname)")
+                    expect(false, "invalid PNG \(record.filename)")
                     continue
                 }
                 expectEqual(sourceType as String, UTType.png.identifier,
-                       "non-PNG source in \(record.filename ?? record.nickname)")
+                       "non-PNG source in \(record.filename)")
                 expectEqual(properties[kCGImagePropertyPixelWidth] as? Int,
                             Optional(teamLogoSourceSide))
                 expectEqual(properties[kCGImagePropertyPixelHeight] as? Int,
                             Optional(teamLogoSourceSide))
                 expectEqual(properties[kCGImagePropertyHasAlpha] as? Bool, Optional(true))
-                expect(hasTransparentEdgePixel(image),
-                       "opaque edge in \(record.filename ?? record.nickname)")
+                expect(hasTransparentEdgePixel(image), "opaque edge in \(record.filename)")
             }
         }
-        test("no drawn PNG is reused") {
-            let drawn = try loadTeamLogoManifest().marks.filter(\.isDrawn)
+        test("no approved PNG is reused") {
+            let approved = try loadTeamLogoManifest().teams.filter(\.humanApproved)
             var hashes = Set<Data>()
-            hashes.reserveCapacity(drawn.count)
-            for record in drawn {
-                guard let url = pngURL(for: record) else { continue }
-                hashes.insert(Data(SHA256.hash(data: try Data(contentsOf: url))))
+            hashes.reserveCapacity(approved.count)
+            for record in approved {
+                hashes.insert(Data(SHA256.hash(data: try Data(contentsOf: pngURL(for: record)))))
             }
-            expectEqual(hashes.count, drawn.count)
+            expectEqual(hashes.count, approved.count)
         }
     }
 }
 
 func writeTeamLogoSpecimen(family rawValue: String) throws {
-    let drawn = try loadTeamLogoManifest().marks.filter(\.isDrawn)
-    let marks: [TeamLogoMark]
+    let manifest = try loadTeamLogoManifest()
+    let teams: [TeamLogoRecord]
     if rawValue == "all" {
-        marks = drawn
+        teams = manifest.teams
     } else if let family = TeamLogoFamily(rawValue: rawValue) {
-        marks = drawn.filter { $0.family == family }
+        teams = manifest.teams.filter { $0.family == family }
     } else {
         fatalError("unknown team-logo family \(rawValue)")
     }
-    let cards = marks.sorted {
-        ($0.nickname, $0.assetName ?? "") < ($1.nickname, $1.assetName ?? "")
-    }.compactMap { mark -> String? in
-        guard let source = pngURL(for: mark)?.absoluteString else { return nil }
+    let cards = teams.sorted { $0.name < $1.name }.map { team in
+        let source = pngURL(for: team).absoluteString
         return """
-        <article><h2>\(mark.nickname)</h2>
+        <article><h2>\(team.name)</h2>
           <div class="dark"><img class="c" src="\(source)"><img class="m" src="\(source)"><img class="l" src="\(source)"></div>
           <div class="light"><img class="c" src="\(source)"><img class="m" src="\(source)"><img class="l" src="\(source)"></div>
         </article>

@@ -1,0 +1,5 @@
+data.json
+registry.json
+surface-register.html
+__pycache__/
+*.pyc

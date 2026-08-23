@@ -69,33 +69,20 @@ func runReadModelProviderTests() {
             expectEqual(CoachWorldReadModelProvider.startingJobs(from: firstState, limit: 0), [])
         }
 
-        test("a team wears the mark drawn for its nickname, or none") {
+        test("canonical teams receive their stable logo references") {
             let world = GameState.bootstrap(seed: 20_260_812)
             let results = CoachWorldReadModelProvider.worldSearch(from: world).results
             expectEqual(results.count, 166)
             expect(results.allSatisfy { result in
-                guard let mark = result.team.mark else { return true }
-                return mark.stableID == result.team.stableID
-                    && mark.assetName.hasPrefix("TeamLogo_")
+                result.team.mark?.stableID == result.team.stableID
+                    && result.team.mark?.assetName.hasPrefix("TeamLogo_") == true
             })
-            // Nine of the forty nicknames in the pool have no artwork yet, and at this seed they
-            // are carried by 38 of the 166. Those wear the initials chip. The number is asserted
-            // rather than described because a silent drop is how the last catalogue rotted.
-            expectEqual(results.filter { $0.team.mark == nil }.count, 38)
         }
 
-        test("an alternate seed resolves marks the same way") {
-            // This asserted the opposite until 2026-08-23: the catalogue was keyed by team
-            // identifier, an identifier is a position in the random stream, and so every world but
-            // the canonical one showed no marks at all. Keyed by nickname, a mark resolves at any
-            // seed, because the nickname pool does not move.
+        test("alternate seeds do not borrow canonical logos") {
             let world = GameState.bootstrap(seed: 20_260_813)
             let results = CoachWorldReadModelProvider.worldSearch(from: world).results
-            expect(!results.isEmpty)
-            expect(results.contains { $0.team.mark != nil })
-            expect(results.allSatisfy { result in
-                result.team.mark == nil || result.team.mark?.stableID == result.team.stableID
-            })
+            expect(results.allSatisfy { $0.team.mark == nil })
         }
 
         test("no controlled career produces no coaching HQ") {
@@ -2029,7 +2016,7 @@ func runReadModelProviderTests() {
             expectEqual(before?.provenance, .simulationSnapshot)
 
             let directory = FileManager.default.temporaryDirectory
-                .appendingPathComponent("pfc-save-4040", isDirectory: true)
+                .appendingPathComponent("pfc-save-4040-\(UUID().uuidString)", isDirectory: true)
             let saves = CoachWorldSaveStore(directory: directory)
             defer { try? FileManager.default.removeItem(at: directory) }
 

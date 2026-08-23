@@ -4,15 +4,25 @@ public struct ProRosterAITransition: Sendable, Equatable {
     public let state: GameState
     public let eventPayloads: [DomainEventPayload]
     public let signedPlayerIDs: [UUID]
+    /// Picks this pass passed because the club on the clock had no active seat.
+    public let passedPicks: Int
+    /// Why the draft loop stopped early, when it did. Not persisted and not an event: it is a
+    /// diagnostic for tests and probes, and it exists because swallowing this was itself the defect
+    /// that let a stalled draft go fifteen weeks without saying so.
+    public let stoppedBecause: String?
 
     public init(
         state: GameState,
         eventPayloads: [DomainEventPayload],
-        signedPlayerIDs: [UUID]
+        signedPlayerIDs: [UUID],
+        passedPicks: Int = 0,
+        stoppedBecause: String? = nil
     ) {
         self.state = state
         self.eventPayloads = eventPayloads
         self.signedPlayerIDs = signedPlayerIDs
+        self.passedPicks = passedPicks
+        self.stoppedBecause = stoppedBecause
     }
 }
 
@@ -52,6 +62,8 @@ public enum ProRosterAISystem {
         var next = state
         var payloads: [DomainEventPayload] = []
         var drafted: [UUID] = []
+        var passed = 0
+        var stopped: (any Error)?
 
         while next.proMarket.phase == .draft,
               let teamID = next.proMarket.currentPickTeamID,
@@ -75,9 +87,24 @@ public enum ProRosterAISystem {
                     contract: contract,
                     in: next
                 )
+            } catch ProManagementError.activeRosterFull {
+                // `02` section 4.2, 2026-08-23: the club has no seat, so it passes and the club
+                // behind it is on the clock. The prospect stays on the board — a pass spends the
+                // pick, not the player — so the next club takes the same best available.
+                //
+                // Measured before this line existed: expiry leaves clubs six to seventeen seats
+                // short against seven rounds, the club that lost fewest filled up on its own sixth
+                // pick, and `break` then ended the round for the other thirty-one. The market never
+                // reached `.rosterBuild` in any season and the draft made 130 of 224 picks by
+                // season four.
+                guard next.proMarket.passDraftPick() else { break }
+                passed += 1
+                continue
             } catch {
-                // A pick the cap or the roster refuses stops the run rather than spinning on the
-                // same team forever. The market stays mid-draft and the next week tries again.
+                // Anything else is not a seat problem and this loop has no policy for it. Recorded
+                // rather than swallowed: until 2026-08-23 the error vanished here, so a draft that
+                // stalled could not say why and the probes had to re-run it to find out.
+                stopped = error
                 break
             }
             payloads.append(.proDraftPick(
@@ -90,7 +117,13 @@ public enum ProRosterAISystem {
             drafted.append(prospect.id)
         }
 
-        return ProRosterAITransition(state: next, eventPayloads: payloads, signedPlayerIDs: drafted)
+        return ProRosterAITransition(
+            state: next,
+            eventPayloads: payloads,
+            signedPlayerIDs: drafted,
+            passedPicks: passed,
+            stoppedBecause: stopped.map { "\($0)" }
+        )
     }
 
     private static func signFreeAgents(
