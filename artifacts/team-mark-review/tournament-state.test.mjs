@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceRound, finalizationStatus, newSession, restoreSession, rewindRound, setSelected } from "./tournament-state.js";
+import { advanceRound, curateCatalog, finalizationStatus, newSession, restoreSession, rewindRound, setSelected } from "./tournament-state.js";
 
 const catalog = {
   fingerprint: "catalog-v1",
@@ -91,4 +91,55 @@ test("unassigned variants can advance but cannot occupy a final team slot", () =
   const status = finalizationStatus(session, fullCatalog);
   assert.deepEqual(status.unassigned, ["unknown"]);
   assert.equal(status.ready, false);
+});
+
+test("curation preserves unique team mappings and seeds a 166-style final round", () => {
+  const curatedCatalog = {
+    fingerprint:"curated-v1",
+    teams:[
+      { stableID:"alpha", name:"Alpha", assetName:"TeamLogo_alpha" },
+      { stableID:"beta", name:"Beta", assetName:"TeamLogo_beta" },
+      { stableID:"gamma", name:"Gamma", assetName:"TeamLogo_gamma" },
+    ],
+    candidates:[
+      { id:"a1", teamStableID:"alpha", stages:["canonical"] },
+      { id:"a2", teamStableID:"alpha", stages:["raw"] },
+      { id:"spare", teamStableID:"beta", stages:["raw"] },
+    ],
+    heldCandidateIDs:["a2"],
+    unassignedCandidateIDs:[],
+  };
+  const duplicateCatalog = structuredClone(curatedCatalog);
+  assert.throws(() => curateCatalog(duplicateCatalog, {
+    schemaVersion:1,
+    selectedCandidateIDs:["a1", "a1"],
+    fillCandidates:[{ id:"fill", sha256:"fill-sha", imagePath:"fill.png" }],
+  }), /final 166 curation is invalid/);
+  assert.equal(duplicateCatalog.candidates[0].teamStableID, "alpha");
+
+  assert.throws(() => curateCatalog(structuredClone(curatedCatalog), {
+    schemaVersion:1,
+    selectedCandidateIDs:[],
+    fillCandidates:[
+      { id:"recolor-a1", sha256:"a1-sha", imagePath:"a1.png", sourceCandidateID:"unknown" },
+      { id:"recolor-a2", sha256:"a2-sha", imagePath:"a2.png", sourceCandidateID:"a2" },
+      { id:"fill", sha256:"fill-sha", imagePath:"fill.png" },
+    ],
+  }), /final 166 curation is invalid/);
+
+  curateCatalog(curatedCatalog, {
+    schemaVersion:1,
+    selectedCandidateIDs:[],
+    fillCandidates:[
+      { id:"recolor-a1", sha256:"a1-sha", imagePath:"a1.png", sourceCandidateID:"a1" },
+      { id:"recolor-a2", sha256:"a2-sha", imagePath:"a2.png", sourceCandidateID:"a2" },
+      { id:"fill", sha256:"fill-sha", imagePath:"fill.png", name:"Abstract", family:"abstract" },
+    ],
+  });
+  assert.deepEqual(curatedCatalog.curatedCandidateIDs, ["recolor-a1", "recolor-a2", "fill"]);
+  assert.deepEqual(curatedCatalog.curatedCandidateIDs.map((id) => curatedCatalog.candidates.find((candidate) => candidate.id === id).teamStableID), ["alpha", "beta", "gamma"]);
+  assert.equal(curatedCatalog.candidates.length, 6);
+  assert.equal(curatedCatalog.candidates.find((candidate) => candidate.id === "a1").teamStableID, "alpha");
+  assert.deepEqual(newSession(curatedCatalog).rounds.at(-1), { candidateIDs:["recolor-a1", "recolor-a2", "fill"], selectedIDs:[] });
+  assert.equal(restoreSession(newSession(curatedCatalog), curatedCatalog).rounds.length, 2);
 });

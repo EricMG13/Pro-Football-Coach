@@ -13,6 +13,7 @@
 - Work only under `artifacts/team-mark-review/duplicate-remake/batch-01/`, except for this plan.
 - Never modify `Tools/TeamLogos/manifest.json` or `Sources/ProFootballCoachUI/Resources/TeamLogos.xcassets` during candidate review.
 - Generate exactly one team mark per image-generation call and use the target's exact manifest asset name and filename.
+- Request high-fidelity final-review artwork and regenerate anatomy, letter construction, proportion, or edge-quality defects before normalization.
 - Final candidates are exactly 256 × 256, 8-bit RGBA PNGs under 192 KB with zero alpha on every canvas-edge pixel.
 - Keep the mark inside the middle 92%, use two manifest colours plus at most one neutral separator, and retain flat hard-edged artwork.
 - Judge at 20 points first; review sheets render 20, 32, and 44 points as 60, 96, and 132 device pixels at 3×.
@@ -87,7 +88,7 @@ Append these shared lines verbatim to every target request, replacing only the p
 ```text
 Use case: logo-brand
 Asset type: fictional athletics team-mark review candidate
-Style/medium: flat vector-style logo mark; two team colours; hard edges; minimal geometric construction
+Style/medium: high-fidelity professional vector-style logo mark; exact anatomy or letter construction; two team colours; optically balanced hard edges; minimal geometric construction
 Composition/framing: one centered subject filling the middle 92% of a square transparent canvas; strong silhouette at 20 points
 Color palette: use the target's two literal hex colours as the dominant flat fills; the darker team colour carries the main silhouette; one neutral white separator only if required for the dark review surface
 Constraints: at most six filled regions; no feature or negative gap below 5% of the canvas; one even 5–6 px keyline/separator; obey the target row's exact letter constraint; genuinely transparent background

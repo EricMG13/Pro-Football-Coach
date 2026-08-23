@@ -50,7 +50,7 @@
     </section>
   </main>
   <script type="module">
-    import { advanceRound, currentRound, finalizationStatus, newSession, restoreSession, rewindRound, setSelected } from "./tournament-state.js?curated-round-one";
+    import { advanceRound, curateCatalog, currentRound, finalizationStatus, newSession, restoreSession, rewindRound, setSelected } from "./tournament-state.js?researched-colors";
 
     const $ = (selector) => document.querySelector(selector);
     const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[char]);
@@ -58,7 +58,7 @@
     let catalog; let session; let sharedAuditRendered = false; let heldAuditRendered = false;
 
     const filters = () => ({ search: $("#search").value.trim().toLowerCase(), family: $("#family").value, stage: $("#stage").value, source: $("#source").value, state: $("#state").value });
-    const storageKey = () => `pro-football-coach.logo-tournament.curated-round-one.${catalog.fingerprint}`;
+    const storageKey = () => `pro-football-coach.logo-tournament.final-166.${catalog.fingerprint}`;
     const teamByID = () => new Map(catalog.teams.map((team) => [team.stableID, team]));
     const candidateByID = () => new Map(catalog.candidates.map((candidate) => [candidate.id, candidate]));
     const save = () => localStorage.setItem(storageKey(), JSON.stringify(session));
@@ -115,9 +115,11 @@
 
     async function start() {
       try {
-        const response = await fetch("./tournament-catalog.json", { cache:"no-store" }); if (!response.ok) throw new Error(`catalog request returned ${response.status}`);
+        const [response, curationResponse] = await Promise.all([fetch("./tournament-catalog.json", { cache:"no-store" }), fetch("./final-166-curation.json", { cache:"no-store" })]);
+        if (!response.ok || !curationResponse.ok) throw new Error(`catalog request returned ${response.status}/${curationResponse.status}`);
         catalog = await response.json(); if (!Array.isArray(catalog.teams) || catalog.teams.length !== 166 || !Array.isArray(catalog.candidates)) throw new Error("catalog is invalid or does not contain 166 teams");
-        session = restoreSession(localStorage.getItem(`pro-football-coach.logo-tournament.${catalog.fingerprint}`), catalog) || newSession(catalog);
+        curateCatalog(catalog, await curationResponse.json());
+        session = restoreSession(localStorage.getItem(storageKey()), catalog) || newSession(catalog);
         $("#catalog-count").textContent = `${catalog.candidates.length.toLocaleString()} selectable variants · ${catalog.candidates.filter((candidate) => candidate.selectionEligible).length.toLocaleString()} reviewed`;
         for (const family of [...new Set(catalog.teams.map((team) => team.family))].sort()) $("#family").insertAdjacentHTML("beforeend", `<option value="${esc(family)}">${esc(family)}</option>`);
         for (const stage of [...new Set(catalog.candidates.flatMap((candidate) => candidate.stages))].sort()) $("#stage").insertAdjacentHTML("beforeend", `<option value="${esc(stage)}">${esc(stage)}</option>`);

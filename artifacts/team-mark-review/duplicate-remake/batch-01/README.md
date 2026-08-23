@@ -1,6 +1,6 @@
 # Duplicate team-mark remake — batch 01
 
-Status: approved for candidate generation; not approved for installation.
+Status: candidate generation and targeted small-size hardening complete; awaiting cross-batch approval; not approved for installation.
 
 This batch exhausts the duplicate occurrences of the catalogue's two most repeated motifs. It preserves one exemplar of each motif and remakes the other twelve marks across all five approved replacement families.
 
@@ -32,9 +32,24 @@ Family allocation: three predators, three letterforms, two extreme-weather marks
 
 ## Production contract
 
+- Treat these as high-fidelity final review candidates: regenerate anatomy, letter construction, proportion, or edge-quality defects instead of relying on downscaling to hide them.
 - Generate one isolated subject per target using the approved brief and exact manifest palette.
 - Normalize to 256 × 256, 8-bit RGBA, a 4% safe area, transparent edge pixels, and less than 192 KB.
 - Keep features and negative gaps at or above 5% of the canvas, use at most six filled regions, and use one even 2–2.5% keyline only where needed.
 - Reject candidates that fail at 20 points, repeat the old motif grammar, conflict with the nickname or approved abbreviation, or resemble a real team identity.
 - Return candidates under exact manifest filenames, `decisions.json`, and six grouped review sheets at 20, 32, and 44 points on light and dark surfaces.
 - Do not alter shipped assets or canonical team data before review approval.
+
+## Generation record
+
+Mode: built-in image generation, followed by image-to-image simplification where the first pass carried illustration-level detail. Every final prompt framed the mark as an original American-football identity for helmet decals, midfield graphics, broadcasts, scoreboards, and 20-point UI use. The shared final prompt required one compact subject, an aggressive athletics silhouette, the exact manifest palette, broad negative space, a heavy dark keyline, genuine transparency, and no real-team reference, scene, mock-up, frame, gradient, or shading.
+
+Target-specific final prompt subjects were: four-arm nova (`CAM`), three-band tornado (`DAV`), S-turn alligator gar (`LAK`), open-coil sea serpent (`MIL`), hooked solar flare (`OGA`), interlocked `WEB`, leaping kelpie (`ABI`), interlocked `GOS`, crescent-breach orca (`KET`), interlocked `LAP`, rotating supercell (`MOB`), and three-quarter crocodile lunge (`RED`). `LAK`, `MIL`, `OGA`, `ABI`, `KET`, `MOB`, and `RED` received dedicated simplification passes. Grouped 20-point review then replaced the weak `CAM`, `LAK`, `OGA`, `WEB`, and `ABI` selections; `LAK` received one final v4 edit to remove repeated scale cuts while preserving its broad snout, eye, four fins, and bright dark-surface mass.
+
+## Candidate package
+
+- `final-candidates/`: twelve exact-name 256 × 256 RGBA PNGs using only the manifest palette and transparent outer edges.
+- `final-review/`: grouped 20, 32, and 44 point sheets on light and dark surfaces.
+- `decisions.json`: one review-only replacement decision per target.
+
+Mechanical checks pass for dimensions, RGBA mode, transparent pixels on all four edges, minimum 4% canvas margin, exact palette membership, the 192 KB per-candidate limit, light/dark surface contrast, and perceptual near-duplication against all 166 shipped marks plus the other candidates. No shipped logo, manifest entry, or canonical team record was changed.

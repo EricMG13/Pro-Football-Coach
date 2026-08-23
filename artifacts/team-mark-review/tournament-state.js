@@ -13,14 +13,112 @@ function copySession(session) {
   return { fingerprint: session.fingerprint, rounds: session.rounds.map(copyRound) };
 }
 
-export function newSession(catalog) {
-  return {
-    fingerprint: catalog.fingerprint,
-    rounds: [{
-      candidateIDs: catalog.candidates.map((candidate) => candidate.id),
-      selectedIDs: catalog.candidates.filter((candidate) => candidate.selectionEligible === true).map((candidate) => candidate.id),
-    }],
+export function curateCatalog(catalog, curation) {
+  const candidateByID = candidateMap(catalog);
+  const selectedIDs = curation?.selectedCandidateIDs;
+  const fillCandidates = curation?.fillCandidates;
+
+  if (
+    curation?.schemaVersion !== 1 ||
+    !Array.isArray(selectedIDs) ||
+    !Array.isArray(fillCandidates)
+  ) {
+    throw new Error("final 166 curation is invalid");
+  }
+
+  if (
+    selectedIDs.length + fillCandidates.length !== catalog.teams.length ||
+    new Set(selectedIDs).size !== selectedIDs.length ||
+    selectedIDs.some((id) => !candidateByID.get(id)) ||
+    fillCandidates.some(
+      (fill) =>
+        !fill?.id ||
+        !fill.sha256 ||
+        !fill.imagePath ||
+        candidateByID.has(fill.id) ||
+        (fill.sourceCandidateID && !candidateByID.has(fill.sourceCandidateID)),
+    ) ||
+    new Set(fillCandidates.map((fill) => fill.id)).size !== fillCandidates.length
+  ) {
+    throw new Error("final 166 curation is invalid");
+  }
+
+  const selectedCandidates = selectedIDs.map((id) => candidateByID.get(id));
+  const sourceCandidates = fillCandidates
+    .map((fill) => candidateByID.get(fill.sourceCandidateID))
+    .filter(Boolean);
+
+  const teamByID = new Map(catalog.teams.map((team) => [team.stableID, team]));
+  const reservedTeamIDs = new Set(
+    [...selectedCandidates, ...sourceCandidates]
+      .map((candidate) => candidate.teamStableID)
+      .filter((id) => teamByID.has(id)),
+  );
+  const availableTeams = catalog.teams.filter(
+    (team) => !reservedTeamIDs.has(team.stableID),
+  );
+  const assignedTeamIDs = new Set();
+
+  const curate = (candidate) => {
+    const originalTeamID = candidate.teamStableID;
+    const team =
+      originalTeamID && !assignedTeamIDs.has(originalTeamID)
+        ? teamByID.get(originalTeamID)
+        : availableTeams.shift();
+    if (!team) {
+      throw new Error("final 166 curation cannot assign every logo to a unique team");
+    }
+
+    assignedTeamIDs.add(team.stableID);
+    Object.assign(candidate, {
+      teamStableID:team.stableID,
+      assetName:team.assetName,
+      selectionEligible:true,
+      qualityStatus:"reviewed",
+    });
+    candidate.stages = [...new Set([...(candidate.stages || []), "curated"])];
+    return candidate.id;
   };
+
+  const curatedCandidateIDs = selectedCandidates.map(curate);
+  for (const fill of fillCandidates) {
+    const sourceCandidate = candidateByID.get(fill.sourceCandidateID);
+    const candidate = {
+      ...fill,
+      teamStableID:sourceCandidate?.teamStableID || null,
+      assetName:sourceCandidate?.assetName || null,
+      stages:sourceCandidate
+        ? ["recolored", "curated"]
+        : ["generated", "normalized", "curated"],
+      stage:sourceCandidate ? "recolored" : "curated",
+      selectionEligible:true,
+      qualityStatus:"reviewed",
+      origins:[{
+        kind:"worktree",
+        path:`artifacts/team-mark-review/${fill.imagePath}`,
+        stage:"curated",
+        worktree:".",
+      }],
+    };
+    catalog.candidates.push(candidate);
+    candidateByID.set(candidate.id, candidate);
+    curatedCandidateIDs.push(curate(candidate));
+  }
+
+  const curatedIDs = new Set(curatedCandidateIDs);
+  catalog.heldCandidateIDs = (catalog.heldCandidateIDs || []).filter((id) => !curatedIDs.has(id));
+  catalog.unassignedCandidateIDs = (catalog.unassignedCandidateIDs || []).filter((id) => !curatedIDs.has(id));
+  catalog.curatedCandidateIDs = curatedCandidateIDs;
+  return catalog;
+}
+
+export function newSession(catalog) {
+  const curatedIDs = catalog.curatedCandidateIDs;
+  const candidateIDs = catalog.candidates.map((candidate) => candidate.id);
+  const selectedIDs = curatedIDs || catalog.candidates.filter((candidate) => candidate.selectionEligible === true).map((candidate) => candidate.id);
+  const rounds = [{ candidateIDs, selectedIDs:[...selectedIDs] }];
+  if (curatedIDs) rounds.push({ candidateIDs:[...selectedIDs], selectedIDs:[] });
+  return { fingerprint:catalog.fingerprint, rounds };
 }
 
 export function restoreSession(raw, catalog) {
