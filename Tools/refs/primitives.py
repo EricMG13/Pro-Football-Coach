@@ -591,6 +591,87 @@ class StatCompare:
 
 
 @dataclass(frozen=True)
+class PlayerCard:
+    """A person as a card, not a table row.
+
+    The reference set's acquisition cards are the pattern: the number and position small,
+    the given name medium, the surname large, the vitals in one tracked line, the overall
+    as a badge in its heat band, and each attribute a figure with its share of the 40-99
+    scale drawn under it.
+
+    The one thing the reference has that this product may never draw is the headshot --
+    `CoachWorldBlankPhotoPlate` exists precisely to be that empty state -- so the crest
+    carries the identity instead.
+
+    `flooded` runs club colour behind the header. It is legal ONLY above a Dossier seam or
+    on a Broadcast frame: `04` section 5's restraint rules give a management screen one
+    full-bleed team field, the world strip's, and every other use is mark-scale. Check 22
+    enforces it."""
+
+    number: str
+    position: str
+    given: str
+    surname: str
+    vitals: str
+    overall: int
+    #: (label, rating) on the 40-99 scale
+    attributes: tuple[tuple[str, int], ...] = ()
+    mark: str | None = None
+    flooded: bool = False
+
+    def cells(self) -> int:
+        return 1 + len(self.attributes)  # the overall, and each attribute
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 62.0 + len(self.attributes) * 20.0
+
+    def render(self) -> str:
+        from marks import mark_uri
+
+        band = heat_token(self.overall)
+        crest = (
+            f'<img class="fl-card__crest" src="{mark_uri(self.mark)}" alt="">'
+            if self.mark
+            else ""
+        )
+        attributes = "".join(
+            f'<span class="fl-card__attr">'
+            f'<span class="fl-label3">{escape(label)}</span>'
+            f'<span class="fl-card__track"><i style="width: '
+            f'{max((rating - 40) / 59, 0) * 100:g}%; background: var({heat_token(rating)})">'
+            "</i></span>"
+            f'<b class="fl-figure" style="color: var({heat_token(rating)})">{rating}</b>'
+            "</span>"
+            for label, rating in self.attributes
+        )
+        return (
+            f'<div class="fl-card{" fl-card--flooded" if self.flooded else ""}">'
+            f'<header class="fl-card__head">{crest}'
+            '<span class="fl-card__name">'
+            f'<em>#{escape(self.number)} {escape(self.position)}</em>'
+            f'<span class="fl-card__given">{escape(self.given)}</span>'
+            f'<b class="fl-card__surname">{escape(self.surname)}</b>'
+            f'<i class="fl-card__vitals">{escape(self.vitals)}</i></span>'
+            f'<span class="fl-card__ovr" style="background: var({band})">'
+            f'<b class="fl-figure">{self.overall}</b><em>OVR</em></span>'
+            "</header>"
+            f'<div class="fl-card__attrs">{attributes}</div></div>'
+        )
+
+
+@dataclass(frozen=True)
 class Chip:
     text: str
     tone: str = "quiet"  # quiet | live | positive | warning | negative | gold

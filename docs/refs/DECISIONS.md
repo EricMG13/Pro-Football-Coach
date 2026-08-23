@@ -220,3 +220,33 @@ expression -- so the check and the render cannot disagree about a width again.
 
 Its head printed `68-89` while the same surface declared that ranges are impossible until
 the scouting-confidence model lands. Now a point value, consistent with the declaration.
+
+### 22. What the Madden reference set could and could not be taken from
+
+Nine reference captures were supplied. The through-line is layered ground, team mark at
+scale, and data in cards -- and comparison two-sided around a centre label.
+
+**Taken:** the field at real geometry, the scorebug strip, the two-sided stat comparison,
+and the player card's composition -- number and position small, given name medium, surname
+large, vitals tracked, overall as a badge in its band, attributes as figure-plus-bar.
+
+**Refused, with reasons:**
+
+- **The headshot.** Every reference card leads with a face. This product may never draw
+  one; `CoachWorldBlankPhotoPlate` exists to be that empty state. The crest carries the
+  identity instead.
+- **The full-bleed logo watermark behind a management screen.** `04` section 5's restraint
+  rules give a management screen exactly one full-bleed team field, the world strip's, and
+  make every other use mark-scale. A watermark behind a Desk surface is the wash section
+  4.4 rejects. This is the single change that would most cheaply make the Desk surfaces
+  look like a game, and canon refuses it -- an owner question, not a drawing choice.
+- **Flooding a card header on a Desk surface.** Same clause. `PlayerCard(flooded=True)` is
+  legal only above a Dossier seam or on a Broadcast frame; rule 22 enforces it. On Desk the
+  card takes the club's colour as a boundary.
+
+### 23. Entities in registry data, twice
+
+`&middot;` was written into a surface's copy in batch 1 and again in batch 3, and both
+times `escape()` turned it into `&amp;middot;` and printed it. `page._ascii` converts the
+real character at the emitter, so the data should always carry the character. Rule 23 makes
+the third occurrence a build failure.

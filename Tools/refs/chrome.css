@@ -523,3 +523,88 @@
 }
 .fl-vs__away.fl-vs--lead::after { border-left: 5px solid var(--state-positive); }
 .fl-vs__home.fl-vs--lead::before { border-right: 5px solid var(--state-positive); }
+
+/* ---- Player card ---------------------------------------------------------------
+   A person as a card. No headshot exists and none is planned, so the crest carries the
+   identity. Club colour floods the header only where the lean already permits it. */
+
+.fl-card {
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-card), var(--inset-panel);
+  overflow: hidden;
+}
+
+.fl-card__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-lg);
+  padding: var(--pad-card);
+  border-bottom: var(--hairline) solid var(--rule-structural);
+}
+/* Desk keeps the neutral ground and takes the club's colour as a boundary, per the
+   restraint rules; a Dossier head may flood. */
+.fl-card__head { box-shadow: inset 3px 0 0 var(--fl-club-field); }
+.fl-card--flooded .fl-card__head {
+  background: linear-gradient(90deg, var(--fl-club-field), var(--surface-panel) 78%);
+  box-shadow: none;
+}
+
+.fl-card__crest { height: 30px; width: 30px; object-fit: contain; flex: none; }
+.fl-card__name { display: grid; min-width: 0; }
+.fl-card__name em {
+  font-style: normal;
+  font: var(--weight-bold) var(--size-flag) / 1.2 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+}
+.fl-card__given {
+  font: var(--weight-medium) var(--size-row) / 1 var(--font-display);
+  color: var(--content-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--track-micro);
+}
+.fl-card__surname {
+  font: var(--weight-bold) var(--size-subject) / 1 var(--font-display);
+  color: var(--content-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--track-micro);
+}
+.fl-card__vitals {
+  font-style: normal;
+  font-size: var(--size-flag);
+  letter-spacing: var(--track-micro);
+  color: var(--content-quiet);
+  text-transform: uppercase;
+}
+
+.fl-card__ovr {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 42px; height: 42px;
+  border-radius: var(--radius-row);
+  flex: none;
+}
+.fl-card__ovr b { font: 700 var(--size-title) / 1 var(--font-figure); color: var(--ink-on-fill); }
+.fl-card__ovr em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--ink-on-fill);
+  letter-spacing: var(--track-flag);
+}
+
+.fl-card__attrs { display: grid; gap: var(--gap-xxs); padding: var(--pad-card); }
+.fl-card__attr { display: flex; align-items: center; gap: var(--gap-sm-plus); }
+.fl-card__attr .fl-label3 { flex: none; min-width: 88px; }
+.fl-card__track {
+  flex: 1;
+  height: var(--share-bar-height);
+  border-radius: 2px;
+  background: var(--rule-structural);
+  overflow: hidden;
+}
+.fl-card__track i { display: block; height: 100%; }
+.fl-card__attr b { font-size: var(--size-action-small); flex: none; min-width: 22px; text-align: right; }

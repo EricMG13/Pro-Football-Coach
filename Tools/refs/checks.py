@@ -727,10 +727,13 @@ def check_band_table() -> list[str]:
 
     Without it the player cannot answer "is 74 good?" without a live percentile, which a
     save with no league history cannot supply."""
-    from primitives import AttributeDial, BandLegend, Heat, ShareBar, walk
+    from primitives import AttributeDial, BandLegend, Heat, PlayerCard, ShareBar, walk
 
     def is_banded(n) -> bool:
         if isinstance(n, (Heat, AttributeDial)):
+            return True
+        # a card draws its overall and every attribute in its heat band
+        if isinstance(n, PlayerCard):
             return True
         # a share bar tinted with a heat token is reading the same scale
         return isinstance(n, ShareBar) and n.tint.startswith("--heat-")
@@ -744,6 +747,46 @@ def check_band_table() -> list[str]:
             out.append(f"{s.id} bands a rating and prints no band table")
         if legend and not bands:
             out.append(f"{s.id} prints a band table and bands nothing")
+    return out
+
+
+@rule(23, "No entities in registry data")
+def check_entities() -> list[str]:
+    """Registry copy is TEXT. `escape()` turns an `&` into `&amp;`, so an entity written
+    into a surface renders as `&middot;` on the page -- twice now, in the scorebug's
+    records and in a card's vitals. `page._ascii` converts the real character at the
+    emitter, so the data should always carry the character."""
+    out = []
+    for path in sorted((HERE / "registry").glob("*.py")):
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for entity in re.findall(r"&[a-zA-Z]{2,10};|&#\d{2,5};", line):
+                out.append(
+                    f"registry/{path.name}:{lineno} writes the entity {entity}; "
+                    "write the character -- the emitter handles the encoding"
+                )
+    return out
+
+
+@rule(22, "Team colour restraint")
+def check_team_colour() -> list[str]:
+    """`04` section 5: one full-bleed team field per management screen, the world strip's;
+    every other management use is mark-scale.
+
+    A `PlayerCard` may flood its header with club colour only where the lean already
+    spends it -- above a Dossier seam, or on a Broadcast frame. On a Desk surface the card
+    takes the club's colour as a boundary instead, which is what the restraint rules
+    permit."""
+    from primitives import PlayerCard, walk
+
+    out = []
+    for s in REGISTRY:
+        for node in walk(s.body):
+            if isinstance(node, PlayerCard) and node.flooded:
+                if s.lean is Lean.DESK:
+                    out.append(
+                        f"{s.id}: a flooded card on a Desk surface. The lean confines club "
+                        "colour to the identity band; the card takes a boundary instead."
+                    )
     return out
 
 

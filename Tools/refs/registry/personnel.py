@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from ._shared import (
     AttributeDial, BandLegend, Chip, Chips, Col, Heat, Hero, NOTHING_MISSING, Panel,
-    Row, Rows, ShareBar, Split, Stack, Status, Table, blocker, desk, dossier, gap,
+    PlayerCard, Row, Rows, ShareBar, Split, Stack, Status, Table, blocker, desk,
+    dossier, gap,
 )
 
 roster = desk(
@@ -147,14 +148,17 @@ staff_room = desk(
 compare = desk(
     id="compare", number=68, name="Compare", family="personnel",
     status=Status.MISSING, evidence="no Swift case; source inventory M6",
-    body=Stack((Panel("Kerr against Ruiz", Table(
-        (Col("Attribute", 14, "left", False), Col("Kerr", 6, "right"),
-         Col("Ruiz", 6, "right"), Col("Delta", 6, "right")),
-        (("Overall", Heat(81, "388 snaps"), Heat(68, "94 snaps"), "-13"),
-         ("Ceiling", "82", "88", "+6"),
-         ("Hands", Heat(86, "41 receptions"), Heat(72, "6 receptions"), "-14"),
-         ("Separation", Heat(78, "388 snaps"), Heat(80, "94 snaps"), "+2")),
-    )), BandLegend())),
+    body=Stack((
+        Stack((
+            PlayerCard("7", "WR", "AMOS", "KERR", "SR · 6'1\" · 197 LB", 81,
+                       (("Hands", 86), ("Separation", 78), ("Blocking", 61)),
+                       mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881"),
+            PlayerCard("18", "TE", "SABLE", "RUIZ", "FR · 6'4\" · 244 LB", 68,
+                       (("Hands", 72), ("Separation", 80), ("Blocking", 66)),
+                       mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881"),
+        ), direction="row"),
+        BandLegend(),
+    )),
     gaps=(
         blocker("SCREEN", "One of Football Manager's core verbs and one of Madden's depth-chart affordances; no registry screen performs it."),
         gap("INTERACTION", "Choosing the second subject has no designed picker."),

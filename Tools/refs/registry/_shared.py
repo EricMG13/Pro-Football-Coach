@@ -5,14 +5,14 @@ from __future__ import annotations
 
 from primitives import (
     AttributeDial, BandLegend, Chip, Chips, Col, Custom, Field, FormLine, Heat,
-    Hero, Meter, OpposedBar, Panel, Row, Rows, ScoreBug, ShareBar, Split, Stack,
+    Hero, Meter, OpposedBar, Panel, PlayerCard, Row, Rows, ScoreBug, ShareBar, Split, Stack,
     StatCompare, Table, ValueRing,
 )
 from surface import Gap, GapKind, NOTHING_MISSING, Lean, Status, Surface
 
 __all__ = [
     "AttributeDial", "BandLegend", "FormLine", "Heat", "Meter", "OpposedBar",
-    "ScoreBug", "ShareBar", "StatCompare", "ValueRing",
+    "PlayerCard", "ScoreBug", "ShareBar", "StatCompare", "ValueRing",
     "Chip", "Chips", "Col", "Custom", "Field", "Hero", "Panel", "Row", "Rows",
     "Split", "Stack", "Table", "Gap", "GapKind", "NOTHING_MISSING", "Lean",
     "Status", "Surface", "desk", "dossier", "broadcast", "gap", "blocker",
