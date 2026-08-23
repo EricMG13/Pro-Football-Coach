@@ -110,11 +110,17 @@ before, the same seven bands on the same edges. No band was touched.
 **Measured, on the defender the animation actually draws converging:** 1 distinct defender and 1
 position before, **9 distinct defenders across all five defensive positions** after.
 
-**Remaining skew, named rather than hidden:** linebackers take only 1 of 93 in that sample. Only the
-first man in the list is recorded on a snap the carrier does not break, and the first man on a run is
-a lineman, so linebackers surface only after a broken tackle. Real defences are led in tackles by
-their linebackers. Fixing that means putting the fitter ahead of the lineman on inside runs, which is
-another calibration cycle; it is a refinement of a working model, not a defect in it.
+**The linebacker skew that survived it — also fixed (`e276b65`).** Linebackers took 1 of 93 stops,
+because only the first attempt is recorded on a snap nobody breaks and the first man on a run was
+always a lineman. A static order could not fix that; it would only have inverted it. What was needed
+was for the level that leads to vary with what actually happened, and `03` §1.1 already records that
+as lane quality, resolved before anyone tackles anybody. `Assignment.atTheSecondLevel` keys on it —
+line lost → the backfield, line won → the second level, line blown open → the secondary.
+
+Same 200 snaps: **LB 38 / S 24 / DT 12 / edge 11 / CB 8**. Calibration improved rather than needing
+to be bought back; one band (college explosive runs, already on its floor) was re-centred with
+`collegeBreakTackleRelief` 0.05 → 0.08. Holdout: **6 failing bands against the 7 this work started
+from, a strict subset.**
 
 ### 4. T2 — position shorthand on the tokens
 

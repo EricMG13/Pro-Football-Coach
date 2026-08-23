@@ -46,11 +46,26 @@ The honest picture: what exists, what is verified, what is not.
 > fingerprints re-pinned (only the college one moved on the recalibration; the pro game at seed
 > 12,345 has no carry in the window the threshold crossed). Measured on the defender the animation
 > draws converging: **1 distinct defender and 1 position before, 9 defenders across all five
-> defensive positions after.** Linebackers still take only 1 of 93 — only the first man in the list
-> is recorded when the carrier does not break a tackle, and on a run that is a lineman, so a
-> linebacker surfaces only after a break. Real defences are led in tackles by their linebackers;
-> closing that is another calibration cycle and a refinement rather than a defect. The original
-> escalation text follows.
+> defensive positions after.**
+>
+> **The linebacker skew is closed too (`e276b65`).** The first fix left linebackers taking 1 of 93
+> stops, because only the first attempt is recorded on a snap nobody breaks and on a run that man
+> was always a lineman. A static order could not fix that and would only have inverted it; what was
+> needed was for the level that leads to *vary with what happened*, which `03` §1.1 already records
+> as lane quality. `Assignment.atTheSecondLevel` keys on it: a line that lost means a carrier
+> stopped in the backfield, a line that won means the second level, a line blown open means the
+> secondary. Same 200 snaps: **LB 38 / S 24 / DT 12 / edge 11 / CB 8**, which is what a real tackle
+> chart looks like.
+>
+> That change *improved* the fit rather than costing one — a linebacker tackles better than the
+> lineman he replaced and waits exactly where the lane was won, damping the long run at its source.
+> One band moved and was bought back with the tier-local lever written for it
+> (`collegeBreakTackleRelief` 0.05 → 0.08, re-centring college explosive runs at 0.1488 against a
+> 0.150 midpoint; the band had been sitting on its floor with 0.0022 to spare beforehand).
+>
+> **On the holdout ladder the engine now sits strictly better than before any of this: 6 failing
+> bands against 7, and the failing set is a strict subset** — college home win rate now passes and
+> nothing new fails. No band was ever touched. The original escalation text follows.
 >
 > **Original escalation (2026-08-22).** `Assignment.assign` builds `pursuit` as
 > `ranked(defense)`, best-first and blind to the play, and `yardsAfterContact` always starts its
