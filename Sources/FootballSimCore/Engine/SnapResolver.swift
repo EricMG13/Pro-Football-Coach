@@ -32,6 +32,17 @@ public enum SnapResolver {
 
         switch offensiveCall.playType {
         case .kneel:
+            // Through the safety check, not around it -- the same defect the three sack returns
+            // had. A kneel loses a yard, so from the offence's own 1 the ball ends on its own goal
+            // line, which is a safety. The bare `-1` return let `DriveEngine`'s
+            // `max(yardLine + yards, 1)` field clamp absorb it into a no-op that scored nothing and
+            // did not even move the ball. `resolveRun` and `sackOrSafety` both guard; this was the
+            // one member of the class that did not.
+            if situation.yardLine - 1 <= 0 {
+                return SnapOutcome(result: .safety, yards: -situation.yardLine,
+                                   secondsElapsed: rules.inBoundsPlaySeconds,
+                                   matchups: [])
+            }
             return SnapOutcome(result: .kneel, yards: -1,
                                secondsElapsed: rules.inBoundsPlaySeconds,
                                matchups: [])

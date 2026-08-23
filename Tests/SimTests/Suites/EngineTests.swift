@@ -599,6 +599,38 @@ func runSnapResolverTests() {
             expect(!outcome.result.stopsClock, "a kneel stopped the clock")
         }
 
+        test("no play type leaves the ball in its own end zone without a safety") {
+            // The field bound the suite never sets an anchor at. `DriveEngine` clamps a resolved
+            // yard line with `max(yardLine + yards, 1)`, so any play that would put the ball on or
+            // behind the offence's own goal line is silently absorbed into a no-op at the 1 unless
+            // the resolver called it a safety first. `resolveRun` and `sackOrSafety` both guard;
+            // this asserts the whole class rather than the two members somebody remembered, so a
+            // sixth `OffensivePlayType` is covered the day it is added rather than the day someone
+            // notices. The scar is already in this file: 5,000 of 5,000 sacks from the own 2 came
+            // back as an ordinary loss before the three sack returns were routed through the check.
+            for playType in OffensivePlayType.allCases {
+                for yardLine in 1...3 {
+                    var rng = SeededRandom(seed: UInt64(yardLine) &+ 977)
+                    let situation = Situation(down: 1, distance: 10, yardLine: yardLine)
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: playType),
+                        defensiveCall: DefensiveCall(coverage: .prevent), personnel: even,
+                        situation: situation, rules: rules, rng: &rng
+                    )
+                    guard outcome.result != .safety else {
+                        expectEqual(outcome.yards, -yardLine,
+                                    "a safety from the \(yardLine) did not surrender the whole "
+                                        + "field position it conceded")
+                        continue
+                    }
+                    expect(situation.yardLine + outcome.yards >= 1,
+                           "\(playType.rawValue) from the \(yardLine) put the ball on or behind "
+                               + "its own goal line as a \(outcome.result.rawValue), which the "
+                               + "drive loop's clamp then absorbed into a no-op")
+                }
+            }
+        }
+
         test("a snap reports its play's own duration, not the pre-snap clock") {
             // The pre-snap clock moved to the drive loop, because whether it runs at all depends on
             // what the PREVIOUS snap did and on the tier's first-down rule — neither of which a
