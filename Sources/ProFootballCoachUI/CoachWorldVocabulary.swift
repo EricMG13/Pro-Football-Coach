@@ -207,10 +207,12 @@ struct CoachWorldRatingRing: View {
             diameter * CoachWorldTokens.Shape.ringStrokeRatio)
     }
 
-    /// The design's own banding: gold is the ordinary band, green reserved for a genuinely elite
-    /// figure so it stays meaningful, red for a real weakness. Colour always repeats the printed
-    /// number beside it. `CoachWorldTokens.Heat.color` is the one definition of the banding, so this
-    /// stays a delegate rather than a second copy that can drift from it.
+    /// The design's own banding, diverging around a neutral centre since `04` section 6.4's
+    /// 2026-08-22 amendment: an average figure is neither praised nor flagged, and colour is spent
+    /// only at the ends. Red for a real weakness, amber below par, green above — lightened at 80-84
+    /// and full from 85, so "good" and "excellent" are not the same green. Colour always repeats the
+    /// printed number beside it. `CoachWorldTokens.Heat` is the one definition of the banding, so
+    /// this stays a delegate rather than a second copy that can drift from it.
     private var ringColor: Color {
         CoachWorldTokens.Heat.color(for: value, palette: palette)
     }
