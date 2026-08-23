@@ -39,9 +39,15 @@ func sweepSeed(_ index: Int) -> UInt64 {
 /// Three tests here plus IdentityDistributionTests all want the same 200 leagues, and generating
 /// them per test made the suite four times slower for no extra coverage. Computed lazily so a run
 /// that skips these suites does not pay for them.
+///
+/// **The canonical world is a member, not a spot-check.** `CanonicalTeamBranding` overrides every
+/// name, nickname and colour at `worldSeed` and returns early at any other seed, so a sweep of
+/// arbitrary seeds reads generator output that the shipped world replaces -- and the one league
+/// every tester actually sees was the one league no legal test read. It sits last so the existing
+/// per-index failure messages keep meaning what they meant.
 let sweptWorlds: [GeneratedWorld] = (0..<LEGAL_SWEEP_LEAGUES).map {
     LeagueGenerator.generate(seed: sweepSeed($0))
-}
+} + [LeagueGenerator.generate(seed: CanonicalTeamBranding.worldSeed)]
 
 /// The one file exempt from the shipped-copy scan, because it *is* the list of real names.
 let blocklistSourcePath = "Generation/Blocklist.swift"

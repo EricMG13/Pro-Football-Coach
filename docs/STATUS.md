@@ -152,6 +152,40 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-23 — the legal sweep never read the shipped world, and now that it does, 61 of the 166
+> canonical teams fail one of the two colour guardrails.** `sweptWorlds` (`LegalTests.swift`) fed
+> both Tier A tests 200 synthetic leagues and never the canonical one:
+> `CanonicalTeamBranding.apply` only fires at `worldSeed = 20_260_812`, so every other seed reaches
+> the generator's own colours and the one league every tester actually sees was the one league no
+> legal test read. The earlier claim a few paragraphs below — "`Legal: trade dress` (7) ... pass" —
+> was true of the 200 synthetic leagues and blind to the shipped one; it was never a measurement of
+> what ships.
+>
+> `sweptWorlds` now appends `LeagueGenerator.generate(seed: CanonicalTeamBranding.worldSeed)` as a
+> 201st member, so `Legal: trade dress` reads the actual shipped roster for the first time.
+> `.build/debug/SimTests --legal-only` (30 tests, 193 checks): `Legal: name collision` and
+> `Legal: shipped copy` stay green; `Legal: trade dress` is now red, honestly, on two counts:
+>
+> - **36 of 166 canonical teams (21.7%) carry a primary/secondary pair that exactly matches an
+>   entry in `Blocklist.tradeDress`** — `ColourGenerator.collidesWithTradeDress`'s ΔE threshold is
+>   25.0 and every one of these 36 is ΔE = 0, a literal hex duplicate, not a near-miss. Examples:
+>   `Carlin A&M Founders` and `Nampa Kestrels` both ship `#002244/#69BE28`; `Zumbrota Central
+>   Lodestars`, `Middlebury Coastal Goshawks` and `Ketchikan Citadels` all ship `#203731/#FFB612`;
+>   `Kanab Tempests`, `Wilber Sharks`, `Cambridge A&M Reapers` and `Sulphur Springs A&M Shrikes` all
+>   ship `#00274C/#FFCB05`. The full 36-name list is reproducible from `--legal-only`'s output plus
+>   `CanonicalTeamBranding.generated.swift` and `Blocklist.swift`; it is not transcribed here.
+> - **36 of 166 (a different, partly overlapping set — 11 teams sit in both) fail `04` section 2.1's
+>   3.0:1 secondary-on-primary legibility floor.** Worst: `Nacogdoches Poly Planters` and
+>   `Webster City Coastal Tornadoes`, both `#008E97/#F58220`, at 1.523:1.
+> - **61 distinct teams (36.7% of the roster) fail at least one of the two.**
+>
+> This is the guardrail CLAUDE.md calls absolute, failing on the table `STATUS.md` and the owner
+> both treated as approved and shipped. **No colour was changed to produce or investigate this
+> finding** — recolouring an owner-approved identity is a design decision for the owner, per
+> CLAUDE.md's "flag anything borderline for the owner to take to counsel; never resolve it
+> yourself." This is filed as a finding, not fixed, and `Legal: trade dress` is left red rather than
+> excluding the canonical world again to turn it green.
+
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
 > `GameState.bootstrap(seed: 20_260_812)` generates: **94 of the 166 team identifiers moved**, and
