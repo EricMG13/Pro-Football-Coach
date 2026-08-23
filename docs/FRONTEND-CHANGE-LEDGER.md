@@ -280,7 +280,7 @@ Verified against the standard and matching:
 
 ## Part B — per surface
 
-**Coverage as of 2026-08-23: 31 of 47 canonical destinations drawn.** Four families complete. The live count is
+**Coverage as of 2026-08-23: 36 of 47 canonical destinations drawn.** Five families complete. The live count is
 `guidelines/coverage.card.html`, which fails on a stale mapping rather than printing it as coverage.
 
 ### B1 · This Week — complete, 9/9, and every one re-sourced
@@ -440,7 +440,32 @@ reason** and the rule enforces itself.
 than 44. A plate with two of them holds four rows where it would hold five — measured, not
 estimated: `2×44 + 2×52 + 28 + 22 + 56 = 298` against the 311 a 54 pt band leaves.
 
-### B3 · Not yet drawn — 16 canonical
+### B1e · Career — complete, 9/9
+
+**Four of the nine share one read model.** Record book, Rivalries, Career line and Coaching tree are
+all `LegacyHistoryReadModel` with a different `focus`, and all four carry the same omission: no
+forecast, no acceptance odds, no job recommendation, and **no unrecorded history**.
+
+| ID | Surface | Required change |
+|---:|---|---|
+| 52 | Career hub | **REMOVE acceptance odds and any job recommendation.** Zero gold — gilding accept would recommend it. **Resign takes semantic red, not neutral**: equal in weight is not equal in kind. Accepting **routes to the promotion fork** rather than committing here. Hosts five aliases. |
+| 54 | Stakeholders | Partial — Season Expectations draws the board's demands, not the wider cast. |
+| 57 | Record book | **REMOVE derived records.** "Best start since 2019" is a record nobody recorded. The holder column is the surface. Zero gold. |
+| 58 | Rivalries | **REMOVE inferred rivalries.** Four close meetings do not make one; the model records which fixtures are. The record is printed **from your side and says so**. Zero gold. |
+| 59 | Career line | **Timeline** — the first surface where position carries meaning. Evenly spaced, because the model records seasons not months. **No projection forward**: the line stops at the season in progress. Zero gold. |
+| 60 | Coaching tree | **Spatial** — direction is the content. **No transitive closure**: a tree is where "no unrecorded history" has the most edges to invent. The coach who left stays on it, or it is an org chart. Zero gold. |
+
+### C7 · Destructive actions are a third case, not an un-gilded one
+
+**CHANGE.** The gold rule (C5) says several equal actions means zero gold. Career hub adds the case
+it did not cover: **accept** and **resign** are both irreversible, so neither is gilded — but resign
+is *destructive*, and destructive actions take the semantic red rather than an equal option's neutral
+treatment.
+
+**Equal in weight is not equal in kind.** Three treatments, not two: gold for the single commit,
+neutral for equal options, semantic red for destruction.
+
+### B3 · Not yet drawn — 11 canonical
 
 Undrawn here means no Press Box composition exists yet, **not** that the Swift view is missing —
 all 62 have a view on `main`. These are queued in the order below.
