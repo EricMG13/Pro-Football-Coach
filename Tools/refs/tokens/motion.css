@@ -1,0 +1,48 @@
+/* Motion — 04 section 6.7, DesignTokens.Motion.
+
+   One easing curve, five durations, and press is a dimming rather than a scale.
+   Motion is spent only to carry a state change that is already true without it:
+   a value settling to its new figure, a panel entering, a snap replaying.
+   Never to manufacture meaning motion alone supplies. */
+
+:root {
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --dur-press: 0.12s;        /* press dim */
+  --dur-value: 0.22s;        /* a value settling to its new figure */
+  --dur-panel-enter: 0.24s;  /* the staff call-in's push */
+  --dur-world: 0.42s;        /* a world changing */
+  --dur-pulse: 1.5s;         /* the live dot. A period, not a duration —
+                                always paired with alternate/infinite */
+
+  --panel-push-distance: 14px;
+  --press-dim: 0.12;         /* press dims; a committing action never shrinks
+                                under the thumb that is committing with it */
+  --disabled-opacity: 0.4;
+}
+
+@keyframes fl-panel-enter {
+  from { opacity: 0; transform: translateY(calc(var(--panel-push-distance) * -1)); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fl-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+@keyframes fl-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Reduce Motion removes the ball's flight, the live dot's pulse and the panel
+   push. Reduce Transparency removes glass, grain and blur and falls back to
+   opaque work / raised fills at the same depth order — mandatory, not optional:
+   no consumer may render glass without that branch. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

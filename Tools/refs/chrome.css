@@ -1,0 +1,654 @@
+/* Reference-frame chrome and primitives.
+
+   Every colour, length and face here is a var() into tokens/. No literal hex, rgb()
+   or rgba() appears below -- check 10 asserts that, so a value that wants to live
+   here has to earn a token first. */
+
+.fl-frame {
+  position: relative;
+  width: var(--floor-width);
+  height: var(--floor-height);
+  background: var(--world-page);
+  color: var(--content-secondary);
+  font: var(--type-callout);
+  overflow: hidden;
+  flex: none;
+}
+
+.fl-frame__grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* ---- Identity band (`04` 6.1d) ----------------------------------------------
+   One band enclosing the whole navigation row. 34 pt, gradient from the club's primary
+   to world.page, hairline of the club's secondary. The mark is 19 pt because the band is
+   the only place a Desk surface spends club colour. */
+
+.fl-band {
+  position: absolute;
+  top: var(--header-top);
+  left: var(--leading-inset);
+  right: var(--gutter);
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  padding: 0 var(--gap-lg);
+  border-radius: var(--radius-row);
+  background: linear-gradient(90deg, var(--club) 0%, var(--world-page) 62%);
+  box-shadow: inset 0 0 0 var(--hairline) var(--club-line);
+  overflow: hidden;
+}
+
+.fl-band__mark { height: 19px; width: 19px; object-fit: contain; flex: none; }
+
+.fl-band__club {
+  font: var(--weight-bold) var(--size-panel) / 1.1 var(--font-display);
+  color: var(--content-primary);
+  white-space: nowrap;
+}
+
+.fl-band__record { font-size: var(--size-pill); color: var(--content-secondary); flex: none; }
+
+.fl-band__rule {
+  width: var(--hairline);
+  height: 17px;
+  background: var(--rule-legible);
+  flex: none;
+}
+
+.fl-band__family {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+  flex: none;
+}
+
+.fl-band__tabs { display: flex; gap: var(--gap-md); overflow: hidden; min-width: 0; }
+
+.fl-tab {
+  font: var(--weight-semibold) var(--size-pill) / 1.1 var(--font-display);
+  letter-spacing: var(--track-micro);
+  color: var(--content-quiet);
+  white-space: nowrap;
+}
+
+.fl-tab--here { color: var(--content-primary); }
+
+.fl-band__context {
+  margin-left: auto;
+  padding-left: var(--gap-lg);
+  font-size: var(--size-pill);
+  color: var(--content-quiet);
+  flex: none;
+}
+
+/* ---- Content plate ------------------------------------------------------ */
+
+.fl-plate {
+  position: absolute;
+  left: var(--content-leading);
+  top: var(--content-top);
+  width: var(--content-width);
+  overflow: hidden;
+}
+
+.fl-commit {
+  position: absolute;
+  left: var(--content-leading);
+  width: var(--content-width);
+  bottom: var(--bottom-inset);
+  height: var(--min-target);
+  border-radius: var(--radius-action);
+  background: var(--gold-field);
+  box-shadow: var(--glow-gold);
+  color: var(--ink-on-gold);
+  display: grid;
+  place-items: center;
+  font: var(--weight-bold) var(--size-action) / 1 var(--font-display);
+  letter-spacing: var(--track-micro);
+}
+
+/* ---- Primitives --------------------------------------------------------- */
+
+.fl-stack { display: flex; gap: var(--gap-md); }
+.fl-stack--column { flex-direction: column; }
+.fl-stack--row { flex-direction: row; align-items: flex-start; }
+.fl-stack--row > * { flex: 1 1 0; min-width: 0; }
+
+.fl-panel {
+  position: relative;
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-panel), var(--inset-panel);
+  overflow: hidden;
+}
+
+.fl-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-sm-plus);
+  min-height: 24px;
+  padding: 0 var(--gap-lg);
+  background: var(--world-raised);
+  border-bottom: var(--hairline) solid var(--rule-structural);
+}
+
+.fl-panel__body { padding: var(--pad-panel); }
+.fl-panel__meta { color: var(--content-quiet); }
+
+.fl-table { display: grid; row-gap: var(--gap-hair); }
+.fl-th, .fl-tr {
+  display: grid;
+  grid-template-columns: var(--fl-track);
+  column-gap: var(--gap-md);
+  align-items: center;
+}
+.fl-th { padding-bottom: var(--gap-xxs); }
+.fl-table--dense .fl-tr { min-height: var(--track-row-dense); }
+.fl-table--comfortable .fl-tr { min-height: var(--min-target); }
+.fl-tr + .fl-tr { border-top: var(--hairline) solid var(--rule-row); }
+
+.col-left { text-align: left; }
+.col-right { text-align: right; }
+.col-center { text-align: center; }
+
+.fl-rows { display: flex; flex-direction: column; gap: var(--gap-hair); }
+.fl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-lg);
+  padding: var(--pad-row);
+  border-radius: var(--radius-row);
+  background: var(--surface-panel-deep);
+}
+.fl-row--readout { min-height: var(--row-min-height); }
+.fl-row--tappable { min-height: var(--min-target); }
+.fl-row__lead { min-width: 0; }
+.fl-row__meta { font: var(--type-caption); color: var(--content-quiet); }
+.fl-row__values { display: flex; gap: var(--gap-lg); flex: none; }
+
+.fl-chips { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
+.fl-chip {
+  padding: var(--gap-tight) var(--gap-sm-plus);
+  border-radius: var(--radius-row);
+  background: var(--surface-panel);
+  font: var(--weight-semibold) var(--size-pill) / 1.2 var(--font-display);
+  letter-spacing: var(--track-micro);
+}
+.fl-chip--gold { background: var(--gold-field); }
+
+.fl-split { display: flex; flex-direction: column; }
+.fl-seam { height: 2px; background: var(--action-primary); flex: none; }
+.fl-split__top, .fl-split__bottom { min-height: 0; }
+.fl-split__bottom { padding-top: var(--gap-lg); }
+
+/* Broadcast and Dossier heads. The ground FLOODS with club or opponent colour and the
+   mark runs as a watermark behind the text -- both are the specification, not styling. */
+.fl-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-block);
+  background: var(--fl-flood);
+  padding: var(--pad-band);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.fl-hero--broadcast { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0 100%); }
+.fl-hero__watermark {
+  position: absolute;
+  right: -6%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.18;
+  object-fit: contain;
+  pointer-events: none;
+}
+.fl-hero__text { position: relative; display: flex; flex-direction: column; gap: var(--gap-xs); min-width: 0; }
+.fl-hero__headline { font-family: var(--font-display); font-weight: 700; line-height: 1.02; }
+.fl-hero__numeral { font-family: var(--font-figure); font-weight: 700; line-height: 1; letter-spacing: var(--track-tight); }
+.fl-hero__points { margin: 0; padding-left: var(--gap-lg); font: var(--type-callout); }
+
+/* ---- The field, at the reference sheet's geometry -----------------------------
+   703.33 px per 100 yards. Every marking derives from --field-yard, so the field
+   cannot drift out of scale with itself. */
+
+.fl-field {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.fl-field__turf {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(69% 69% at var(--field-crown-x) var(--field-crown-y),
+      var(--fl-turf-crown) 0%, var(--fl-turf) 46%, var(--fl-turf-mid) 78%,
+      var(--fl-turf-shade) 100%);
+}
+
+/* Mowing stripes on the 5-yard pitch, and the scan line the reference carries. */
+.fl-field__stripes {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 1px, var(--field-scan) 1px 2px),
+    repeating-linear-gradient(90deg,
+      var(--field-stripe-light) 0 var(--field-five),
+      var(--field-stripe-dark) var(--field-five) calc(var(--field-five) * 2));
+}
+
+/* A 2 px line every five yards. */
+.fl-field__lines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg,
+    var(--field-yard-line) 0 2px, transparent 2px var(--field-five));
+}
+
+/* Hash marks on the 1-yard pitch, inset to the college rows. */
+.fl-field__hash {
+  position: absolute;
+  left: 0; right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(90deg,
+    var(--field-hash) 0 1.5px, transparent 1.5px var(--field-yard));
+}
+.fl-field__hash--top { top: 37.5%; }
+.fl-field__hash--bottom { bottom: 37.5%; }
+
+.fl-field__numbers { position: absolute; inset: 0; }
+.fl-field__yardno {
+  position: absolute;
+  top: 16%;
+  transform: translateX(-50%);
+  font: var(--weight-bold) 19px / 1 var(--font-display);
+  color: var(--field-line);
+  opacity: 0.66;
+  letter-spacing: var(--track-micro);
+}
+
+.fl-field__endzone {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.20;
+}
+.fl-field__endzone img { height: 108px; width: 108px; object-fit: contain; display: block; }
+.fl-field__endzone--home { left: 2%; }
+.fl-field__endzone--away { right: 2%; }
+
+/* The line of scrimmage is white; the line to gain is the one other place gold is
+   spent (`04` 6.1a(ii)). */
+.fl-field__los,
+.fl-field__gain { position: absolute; top: 0; bottom: 0; width: 2px; }
+.fl-field__los { background: var(--field-line); }
+.fl-field__gain { background: var(--action-primary); box-shadow: var(--glow-gold); }
+
+.fl-field__overlays {
+  position: absolute;
+  inset: auto var(--gap-lg) var(--gap-md) var(--gap-lg);
+  display: flex;
+  gap: var(--gap-sm-plus);
+  flex-wrap: wrap;
+}
+.fl-field__overlay {
+  font: var(--weight-bold) var(--size-pill) / 1.2 var(--font-display);
+  letter-spacing: var(--track-micro);
+  padding: 2px var(--gap-xs);
+  border-radius: var(--radius-row);
+  background: var(--surface-scrim);
+}
+
+/* ---- Scorebug: the one surface carrying both teams' identity ------------------- */
+
+.fl-bug {
+  display: flex;
+  align-items: stretch;
+  gap: var(--hairline);
+  height: 54px;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--surface-panel-deep);
+  box-shadow: var(--shadow-card), var(--inset-panel);
+}
+
+.fl-bug__situation,
+.fl-bug__clock {
+  display: grid;
+  place-items: center;
+  padding: 0 var(--gap-lg);
+  font: var(--weight-bold) var(--size-action-small) / 1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-secondary);
+  background: var(--world-raised);
+  flex: none;
+}
+.fl-bug__clock { letter-spacing: var(--track-micro); }
+
+.fl-bug__team {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm-plus);
+  padding: 0 var(--gap-lg);
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--surface-panel);
+}
+.fl-bug__team--away { justify-content: flex-start; }
+.fl-bug__team--home { justify-content: flex-end; }
+.fl-bug__team em { margin-left: auto; }
+.fl-bug__team--home em { margin-left: 0; margin-right: auto; }
+.fl-bug__team img { height: 32px; width: 32px; object-fit: contain; }
+.fl-bug__team b {
+  font: var(--weight-bold) var(--size-title) / 1 var(--font-display);
+  color: var(--content-primary);
+  letter-spacing: var(--track-micro);
+}
+.fl-bug__team em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--content-quiet);
+}
+.fl-bug__score {
+  font: var(--weight-bold) 34px / 1 var(--font-figure);
+  color: var(--content-primary);
+  letter-spacing: var(--track-tight);
+}
+/* Possession is live green, not gold -- gold is the commit and the line to gain. */
+.fl-bug__wedge {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--state-live);
+}
+
+.fl-figure { font-family: var(--font-figure); font-variant-numeric: tabular-nums lining-nums; }
+
+.fl-label3 {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+}
+
+/* Heat: the band is a second reading of a printed figure, never the only one. */
+.fl-heat { font-variant-numeric: tabular-nums lining-nums; font-weight: 600; }
+
+/* The printed band table. `04` 6.4: where a surface bands a rating it prints this. */
+.fl-bands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-lg);
+  align-items: center;
+  padding-top: var(--gap-xxs);
+}
+.fl-heatkey { display: inline-flex; align-items: center; gap: var(--gap-xxs); }
+.fl-heatkey i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.fl-heatkey span {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+}
+.fl-heatkey b {
+  font-weight: 500;
+  font-size: var(--size-pill);
+  color: var(--content-quiet);
+}
+
+/* ---- The arc family (`04` 6.4; geometry.css bounds it to proportions) ---------- */
+
+.fl-arc { display: block; }
+.fl-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fl-ring { position: relative; display: inline-grid; place-items: center; flex: none; }
+.fl-ring > b {
+  position: absolute;
+  font-size: var(--size-action-small);
+  font-weight: 600;
+  color: var(--content-primary);
+}
+
+.fl-dial { position: relative; display: grid; place-items: center; flex: none; }
+.fl-dial > b { position: absolute; font-weight: 700; line-height: 1; }
+.fl-dial > .fl-label3 { position: absolute; bottom: 6%; }
+
+.fl-share { display: flex; align-items: center; gap: var(--gap-sm-plus); }
+.fl-share__track {
+  flex: 1;
+  height: var(--share-bar-height);
+  border-radius: 2px;
+  background: var(--rule-structural);
+  overflow: hidden;
+}
+.fl-share__track i { display: block; height: 100%; }
+.fl-share > b { font-size: var(--size-action-small); color: var(--content-primary); flex: none; }
+/* In a table cell the column head is the label, so the bar carries only itself. */
+.fl-share--inline { gap: var(--gap-xs); }
+.fl-share--inline > b { min-width: 30px; text-align: right; }
+
+.fl-meter, .fl-opposed { display: flex; align-items: center; gap: var(--gap-sm-plus); }
+.fl-meter > .fl-label3, .fl-opposed > .fl-label3 { flex: none; min-width: 92px; }
+.fl-meter__track, .fl-opposed__track {
+  flex: 1;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--rule-structural);
+  display: flex;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 var(--hairline) var(--rule-legible);
+}
+.fl-meter__track i { display: block; height: 100%; }
+/* Over capacity overruns its track rather than clamping -- a cap sheet that cannot show
+   itself breached is not a cap sheet. */
+.fl-meter__over { background: repeating-linear-gradient(45deg,
+  var(--state-negative) 0 3px, transparent 3px 6px); }
+.fl-opposed__home { background: var(--college-identity); }
+.fl-opposed__away { background: var(--pro-identity); }
+.fl-meter > b, .fl-opposed > b {
+  font-size: var(--size-action-small);
+  color: var(--content-primary);
+  flex: none;
+}
+
+.fl-form { display: flex; gap: var(--gap-xxs); align-items: flex-end; }
+.fl-form__result { display: grid; justify-items: center; gap: 2px; position: relative; }
+.fl-form__result b {
+  display: grid;
+  place-items: center;
+  width: 18px; height: 18px;
+  border-radius: 3px;
+  background: var(--tint);
+  color: var(--ink-on-fill);
+  font: var(--weight-bold) var(--size-pill) / 1 var(--font-display);
+}
+.fl-form__result em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--content-quiet);
+  letter-spacing: var(--track-micro);
+}
+
+/* ---- Two-sided comparison ------------------------------------------------------
+   The label sits between the values so the eye reads the gap. A leading side gets a
+   marker, never colour alone. */
+
+.fl-vs { display: flex; flex-direction: column; }
+.fl-vs__head,
+.fl-vs__row {
+  display: grid;
+  grid-template-columns: 1fr minmax(120px, auto) 1fr;
+  align-items: center;
+  column-gap: var(--gap-lg);
+}
+.fl-vs__head { padding-bottom: var(--gap-xxs); }
+.fl-vs__head span:first-child { text-align: left; }
+.fl-vs__head span:last-child { text-align: right; }
+.fl-vs__row { min-height: 26px; border-top: var(--hairline) solid var(--rule-row); }
+.fl-vs__away { text-align: left; font-size: var(--size-row); }
+.fl-vs__home { text-align: right; font-size: var(--size-row); }
+.fl-vs__label {
+  text-align: center;
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+}
+/* The leading side is marked by a wedge, not by colour, so the reading survives the
+   accessibility contract's colour-is-never-the-only-meaning rule. */
+.fl-vs--lead { position: relative; font-weight: 700; }
+.fl-vs__away.fl-vs--lead::after,
+.fl-vs__home.fl-vs--lead::before {
+  content: "";
+  display: inline-block;
+  width: 0; height: 0;
+  margin: 0 var(--gap-xs);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+.fl-vs__away.fl-vs--lead::after { border-left: 5px solid var(--state-positive); }
+.fl-vs__home.fl-vs--lead::before { border-right: 5px solid var(--state-positive); }
+
+/* ---- Player card ---------------------------------------------------------------
+   A person as a card. No headshot exists and none is planned, so the crest carries the
+   identity. Club colour floods the header only where the lean already permits it. */
+
+.fl-card {
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-card), var(--inset-panel);
+  overflow: hidden;
+}
+
+.fl-card__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-lg);
+  padding: var(--pad-card);
+  border-bottom: var(--hairline) solid var(--rule-structural);
+}
+/* Desk keeps the neutral ground and takes the club's colour as a boundary, per the
+   restraint rules; a Dossier head may flood. */
+.fl-card__head { box-shadow: inset 3px 0 0 var(--fl-club-field); }
+.fl-card--flooded .fl-card__head {
+  background: linear-gradient(90deg, var(--fl-club-field), var(--surface-panel) 78%);
+  box-shadow: none;
+}
+
+.fl-card__crest { height: 30px; width: 30px; object-fit: contain; flex: none; }
+.fl-card__name { display: grid; min-width: 0; }
+.fl-card__name em {
+  font-style: normal;
+  font: var(--weight-bold) var(--size-flag) / 1.2 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+}
+.fl-card__given {
+  font: var(--weight-medium) var(--size-row) / 1 var(--font-display);
+  color: var(--content-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--track-micro);
+}
+.fl-card__surname {
+  font: var(--weight-bold) var(--size-subject) / 1 var(--font-display);
+  color: var(--content-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--track-micro);
+}
+.fl-card__vitals {
+  font-style: normal;
+  font-size: var(--size-flag);
+  letter-spacing: var(--track-micro);
+  color: var(--content-quiet);
+  text-transform: uppercase;
+}
+
+.fl-card__ovr {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 42px; height: 42px;
+  border-radius: var(--radius-row);
+  flex: none;
+}
+.fl-card__ovr b { font: 700 var(--size-title) / 1 var(--font-figure); color: var(--ink-on-fill); }
+.fl-card__ovr em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--ink-on-fill);
+  letter-spacing: var(--track-flag);
+}
+
+.fl-card__attrs { display: grid; gap: var(--gap-xxs); padding: var(--pad-card); }
+.fl-card__attr { display: flex; align-items: center; gap: var(--gap-sm-plus); }
+.fl-card__attr .fl-label3 { flex: none; min-width: 88px; }
+.fl-card__track {
+  flex: 1;
+  height: var(--share-bar-height);
+  border-radius: 2px;
+  background: var(--rule-structural);
+  overflow: hidden;
+}
+.fl-card__track i { display: block; height: 100%; }
+.fl-card__attr b { font-size: var(--size-action-small); flex: none; min-width: 22px; text-align: right; }
+
+/* ---- Bracket -------------------------------------------------------------------
+   A bracket is a shape. Rounds space out as the field halves, which is the whole
+   reading a table of pairings cannot give. */
+
+.fl-bracket { display: flex; gap: var(--gap-xl); align-items: stretch; }
+.fl-bracket__round {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: var(--gap-xxs);
+}
+.fl-bracket__team {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm-plus);
+  min-height: 26px;
+  padding: 0 var(--gap-md);
+  border-radius: var(--radius-row);
+  background: var(--surface-panel-deep);
+  box-shadow: inset 2px 0 0 var(--action-secondary);
+}
+.fl-bracket__team--out { opacity: 0.45; box-shadow: inset 2px 0 0 var(--rule-structural); }
+.fl-bracket__team em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--content-quiet);
+  min-width: 12px;
+}
+.fl-bracket__team b {
+  font: var(--weight-bold) var(--size-action-small) / 1 var(--font-display);
+  color: var(--content-primary);
+  letter-spacing: var(--track-micro);
+}
+.fl-bracket__team i {
+  font-style: normal;
+  margin-left: auto;
+  font-size: var(--size-action-small);
+  color: var(--content-secondary);
+}

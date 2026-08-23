@@ -1,0 +1,38 @@
+/* Frame and stage — 04 sections 6.1b and 6.1c, DesignTokens.Frame / .Stage.
+
+   Every management surface is composed at the install floor with absolute
+   positions. There is no tab bar and no nav rail beyond the icon column —
+   navigation lives in the identity header, family on the left and jump-to on
+   the right. */
+
+:root {
+  --floor-width: 844px;
+  --floor-height: 390px;
+
+  --sensor-housing: 59px;
+  --home-indicator: 21px;
+  --gutter: 20px;
+  --leading-inset: 63px;   /* sensor housing + 4 clearance */
+  --bottom-inset: 25px;    /* home indicator + 4 clearance */
+  --top-inset: 12px;
+
+  --rail-leading: 59px;
+  --rail-width: 44px;
+  --rail-top: 46px;
+  --rail-gap: 2px;
+
+  --content-leading: 115px;
+  --content-top: 46px;
+  /* 844 − 115 − 20. Derived, not chosen, so it stays right if the floor moves. */
+  --content-width: 709px;
+  --rail-free-leading: 63px;   /* Title, Job Board, Offer carry no rail */
+
+  --header-top: 3px;
+  --header-primary-row: 22px;
+  --header-secondary-row: 16px;
+}
+
+/* Content column widths are deliberate, not fluid (FLOODLIT-SURFACES §4).
+   A surface either uses the full 709 or a named narrower column with the world
+   showing beside it:
+   150 250 300 330 345 380 396 400 402 404 410 420 428 430 474 697 709 761 */
