@@ -3456,9 +3456,57 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
   spacing, radius and font size only. This is the pattern set the plan deliberately scoped small.
   **P11 owns extending it**, and `04` §3's component registry is what makes that enumeration by
   construction rather than by memory.
+  > **Superseded 2026-08-23.** Colour is covered now:
+  > `"no view constructs a raw colour outside the token layer, beyond the named exceptions"`, in
+  > `Tests/SimTests/Suites/DesignContractTests.swift`, matches `Color((red|hue):` against
+  > comment-stripped source. Two caveats, both live — see the 2026-08-23 documentation-pass entry
+  > below: its root is the *directory* `Sources/ProFootballCoachUI`, not the by-construction
+  > UI-import enumeration its sibling scans use; and it permits one raw literal in
+  > `MatchDayScoreBug.swift` under a `pendingCanonAmendment` allowance that no canon document
+  > records.
 - **The comment scanner does not understand raw strings or multiline literals.** A `#"…"#`
   containing a backslash could mis-track its closing quote. The failure direction is a false
   negative on a line no current pattern occupies. Revisit if the tree gains raw strings.
+
+> **2026-08-23 — documentation pass: what the canon documents claimed, and what the tree holds.**
+> A mechanical sweep — every markdown link and backticked repo path resolved, every backticked Swift
+> type and test name in the canon documents grepped against `Sources/`, `Tests/` and `Tools/`, and
+> every documented structure compared against `ls` rather than against memory. Fixed in the same
+> pass: `README.md`'s status block, layout table and build commands; `03b` §§1, 2, 3, 5 and 7;
+> `05`'s G2 gate and P11 entry conditions; `06`'s orientation row; `CLAUDE.md`'s orientation line.
+> The drift worth recording here is what the sweep found that a documentation pass may not fix.
+>
+> **1. `SmallestDeviceLayoutTest` does not exist, and four canon documents name it.** `04`, `05`
+> §P11, `06` and `OPEN-DECISIONS` all cite it as the two-tier assertion that every registry surface
+> is un-clipped and reachable at the 844 x 390 install floor and at full budget at the 852 x 393
+> promise floor. No test in `Tests/` reads either dimension; both numbers appear only in comments in
+> `MatchDayField.swift`, `DepthChartView.swift`, `CoachWorldFloodlitComposition.swift` and
+> `MatchDayView.swift`. This is canon ahead of code, and it is the half of G-09 that is still owed —
+> the orientation half landed and is now named correctly in all four places. Building the layout
+> harness is a phase of work, not a documentation edit, so it is recorded rather than attempted.
+>
+> **2. The raw-colour scan enumerates by directory, which the project's own convention forbids.**
+> `"no view constructs a raw colour outside the token layer"` reads
+> `swiftFiles(under: "Sources/ProFootballCoachUI")`. Its siblings in `ContractTests.swift` — the
+> design-token scan and the authoritative-root scan — were deliberately inverted to enumerate by UI
+> import precisely so that `Sources/CoachWorldApp` would be inside them on the day it was created.
+> This one was not. `CoachWorldApp` has one SwiftUI-importing file and zero `Color(red:`/`Color(hue:`
+> sites today, so nothing is wrong in the tree right now; what is wrong is that nothing would notice
+> if that changed. `CLAUDE.md`'s rule is the coverage boundary must not become the quality boundary.
+>
+> **3. One raw colour is permitted by a `pendingCanonAmendment` allowance no document records.**
+> The same scan allows exactly one literal in `MatchDayScoreBug.swift` — the `.bowl` kind's
+> alternate ground, around `#0E0A06` — as pending a canon amendment. That hex appears nowhere in
+> `04` §6.1, nowhere else in `Sources/`, and in no status entry before this one. The debt is real
+> and tracked, but only inside a dictionary in a test file, where nobody reading the design system
+> would find it. Either `04` §6.1 gains the token or the view loses the literal; the owner's call.
+>
+> **4. `Package.swift`'s header comment says "two library targets" and the manifest declares three.**
+> `FootballSimCore`, `ProFootballCoachUI` and `CoachWorldApp`. A one-line comment fix, left alone
+> only because this pass touched no compiled file.
+>
+> **Verification.** Documentation-only changes; no file under `Sources/` or `Tests/` was touched, so
+> no behaviour can have changed. See the pull request for which lanes ran and which did not.
 
 ---
 
