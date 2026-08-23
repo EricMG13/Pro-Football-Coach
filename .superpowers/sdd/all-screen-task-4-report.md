@@ -893,3 +893,22 @@ targeting.
 genuine AX5 (335.5s). design 58/857, core 238/3,243, screen read models 69/9,704,
 `git diff --check` clean, content size restored to `large`.
 
+## The read model's unverified validators (2026-08-23)
+
+`render-recorded-match`'s gate opens with: *"the read model rejects invalid score/situation values,
+any actor count other than 22, any side count other than 11, out-of-bounds field positions, more
+than three foreground actors, or a control list other than the canonical five."*
+
+Seven of `MatchDayReadModel.ValidationError`'s eleven cases were asserted. **Four were reached by no
+test at all** -- `invalidTeamDistribution`, `invalidScore`, `duplicateActorID` and
+`unknownForegroundActor` -- and two of those, the side count and the score, are named in the gate
+itself. A validator no test reaches is indistinguishable from one that does not run.
+
+All four are now asserted: a 12-versus-10 frame, a duplicated actor id, a foreground id naming
+nobody on the field, and a negative score. The model rejected every one with the right error, so
+this found no defect -- it converted four assumed properties into checked ones, which is the
+difference between the gate being met and being believed. Core contracts 3,243 to 3,247 checks.
+
+Each block asserts `expect(false, ...)` on the construction *succeeding*, so a model that stopped
+validating fails them; they cannot pass vacuously.
+

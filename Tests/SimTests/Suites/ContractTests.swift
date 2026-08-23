@@ -2106,14 +2106,15 @@ func runContractTests() {
                 situation: MatchDayReadModel.Situation? = nil,
                 offenseDirection: MatchFieldDirection? = nil,
                 causalCommentary: String? = nil,
-                controls: [MatchDayReadModel.ControlState]? = nil
+                controls: [MatchDayReadModel.ControlState]? = nil,
+                home: MatchDayReadModel.TeamScore? = nil
             ) throws -> MatchDayReadModel {
                 try MatchDayReadModel(
                     recordedOutcomeID: sample.recordedOutcomeID,
                     provenance: sample.provenance,
                     world: sample.world,
                     venue: sample.venue,
-                    home: sample.home,
+                    home: home ?? sample.home,
                     away: sample.away,
                     situation: situation ?? sample.situation,
                     offenseDirection: offenseDirection ?? sample.offenseDirection,
@@ -2137,6 +2138,76 @@ func runContractTests() {
                 expectEqual(error, .actorCount(21), "the wrong 21-actor error was returned")
             } catch {
                 expect(false, "an unexpected 21-actor error was returned: \(error)")
+            }
+
+            // The four `ValidationError` cases nothing reached. `render-recorded-match`'s gate
+            // names two of them directly -- "any side count other than 11" and invalid score -- and
+            // a validator no test reaches is indistinguishable from one that does not run.
+            do {
+                var actors = sample.actors
+                let home = actors.first { $0.side == .home }
+                let away = actors.firstIndex { $0.side == .away }
+                if let home, let away {
+                    actors[away] = MatchDayReadModel.Actor(
+                        stableID: actors[away].stableID,
+                        side: home.side,
+                        uniformNumber: actors[away].uniformNumber,
+                        position: actors[away].position,
+                        xYardsFromLeftGoalLine: actors[away].xYardsFromLeftGoalLine,
+                        yFraction: actors[away].yFraction
+                    )
+                }
+                _ = try rebuilding(actors: actors, foregroundActorIDs: sample.foregroundActorIDs)
+                expect(false, "a 12-versus-10 recorded frame was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .invalidTeamDistribution,
+                            "the wrong lopsided-sides error was returned")
+            } catch {
+                expect(false, "an unexpected lopsided-sides error was returned: \(error)")
+            }
+
+            do {
+                var actors = sample.actors
+                actors[1] = MatchDayReadModel.Actor(
+                    stableID: actors[0].stableID,
+                    side: actors[1].side,
+                    uniformNumber: actors[1].uniformNumber,
+                    position: actors[1].position,
+                    xYardsFromLeftGoalLine: actors[1].xYardsFromLeftGoalLine,
+                    yFraction: actors[1].yFraction
+                )
+                _ = try rebuilding(actors: actors, foregroundActorIDs: sample.foregroundActorIDs)
+                expect(false, "a recorded frame with a duplicated actor id was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .duplicateActorID, "the wrong duplicate-id error was returned")
+            } catch {
+                expect(false, "an unexpected duplicate-id error was returned: \(error)")
+            }
+
+            do {
+                _ = try rebuilding(
+                    actors: sample.actors,
+                    foregroundActorIDs: ["no-such-actor"]
+                )
+                expect(false, "a foreground id naming nobody on the field was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .unknownForegroundActor("no-such-actor"),
+                            "the wrong unknown-foreground error was returned")
+            } catch {
+                expect(false, "an unexpected unknown-foreground error was returned: \(error)")
+            }
+
+            do {
+                _ = try rebuilding(
+                    actors: sample.actors,
+                    foregroundActorIDs: sample.foregroundActorIDs,
+                    home: MatchDayReadModel.TeamScore(team: sample.home.team, score: -1)
+                )
+                expect(false, "a negative score was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .invalidScore, "the wrong negative-score error was returned")
+            } catch {
+                expect(false, "an unexpected negative-score error was returned: \(error)")
             }
 
             do {
