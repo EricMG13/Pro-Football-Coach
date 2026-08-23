@@ -27,9 +27,16 @@ import FootballSimCore
 /// looks like, not a sign that half the change failed to apply -- the constant was verified in the
 /// built binary and the suite rebuilt from clean before this was concluded.
 ///
-/// Both values reproduced across three independent debug processes and a release build.
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 16_554_055_926_532_891_433
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 9_227_341_757_813_793_374
+/// Both moved again in the same session, closing the linebacker skew the first fix left behind:
+/// `Assignment.atTheSecondLevel` now keys the level of the defence that meets a run on the lane
+/// quality the front just gave up, and `collegeBreakTackleRelief` moved 0.05 to 0.08 to re-centre
+/// the college explosive-run band that shifted with it. Three model changes, one pin move each,
+/// and the pin caught every one of them -- which is the whole reason it is a literal in a source
+/// file rather than a computed value.
+///
+/// Every value here reproduced across three independent debug processes and a release build.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 15_295_482_185_907_425_422
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 2_955_826_901_363_617_613
 
 func runEngineTests() {
     suite("Leverage") {
@@ -308,6 +315,82 @@ func runSnapResolverTests() {
     let even = testPersonnel(offenseSkill: 70, defenseSkill: 70)
 
     suite("Snap resolution") {
+        test("lane quality decides which level of the defence meets the carrier") {
+            // 03 section 1.1 resolves the front into lane quality BEFORE anyone tackles anybody,
+            // and lane quality is exactly what decides where the carrier is met: a line that lost
+            // is a carrier met in the backfield by the men who beat it, a line that won is a
+            // carrier at the second level where the linebackers are, and a line that was blown
+            // open is a carrier in the secondary. Pure and rng-free, so it is unit-testable
+            // directly rather than only through the distribution below.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let base = Assignment.pursuitOrder(
+                offensiveCall: OffensiveCall(playType: .run, runGap: .insideLeft),
+                front: personnel.defensive(group: .defensiveLine)
+                    + personnel.defensive(group: .linebackers),
+                coverage: personnel.defensive(group: .secondary),
+                personnel: personnel
+            )
+            func leader(_ lane: Double) -> Position? {
+                Assignment.atTheSecondLevel(base, lane: lane).first?.position
+            }
+            expect(leader(-0.6)?.group == .defensiveLine,
+                   "a line that was beaten did not meet the carrier at the line")
+            expect(leader(0.2)?.group == .linebackers,
+                   "a line that was won did not put the carrier at the second level")
+            expect(leader(0.9)?.group == .secondary,
+                   "a run into the open field was not met by the secondary")
+            // Order is a permutation, never a filter: everyone still gets a place in the chase.
+            for lane in [-0.9, -0.3, 0.0, 0.3, 0.9] {
+                let reordered = Assignment.atTheSecondLevel(base, lane: lane)
+                expectEqual(Set(reordered.map(\.id)), Set(base.map(\.id)),
+                            "reordering at lane \(lane) dropped or duplicated a defender")
+                expectEqual(reordered.count, base.count, "the pursuit changed length at \(lane)")
+            }
+        }
+
+        test("every level of the defence makes tackles, and none of them makes all of them") {
+            // The skew that survived the first pursuit fix: with the line always leading a run,
+            // linebackers took 1 of 93 recorded stops. Real defences are led in tackles by their
+            // linebackers, and a model where they never make one is wrong in the same kind of way
+            // as one where the same man makes all of them -- just less obviously.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            var byGroup: [PositionGroup: Int] = [:]
+            var total = 0
+            for seed in UInt64(2_000)..<2_600 {
+                var rng = SeededRandom(seed: seed)
+                let gaps = RunGap.allCases
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .run,
+                                                 runGap: gaps[Int(seed) % gaps.count]),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: personnel,
+                    situation: Situation(),
+                    rules: rules,
+                    rng: &rng
+                )
+                // The man the record says ended it, which is what Match Day draws converging.
+                let attempts = outcome.matchups.filter { $0.kind == .carrierVersusPursuit }
+                    + outcome.brokenTackleAttempts
+                guard let stop = attempts.first(where: { !$0.attackerWon }),
+                      let man = personnel.defense.first(where: { $0.id == stop.defenderID })
+                else { continue }
+                byGroup[man.position.group, default: 0] += 1
+                total += 1
+            }
+            expect(total > 100, "too few recorded stops to judge a distribution: \(total)")
+            let line = Double(byGroup[.defensiveLine] ?? 0) / Double(total)
+            let backers = Double(byGroup[.linebackers] ?? 0) / Double(total)
+            // Deliberately loose. The claim is "every level is genuinely in the game", not a
+            // specific split -- pinning a split would be inventing precision the record has no
+            // opinion about, and would turn every future tuning change into a false red.
+            expect(backers >= 0.12,
+                   "linebackers made \(Int(backers * 100))% of run stops; they lead real defences")
+            expect(line >= 0.12,
+                   "the line made \(Int(line * 100))% of run stops, so the fix inverted the skew")
+            expect(backers <= 0.75 && line <= 0.75,
+                   "one level made \(byGroup) of the stops, which is the defect in a new costume")
+        }
+
         test("the man who makes the tackle depends on the play, not on the depth chart") {
             // The defect: `pursuit` was `ranked(defense)` -- best-overall-first and blind to the
             // call -- and `yardsAfterContact` always starts its chain at index zero, so the
@@ -360,10 +443,16 @@ func runSnapResolverTests() {
                    "every recorded tackle came from one position: \(positions)")
             expect(identities.count > 2,
                    "only \(identities.count) defender(s) ever made a tackle across 400 snaps")
-            // And the front seven, not the secondary, is what meets a run. A cornerback leading the
-            // pursuit on a run up the middle would be the same class of error in the other
-            // direction -- relevance replaced by a different arbitrary rule.
-            var runTacklerGroups: Set<PositionGroup> = []
+            // And the front seven, not the secondary, is what usually meets a run. A cornerback
+            // *leading* the pursuit on a run up the middle would be the same class of error in the
+            // other direction -- relevance replaced by a different arbitrary rule.
+            //
+            // "Usually", not "always", and the weakening is deliberate: since `atTheSecondLevel`
+            // landed, a run whose lane was blown open IS met by the secondary, because that is
+            // where the carrier got to. The invariant that still carries the meaning is that the
+            // front seven takes the clear majority -- a secondary that led most inside runs would
+            // be the defect again.
+            var runTacklerGroups: [PositionGroup: Int] = [:]
             for seed in UInt64(1_000)..<1_200 {
                 var rng = SeededRandom(seed: seed)
                 let outcome = SnapResolver.resolve(
@@ -376,12 +465,16 @@ func runSnapResolverTests() {
                 )
                 for matchup in outcome.matchups where matchup.kind == .carrierVersusPursuit {
                     if let man = personnel.defense.first(where: { $0.id == matchup.defenderID }) {
-                        runTacklerGroups.insert(man.position.group)
+                        runTacklerGroups[man.position.group, default: 0] += 1
                     }
                 }
             }
-            expect(runTacklerGroups.isSubset(of: [.defensiveLine, .linebackers]),
-                   "an inside run was met first by \(runTacklerGroups), not by the front seven")
+            let runStops = runTacklerGroups.values.reduce(0, +)
+            let frontSeven = (runTacklerGroups[.defensiveLine] ?? 0)
+                + (runTacklerGroups[.linebackers] ?? 0)
+            expect(runStops > 50, "too few inside-run stops to judge: \(runStops)")
+            expect(Double(frontSeven) / Double(runStops) > 0.6,
+                   "inside runs were met by \(runTacklerGroups), not mostly by the front seven")
         }
 
         test("running backs are eligible pass targets") {

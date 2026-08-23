@@ -275,8 +275,11 @@ public enum SnapResolver {
                                matchups: matchups)
         }
 
+        // The level of the defence that meets him follows from the lane the front just gave up,
+        // which is resolved above and is the record's own answer to "where was he stopped".
+        let met = Assignment.atTheSecondLevel(assignment.pursuit, lane: lane)
         let (broken, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
-            carrier: carrier, pursuit: assignment.pursuit, aggression: offensiveCall.aggression,
+            carrier: carrier, pursuit: met, aggression: offensiveCall.aggression,
             homeFieldAdvantage: homeFieldAdvantage,
             threshold: MatchupRules.breakTackleThreshold
                 - (rules.tier == .college ? MatchupRules.collegeBreakTackleRelief : 0),

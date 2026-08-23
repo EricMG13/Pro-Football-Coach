@@ -172,7 +172,7 @@ public enum Assignment {
     /// The near side of the gap leads, so two runs to different gaps do not produce the same first
     /// man. Nothing here is a coin flip -- assignment stays pure and rng-free, per §1.1 -- and the
     /// full ranked defence is appended so the chain can never run short of men.
-    static func pursuitOrder(
+    public static func pursuitOrder(
         offensiveCall: OffensiveCall,
         front: [Player],
         coverage: [Player],
@@ -214,11 +214,40 @@ public enum Assignment {
         return (ordered + SnapPersonnel.ranked(personnel.defense)).filter { seen.insert($0.id).inserted }
     }
 
+    /// Who meets the carrier, once the line has actually been resolved.
+    ///
+    /// `pursuitOrder` runs in `assign`, before a single duel has been scored, so the best it can do
+    /// is key on the call. Lane quality is the thing that decides *where* the carrier is met, and it
+    /// is known by the time anyone tackles him -- so the run path applies this on top.
+    ///
+    /// Three levels, and the reason there are three rather than two is that two produced the defect
+    /// in a mirror. A static order hands the first man in the list almost every recorded stop,
+    /// because only the first attempt is recorded on a snap nobody breaks; so whichever level leads
+    /// unconditionally takes the lot. Keying on lane quality means the level that leads *varies with
+    /// what actually happened at the line*, which is both the football answer and the only thing
+    /// that spreads the record without inventing a spread.
+    ///
+    /// A permutation, never a filter: every defender keeps a place in the chase, so the break-tackle
+    /// chain can still run its full length whatever the lane did.
+    public static func atTheSecondLevel(_ pursuit: [Player], lane: Double) -> [Player] {
+        let level: (Player) -> Bool
+        if lane > MatchupRules.openFieldLaneThreshold {
+            level = { $0.position.group == .secondary }
+        } else if lane > MatchupRules.secondLevelLaneThreshold {
+            level = { $0.position == .linebacker }
+        } else {
+            return pursuit
+        }
+        let promoted = pursuit.filter(level)
+        guard !promoted.isEmpty else { return pursuit }
+        return promoted + pursuit.filter { !level($0) }
+    }
+
     /// The men on the side the ball is going, first.
     ///
     /// Deterministic and rng-free. This is what stops one gap's answer being every gap's answer:
     /// with it, a run left and a run right are met by different people.
-    static func nearSideFirst(_ players: [Player], gap: RunGap) -> [Player] {
+    public static func nearSideFirst(_ players: [Player], gap: RunGap) -> [Player] {
         guard players.count > 1 else { return players }
         let leadsLeft = gap == .insideLeft || gap == .outsideLeft
         let lead = leadsLeft ? 0 : players.count - 1

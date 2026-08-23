@@ -211,7 +211,22 @@ public enum MatchupRules {
     /// (4, then 12, then 24), so multiplying them by a tier factor stepped the first break from 4
     /// to 5 between multipliers of 1.09 and 1.13 and jumped the explosive-run rate from 0.136 to
     /// 0.171 with nothing in between. Break *probability* moves continuously with the threshold.
-    public static let collegeBreakTackleRelief = 0.05
+    public static let collegeBreakTackleRelief = 0.08
+    /// Lane quality above which the carrier is met at the second level rather than at the line,
+    /// and above which he is into the secondary rather than either.
+    ///
+    /// `03` §1.1 resolves the front into lane quality *before* anyone tackles anybody, which makes
+    /// it the one thing in the record that already says where the carrier was met. A line that lost
+    /// is a carrier stopped in the backfield by the men who beat it; a line that won is a carrier at
+    /// the second level, where the linebackers are; a line blown open is a carrier the secondary has
+    /// to come down and get.
+    ///
+    /// This exists because ordering the front statically was not enough. With the line always
+    /// leading a run, linebackers took **1 of 93** recorded stops -- and a defence whose linebackers
+    /// never make a tackle is wrong in the same kind of way as one where the same man makes all of
+    /// them, just less obviously. Real defences are led in tackles by their linebackers.
+    public static let secondLevelLaneThreshold = 0.0
+    public static let openFieldLaneThreshold = 0.55
     /// Leverage above which the carrier breaks a tackle.
     ///
     /// **0.46 until 2026-08-23, when the pursuit-order defect was fixed.** `Assignment.assign` used
