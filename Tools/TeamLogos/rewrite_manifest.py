@@ -92,6 +92,26 @@ SUBJECTS = {
     "Goshawks": dict(creature="a goshawk, head turned and brow low", emblem="a goshawk's head"),
     "Martens": dict(creature="a marten, body arched and teeth bared", emblem="a marten's head"),
     "Wyverns": dict(creature="a wyvern, wings spread and tail coiled", emblem="a wyvern's head"),
+    # The wrights and carriers the grammar started emitting after the 2026-08-22 calibration
+    # merge moved the world. Without an entry a noun cannot be drawn at all, which is how 52
+    # marks ended up carrying the previous occupant's animal.
+    "Wainwrights": dict(figure="a wainwright under a flat cap",
+                        tool="a wagon wheel and spoke shave",
+                        emblem="a crossed adze and draw-knife",
+                        place="a wain drawn up at a yard gate"),
+    "Wheelwrights": dict(figure="a wheelwright under a brimmed cap", tool="a spoked cartwheel",
+                         emblem="a traveller wheel", place="a wheel pit and tyring plate"),
+    "Millwrights": dict(figure="a millwright in a rolled cap", tool="a crown gear and pinion",
+                        emblem="a cogged wheel", place="a mill wheel at a race"),
+    "Bargemen": dict(figure="a bargeman in a knit cap", tool="a tiller and quant pole",
+                     emblem="a barge prow", place="a mooring bollard on a cut bank"),
+    "Lamplighters": dict(figure="a lamplighter under a soft hat",
+                         tool="a lamplighter's pole and wick", emblem="a street lantern",
+                         place="a lamp standard at a street corner"),
+    "Draymen": dict(figure="a drayman under a wide brim", tool="a dray cart and hames",
+                    emblem="a harness collar and rein", place="a brewery yard ramp"),
+    "Bitterns": dict(creature="a bittern, neck stretched and bill raised",
+                     emblem="a bittern's head", place="a reed bed at a dyke"),
 }
 
 FIELD_FOR_FAMILY = {
@@ -210,6 +230,7 @@ def main():
         raise SystemExit(f"family balance is wrong: {dict(counts)}")
 
     per_family_index = Counter()
+    stale = 0
     for record in records:
         entry = names[record["stableID"]]
         noun = entry["nickname"].split()[-1]
@@ -220,17 +241,35 @@ def main():
         record["abbreviation"] = "".join(c for c in entry["name"] if c.isalpha())[:3].upper()
         record["family"] = family
         record["concept"] = phrasing(family, noun, index).capitalize() + "."
+        previous = record["prompt"]
         record["prompt"] = build_prompt(record, family, noun, index)
-        record["reviewNotes"] = (
-            "Nickname-matched brief written 2026-08-21; the packaged artwork still shows the "
-            "2026-08-20 concept and is awaiting a regeneration run."
-        )
+        # The packaged PNG was drawn from the prompt this record used to carry. If that prompt
+        # has moved -- a different subject, a different nickname, or the colours the brief names
+        # as its two flats -- the artwork on disk no longer depicts this team and the record is
+        # not approved any more. Saying so here is the point: the run that produced this manifest
+        # last time left every record marked approved, so 113 marks shipped either depicting a
+        # nickname the team no longer has or drawn in colours that are no longer its own, and the
+        # suite reported the catalogue as complete and approved throughout.
+        #
+        # Records whose prompt is unchanged keep their status and their review notes, which carry
+        # per-mark contrast findings this pass has no business discarding.
+        if record["prompt"] != previous:
+            record["generationStatus"] = "pending"
+            record["humanApproved"] = False
+            record["reviewNotes"] = (
+                "Brief rewritten from this team's own nickname and colours; the packaged artwork "
+                "still shows the concept this record carried before and must be regenerated "
+                "before the record can be approved again."
+            )
+            stale += 1
 
     manifest["teams"] = records
     with open("Tools/TeamLogos/manifest.json", "w") as handle:
         json.dump(manifest, handle, indent=2, sort_keys=True)
         handle.write("\n")
     print(f"rewrote {len(records)} records; families {dict(sorted(counts.items()))}")
+    print(f"{stale} need new artwork and are no longer approved; "
+          f"{len(records) - stale} keep their approved mark")
 
 
 if __name__ == "__main__":

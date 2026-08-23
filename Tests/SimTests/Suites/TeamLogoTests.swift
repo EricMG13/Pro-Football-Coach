@@ -47,6 +47,37 @@ private func loadTeamLogoManifest() throws -> TeamLogoManifest {
     )
 }
 
+/// The brief a record with this concept, nickname and colours must carry.
+///
+/// The same template `Tools/TeamLogos/rewrite_manifest.py` builds a prompt from, held here so a
+/// test can compare a record's prompt against the record's own fields. It has to be compared,
+/// because the prompt embeds its two colours as literal text: when `9e50b57` re-keyed the records
+/// onto a new world it updated `primaryColorHex` and `secondaryColorHex` and left the prompt --
+/// and the artwork drawn from it -- carrying the previous occupant's, and nothing looked.
+func teamLogoPrompt(
+    concept: String,
+    nickname: String,
+    primary: String,
+    secondary: String
+) -> String {
+    let subject = concept.prefix(1).lowercased() + concept.dropFirst()
+    return """
+    Draw one original athletics team mark as flat vector artwork.
+
+    Subject: \(subject) The mark depicts the team's nickname, the \(nickname), and nothing else.
+
+    Style: a single subject filling the frame. Two or three flat colours only. No gradient, no shading, no texture, no depth, no lighting, no outline sketch. Every shape has a hard edge and one heavy dark keyline of even weight. Bold geometric simplification: few large shapes, wide negative space, angular cuts, sharp points. Detail that would vanish at 20 points is left out. Centred in a square canvas on a transparent background.
+
+    Not: a scene, a landscape, a horizon, scenery behind the subject, a photograph, a 3D render, an emblem crowded with small parts, watercolour, airbrush, drop shadow, bevel, glow, halftone, or a mock-up on a shirt or a helmet.
+
+    Colours: \(primary) and \(secondary) as the two dominant flats. Black or white only where a keyline or a separation needs it.
+
+    No words, letters, initials, numerals, dates, slogans, competition marks, uniforms or watermarks. Do not reference or resemble any real school, club, conference, trophy or event identity, and do not reproduce any real team's combination of colour and shape.
+
+    Output one isolated 256 x 256 PNG with transparency around the mark.
+    """
+}
+
 func runTeamLogoManifestExport(
     force: Bool = false,
     to targetURL: URL = teamLogoManifestURL
@@ -276,6 +307,32 @@ func runTeamLogoManifestTests() {
             expect(catalogueBytes <= teamLogoCatalogueByteBudget,
                    "packaged marks total \(catalogueBytes) bytes, over "
                        + "\(teamLogoCatalogueByteBudget)")
+        }
+        test("every prompt rebuilds from the record it belongs to") {
+            // The limb that was missing. "every mark brief depicts the team it belongs to" reads
+            // the nickname out of the prompt, so it caught the 52 marks drawn for another team's
+            // nickname -- and said nothing about the 112 whose brief still named the previous
+            // occupant's colours, because nothing compared the prompt's own colour line to the
+            // record's colour fields. Rebuilding the whole prompt covers both by construction:
+            // concept, nickname and both colours must agree with the record or the string does
+            // not match, and a field added to the template is covered the day it is added rather
+            // than the day someone remembers this test.
+            for team in try loadTeamLogoManifest().teams {
+                guard let nickname = team.name.split(separator: " ").last.map(String.init) else {
+                    expect(false, "\(team.name) has no nickname")
+                    continue
+                }
+                expectEqual(
+                    team.prompt,
+                    teamLogoPrompt(
+                        concept: team.concept,
+                        nickname: nickname,
+                        primary: team.primaryColorHex,
+                        secondary: team.secondaryColorHex
+                    ),
+                    "\(team.name)'s brief does not describe its own record"
+                )
+            }
         }
         test("every mark brief depicts the team it belongs to") {
             // The set this replaced had the Silver Kestrels carrying a compass roundel: the brief
