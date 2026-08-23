@@ -646,9 +646,9 @@ selected segment in that frame; reordering a control strip on one sample would b
 
 ### Still outstanding for ID 14
 
-Nothing from the 1a reconciliation. What remains is proof breadth, not composition: the full
-manual/device/assistive-technology matrix, and a real retained-game Match Day capture inside the
-production navigator rather than the `PROOF_SCREEN=match` fixture. ID 14 is **not** marked complete.
+Nothing from the 1a reconciliation, and the retained-game capture is now done -- see "Match Day on a
+real retained game" below. What remains is the manual/device/assistive-technology matrix, which is
+an owner action, and a fresh independent review. ID 14 is **not** marked complete.
 
 ## The logo proof reds (2026-08-22)
 
@@ -707,3 +707,51 @@ regex excluded digits and so could not match a name ending `AtAX5`; the counts o
 that was fixed.
 
 Content size restored to `large` and read back.
+
+## Match Day on a real retained game (2026-08-23)
+
+The standing caveat -- that every Match Day capture came from the `PROOF_SCREEN=match` fixture
+rather than a played game inside the production navigator -- is discharged.
+
+`PROOF_SCREEN_NUMBER=14` on a fresh career shows the honest unavailable state, "Match Day
+unavailable. No retained career evidence is available for this surface.", because a Week 1 career
+has played nothing. There is no debug shortcut to a played week, and inventing one would have been a
+second path into the surface. So the week was played through the production route on seed `424242`:
+resolve the four redshirt decisions (`hq-choice-*` then `hq-commit-decision`), delegate balanced
+preparation, then **Advance**, which stays disabled until the last obligation clears.
+
+The result is Match Day on a real recorded game inside the real navigator: Claremont State Storm
+Ferrymen against Escanaba Thunder Harriers, live clock `Q1 · 14:22`, `3RD & 3 · ESC BALL`, both real
+team logos, the 22 actors as pale and navy discs with two foreground rings, the lower third's
+recorded sentence, and the five controls with the gold committing action reading NEXT SNAP.
+
+### The defect it found
+
+The fixture carries no `statusMessage`, so no capture had ever shown one. On the real route it is
+set, and `standardLayout` centred it across the frame with `.frame(width: size.width, alignment:
+.top)` -- so the receipt was drawn straight across the scorebug's clock and down-and-distance.
+
+Reference 1a already answers this and had been missed for the same reason: its banner slot is
+`left: 63px; top: 54px; width: 578px`, below the scorebug and, in its own words, "578 wide so it
+clears the call-ins plate". The banner now takes that slot. Re-captured on the same route: the
+receipt sits below the scorebug and the clock reads clean.
+
+This is the argument for the capture existing at all. Three rounds of fixture captures, a green
+suite and a reference read could not surface it; one real route did immediately.
+
+### Full suite, re-run after the change
+
+21 tests, 0 failures, across both content sizes -- pass A 14 at `large` (315.2s), pass B seven at
+genuine AX5 (270.7s), disjoint, every declared test run once. design 58/857, core 238/3243, screen
+read models 69/9704, tactical 8/81, `git diff --check` clean. Content size restored to `large`.
+
+## Owner walkthrough handed off
+
+`docs/proofs/2026-08-23-all-screen-owner-walkthrough.md` is the written script for the manual half.
+`CLAUDE.md` makes simulator and device demonstration an owner action -- "hand off a written
+walkthrough script, never claim it happened" -- so it is written, not performed. It covers the route
+above, the assistive-technology matrix row by row, the `04b` rubric at 31/40 with zero P0/P1, and
+the two inset questions this work deliberately left open, which need a real 17-class device to
+settle.
+
+Task 4 stays `pending` until that walkthrough carries real results and a fresh reviewer approves.

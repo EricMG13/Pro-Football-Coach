@@ -211,8 +211,9 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                         .padding(.horizontal, CoachWorldTokens.Space.sm)
                         .padding(.vertical, CoachWorldTokens.Space.xxs)
                         .background(.ultraThinMaterial, in: Capsule())
-                        .padding(.top, furnitureTop)
-                        .frame(width: size.width, alignment: .top)
+                        .frame(maxWidth: MatchMetric.bannerWidth, alignment: .leading)
+                        .padding(.leading, CoachWorldTokens.Frame.leadingInset)
+                        .padding(.top, furnitureTop + MatchMetric.bannerDrop)
                 }
             }
             .onPreferenceChange(TopRightStackHeightKey.self) { topRightStackHeight = $0 }
@@ -1056,6 +1057,13 @@ private enum MatchMetric {
     /// and the plan-edit action into one plate with internal seams; this column adopts its width
     /// and containment while those remain three cards.
     static let topRightPlateWidth: CGFloat = 172
+    /// 1a's banner slot: `left: 63, top: 54, width: 578`, below the scorebug and narrow enough to
+    /// clear the top-right plate. This was centred across the frame, so on a real route -- where
+    /// `statusMessage` is actually set, unlike the proof fixture -- the receipt was drawn straight
+    /// across the scorebug's clock and down-and-distance. `bannerDrop` is 54 minus the scorebug's
+    /// own top inset of 12.
+    static let bannerWidth: CGFloat = 578
+    static let bannerDrop: CGFloat = 42
     /// 1a insets its trailing furniture 16, where the management shell's gutter is 20. The trailing
     /// edge carries no sensor housing, and `04` section 7 records the 17e insets as "unsourced --
     /// measure before relying on either", so there is no measured value this contradicts. Match
