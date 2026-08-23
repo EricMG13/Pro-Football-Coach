@@ -185,6 +185,30 @@ private let pinnedNewsFeedFingerprint: UInt64 = 15_792_896_265_198_872_985
 /// the merged release run.
 private let pinnedArchivedLedgerFingerprint: UInt64 = 9_134_642_366_837_657_455
 
+/// `ScoutingState` is a required, non-optional property of every `GameState`, and every pin above
+/// hashes a root that contains it — but always the empty one. `bootstrap` builds it with no
+/// observation, no queued evaluation and no portal knowledge; `WorldScheduler.advanceWeek` records
+/// none of the three on its own (only `CollegeRecruitingSystem` and `CollegePortalMatchingV1` do,
+/// and those are career-control and portal-window steps, not scheduler steps); and the negotiation,
+/// match-session, news-feed and archived-ledger fixtures above never touch `state.scouting` either.
+/// So a root whose scouting store came back from decode with its per-observer portal knowledge in a
+/// different order, or with an observation filed under the wrong observer, would satisfy every pin
+/// in this file.
+///
+/// That order is the risk worth pinning. `portalKnowledgeByObserver` is a `[UUID: [...]]` map whose
+/// values are *arrays*, and `recordPortalKnowledgeBatch` builds each array by iterating a
+/// `Dictionary` — hash-salted per process — before `ScoutingState.canonical` sorts it back. The
+/// sort is what makes the store deterministic, and nothing above asserts that it is. This pin feeds
+/// the recorder in Dictionary order, exactly as `CollegePortalMatchingV1` does, and hashes the
+/// resulting root, so the store's cross-process byte-identity is asserted rather than assumed.
+///
+/// Added 2026-08-23. Reproduced in three independent release processes before being written
+/// here. The salt itself was checked rather than assumed: a four-key `[UUID: Int]` printed
+/// `1,0,3,2`, `2,3,0,1` and `3,1,2,0` in three launches of the same script, so the input order this
+/// fixture feeds the recorder really does differ per process and the pin's stability is the sort
+/// doing its job, not an accident of one hash seed.
+private let pinnedScoutingStoreFingerprint: UInt64 = 11_975_195_598_958_932_610
+
 /// Hashes the canonical JSON body, not the save envelope.
 ///
 /// It hashed the envelope until 2026-08-12, when the body became zlib-compressed. That would have
@@ -415,6 +439,109 @@ func runArchitectureTests() {
             expectEqual(
                 try architectureFingerprint(state),
                 pinnedArchivedLedgerFingerprint
+            )
+        }
+
+        test("the scouting store is pinned across processes") {
+            // A store-shape fixture, not an integrity-valid world: the observations are filed
+            // against player IDs rather than prospect IDs, and the portal snapshots have no
+            // matching entrant record or portal target season, so `WorldIntegrity.check` would
+            // reject this root and it is never decoded here. What the pin asserts is the property
+            // in question -- that one `ScoutingState`, built through the real recorder from a
+            // hash-ordered batch, encodes to the same bytes in every process. Decodability is a
+            // different property and `WorldIntegrity`'s own suite owns it.
+            var state = GameState.bootstrap(seed: 20_260_823)
+            let observers = Array(state.programmes.ids.prefix(3))
+            let sources = Array(state.programmes.ids.suffix(2))
+            let players = Array(state.players.ids.prefix(4))
+            expectEqual(observers.count, 3)
+            expectEqual(players.count, 4)
+
+            let targetSeason = 3
+            let window = CollegePortalWindow.postseason
+            guard let openedAt = CollegePortalPolicyV1.expectedCalendar(
+                targetSeason: targetSeason,
+                window: window
+            ) else {
+                expect(false, "the portal policy has no calendar for the fixture's window")
+                return
+            }
+            let rated = CollegePortalPolicyV1.ratedAttributes(for: .quarterback)
+            expect(!rated.isEmpty, "the portal policy rates no attribute for the fixture position")
+            let estimated = Dictionary(uniqueKeysWithValues: rated.map { ($0, Rating(70)) })
+
+            // Keyed by player and flat-mapped through `values`, exactly as
+            // `CollegePortalMatchingV1` feeds the recorder. The order a batch arrives in is
+            // therefore Dictionary order, which is salted per process; the recorder's job is to
+            // canonicalise it back. If that sort ever stopped being total, this is the pin that
+            // would see it, and no root pin above could.
+            var snapshotsByPlayerID: [UUID: [CollegePortalKnowledgeSnapshot]] = [:]
+            for (playerIndex, playerID) in players.enumerated() {
+                for (observerIndex, observerID) in observers.enumerated() {
+                    snapshotsByPlayerID[playerID, default: []].append(
+                        CollegePortalKnowledgeSnapshot(
+                            observerProgrammeID: observerID,
+                            playerID: playerID,
+                            sourceProgrammeID: sources[
+                                (playerIndex + observerIndex) % sources.count
+                            ],
+                            targetSeason: targetSeason,
+                            window: window,
+                            position: .quarterback,
+                            estimatedOverall: Rating(70),
+                            estimatedAttributes: estimated,
+                            estimatedPotential: Rating(70 + playerIndex),
+                            confidence: 40 + observerIndex,
+                            lastUpdated: openedAt,
+                            evidenceCount: 2 + playerIndex
+                        )
+                    )
+                }
+            }
+
+            var scouting = ScoutingState()
+            expect(
+                scouting.recordPortalKnowledgeBatch(
+                    snapshotsByPlayerID.values.flatMap { $0 },
+                    targetSeason: targetSeason,
+                    window: window
+                ),
+                "the portal-knowledge batch for the scouting fixture was rejected"
+            )
+            for (playerIndex, playerID) in players.enumerated() {
+                expect(
+                    scouting.queueEvaluation(
+                        observerID: observers[playerIndex % observers.count],
+                        prospectID: playerID,
+                        effort: 1 + playerIndex
+                    ),
+                    "a scouting evaluation for the fixture was rejected"
+                )
+            }
+            var observations: [UUID: [UUID: ProspectObservation]] = [:]
+            for (playerIndex, playerID) in players.enumerated() {
+                observations[observers[playerIndex % observers.count], default: [:]][playerID] =
+                    ProspectObservation(
+                        prospectID: playerID,
+                        estimatedAttributes: estimated,
+                        estimatedPotential: Rating(72 + playerIndex),
+                        confidence: 30 + playerIndex,
+                        lastUpdated: openedAt,
+                        evidenceCount: 1 + playerIndex
+                    )
+            }
+            state.scouting = ScoutingState(
+                observationsByObserver: observations,
+                pendingEvaluations: scouting.pendingEvaluations,
+                portalKnowledgeByObserver: scouting.portalKnowledgeByObserver
+            )
+
+            expectEqual(state.scouting.portalKnowledgeByObserver.count, observers.count)
+            expectEqual(state.scouting.observationsByObserver.count, observers.count)
+            expectEqual(state.scouting.pendingEvaluations.count, players.count)
+            expectEqual(
+                try architectureFingerprint(state),
+                pinnedScoutingStoreFingerprint
             )
         }
 

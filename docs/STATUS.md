@@ -2104,7 +2104,54 @@ here (unlike the news-feed pin). Verified across two independent process invocat
 `11_509_177_498_617_182_391`, identical both times. No engine divergence found; nothing was fixed
 because nothing broke.
 
-All four surfaces named since 2026-08-19 are now closed. No further candidate has been identified yet.
+All four surfaces named since 2026-08-19 are now closed. A fifth was found on 2026-08-23, below.
+
+### 2026-08-23 — determinism coverage widened: the scouting store
+
+`GameState.scouting` is a required, non-optional property of every root, so every architecture pin
+already hashes it — always empty. `bootstrap` builds a `ScoutingState()` with no observation, no
+queued evaluation and no portal knowledge; `WorldScheduler.advanceWeek` records none of the three on
+its own, because the three producers are `CollegeRecruitingSystem` and `CollegePortalMatchingV1`,
+which are career-control and portal-window steps rather than scheduler steps; and the
+negotiation-ledger, match-session, news-feed and archived-ledger fixtures never touch
+`state.scouting` either. A root whose scouting store came back with its per-observer portal knowledge
+in a different order, or with an observation filed under the wrong observer, would have satisfied
+every existing pin.
+
+The order is the part worth pinning, and the risk is concrete rather than theoretical.
+`ScoutingState.portalKnowledgeByObserver` is a `[UUID: [CollegePortalKnowledgeSnapshot]]` whose
+values are *arrays*, and `recordPortalKnowledgeBatch` builds each array by iterating a `Dictionary`
+— `CollegePortalMatchingV1` calls it with `offersByPlayerID.values.flatMap { $0.map(\.knowledge) }`
+— before `ScoutingState.canonical` sorts it back into (targetSeason, window.order,
+sourceProgrammeID, playerID) order. That sort is the entire reason the store is deterministic, and
+nothing asserted it across processes. `PortalPolicyTests` checks that an ascending and a descending
+batch agree, which is an in-process equality check: within one launch the hash seed is constant, so
+a comparison of two orders can pass while the bytes still churn between launches — the same shape of
+gap `CodingSupport.swift` records for the `CodingKeyRepresentable` bug.
+
+Added `"the scouting store is pinned across processes"` to `ArchitectureTests.swift`. It bootstraps
+seed `20_260_823`, builds twelve portal-knowledge snapshots (three observers x four players, one
+target season, `.postseason`), feeds them to `recordPortalKnowledgeBatch` through
+`snapshotsByPlayerID.values.flatMap { $0 }` so the batch arrives in Dictionary order exactly as
+production delivers it, queues four evaluations, files four observations, and hashes the resulting
+root. Value `11_975_195_598_958_932_610`.
+
+The salt was checked rather than assumed. A four-key `[UUID: Int]` printed `1,0,3,2`, `2,3,0,1` and
+`3,1,2,0` across three launches of the same script on this toolchain, so the input order the fixture
+feeds the recorder really does differ per process, and the pin holding still is the canonical sort
+working rather than one lucky hash seed.
+
+One limit is worth stating plainly: the fixture is a store-shape fixture, not an integrity-valid
+world. Its observations are filed against player IDs rather than prospect IDs, and its portal
+snapshots have no matching entrant record or portal target season, so `WorldIntegrity.check` would
+reject this root and the pin never decodes it. What the pin asserts is exactly the property in
+question — one `ScoutingState`, built through the real recorder from a hash-ordered batch, encodes
+to the same bytes in every process. Decodability of a populated scouting store is a separate
+property that `WorldIntegrity`'s own suite owns, and it is still not pinned. The value was reproduced in three independent direct
+release-process invocations before it was written into the file, and `./scripts/verify.sh --lane
+determinism` was then run twice as two separate processes, each with its own scratch build: both
+`2 passed, 0 failed`. No engine divergence was found, so no engine change was needed and no existing
+pinned literal was touched.
 
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
