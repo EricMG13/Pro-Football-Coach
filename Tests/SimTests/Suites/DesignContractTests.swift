@@ -182,6 +182,56 @@ private func rawAssetLoaders(in source: String) -> [String] {
 
 // MARK: - The suite
 
+/// Every directory under `docs/` that holds markdown.
+///
+/// Walked rather than listed, because a list here would be the coverage boundary the manifest's own
+/// problem was made of.
+private func documentedDirectories() -> [String] {
+    let root = packageRoot().appendingPathComponent("docs")
+    guard let walker = FileManager.default.enumerator(atPath: root.path) else { return [] }
+    var directories: Set<String> = []
+    for case let path as String in walker where path.hasSuffix(".md") {
+        let parent = (path as NSString).deletingLastPathComponent
+        directories.insert(parent.isEmpty ? "docs/" : "docs/\(parent)/")
+    }
+    return directories.sorted()
+}
+
+func runDocumentManifestTests() {
+    suite("Document manifest") {
+        // DOC-MANIFEST decides what is canon, and it had gone stale against the tree it governs:
+        // six directories holding 45 markdown files sat at paths it never named, one of them called
+        // `10-CANON-AMENDMENT-04.md`. Section 1's rule already answers it in the abstract -- a path
+        // listed nowhere carries no authority -- but silence reads as omission rather than as
+        // classification, and a reader cannot tell which. So the directories are enumerated from
+        // disk and checked against the manifest, not maintained by hand inside it.
+        test("every docs directory holding markdown is classified in DOC-MANIFEST") {
+            let manifestURL = packageRoot().appendingPathComponent("docs/DOC-MANIFEST.md")
+            guard let manifest = try? String(contentsOf: manifestURL, encoding: .utf8) else {
+                expect(false, "docs/DOC-MANIFEST.md is unavailable")
+                return
+            }
+            let directories = documentedDirectories()
+            expect(directories.count >= 8,
+                   "walked only \(directories.count) docs directories — the walk, not the manifest, "
+                       + "is what failed")
+            let unclassified = directories.filter { !manifest.contains($0) }
+            expect(unclassified.isEmpty,
+                   "DOC-MANIFEST does not classify \(unclassified.count) directory(ies): "
+                       + "\(unclassified.joined(separator: ", ")). Add each to section 8 with what "
+                       + "it is and what authority it carries — a path the manifest never names is "
+                       + "a path a reader has to guess about.")
+        }
+
+        test("the walk would notice a directory the manifest does not name") {
+            let manifest = "| `docs/plans/` | plans | none |"
+            let planted = ["docs/plans/", "docs/invented/"]
+            expectEqual(planted.filter { !manifest.contains($0) }, ["docs/invented/"],
+                        "an unclassified directory must be reported")
+        }
+    }
+}
+
 func runDesignContractTests() {
     let canon = canonText()
 
