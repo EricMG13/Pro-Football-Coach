@@ -295,7 +295,16 @@ public enum DriveEngine {
                 progress.situation.down += 1
                 if progress.situation.down > 4 { progress.ending = .downs }
             }
-            if progress.situation.secondsRemainingInQuarter <= 0 {
+            // Only if the snap did not already end the drive by rule. Both facts can be true at
+            // once -- the down counter passed four and the quarter ran out -- and this overwrote
+            // the rule ending with the clock one. `.downs` changes possession and `.endOfQuarter`
+            // does not, so a fourth-down stop as Q1 or Q3 expired handed the ball back to the
+            // offence that had just failed to convert, still on a fifth down, because the
+            // possession block that resets it is the one `.endOfQuarter` skips. A down above four
+            // is also what `ScreenReadModels` rejects as `invalidSituation("down")`, so Match Day
+            // could not present the snap either. The quarter still advances: the reducer reads the
+            // clock for that, not the ending.
+            if progress.situation.secondsRemainingInQuarter <= 0, progress.ending == nil {
                 progress.ending = situation.quarter % 2 == 0 ? .endOfHalf : .endOfQuarter
             }
         }

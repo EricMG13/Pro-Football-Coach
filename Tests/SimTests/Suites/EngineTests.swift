@@ -740,6 +740,58 @@ func runGameLoopTests() {
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
 
     suite("Game loop") {
+        test("a fourth-down stop hands the ball over even when the quarter expires on it") {
+            // The down edge the suite never sets against a clock edge. `DriveEngine.step` sets
+            // `.downs` when the down counter passes four, then unconditionally overwrites the
+            // ending with a clock ending if the same snap ran the quarter out. `.downs` changes
+            // possession and `.endOfQuarter` does not, so a fourth-down stop as the first or third
+            // quarter expired handed the ball straight back to the offence that had just failed to
+            // convert. The defence got nothing for the stop.
+            //
+            // Both facts are true on that snap -- the drive ended by rule and the quarter ended by
+            // clock -- and the reducer advances the quarter off the clock rather than off the
+            // ending, so the rule ending is the one that has to survive.
+            struct AlwaysRunCaller: PlayCaller, Sendable {
+                func offensiveCall(for situation: Situation,
+                                   rules: any ClockRules.Type) -> OffensiveCall {
+                    OffensiveCall(playType: .run, tempo: .normal)
+                }
+                func defensiveCall(for situation: Situation,
+                                   rules: any ClockRules.Type) -> DefensiveCall {
+                    DefensiveCall(coverage: .man)
+                }
+            }
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            // Odd quarters only: at the end of Q2 and Q4 the clock ending is `.endOfHalf`, which
+            // already changes possession, so the overwrite is invisible there. Q1 and Q3 are where
+            // it bites.
+            for quarter in [1, 3] {
+                var progress = DriveEngine.begin(
+                    from: Situation(down: 4, distance: 25, yardLine: 50,
+                                    possession: .home, quarter: quarter,
+                                    secondsRemainingInQuarter: 1),
+                    driveSeed: UInt64(quarter) &+ 8_311,
+                    isAfterTurnover: false,
+                    clockRunning: true
+                )
+                DriveEngine.step(&progress, offense: personnel, defense: personnel,
+                                 caller: AlwaysRunCaller(), rules: Tier.pro.clockRules,
+                                 homeFieldAdvantage: 0)
+                // A 25-yard run on one carry would convert and make the fixture say nothing, so the
+                // assertion is guarded on the stop actually having happened.
+                guard progress.situation.down > 4 else { continue }
+                expectEqual(progress.ending, .downs,
+                            "the quarter expiring on a fourth-down stop in Q\(quarter) replaced "
+                                + "the turnover on downs with a clock ending")
+                let finished = DriveEngine.finish(progress)
+                expect(finished.next.possession != Side.home,
+                       "a fourth-down stop as Q\(quarter) expired left the ball with the offence "
+                           + "that failed to convert")
+                expectEqual(finished.next.down, 1,
+                            "the ball changed hands without resetting the down")
+            }
+        }
+
         test("detailed summaries use scrimmage plays and preserve losses") {
             func play(_ type: OffensivePlayType, result: SnapResult, yards: Int) -> PlayRecord {
                 PlayRecord(
