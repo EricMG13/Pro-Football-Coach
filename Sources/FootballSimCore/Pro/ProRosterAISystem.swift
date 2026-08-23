@@ -43,7 +43,9 @@ public enum ProRosterAISystem {
             return try signFreeAgents(in: state, controlledTeamID: controlledTeamID)
         case .draft:
             return try makeDraftPicks(in: state, controlledTeamID: controlledTeamID)
-        case .closed, .rosterBuild:
+        case .rosterBuild:
+            return try buildRosters(in: state, controlledTeamID: controlledTeamID)
+        case .closed:
             return ProRosterAITransition(state: state, eventPayloads: [], signedPlayerIDs: [])
         }
     }
@@ -87,16 +89,15 @@ public enum ProRosterAISystem {
                     contract: contract,
                     in: next
                 )
-            } catch ProManagementError.activeRosterFull {
-                // `02` section 4.2, 2026-08-23: the club has no seat, so it passes and the club
-                // behind it is on the clock. The prospect stays on the board — a pass spends the
-                // pick, not the player — so the next club takes the same best available.
+            } catch ProManagementError.practiceSquadFull {
+                // A club whose squad is full passes, for the reason the active-seat pass existed
+                // between 2026-08-20 and 2026-08-23: one club with nowhere to put a player must not
+                // end the round for the thirty-one behind it. The prospect stays on the board.
                 //
-                // Measured before this line existed: expiry leaves clubs six to seventeen seats
-                // short against seven rounds, the club that lost fewest filled up on its own sixth
-                // pick, and `break` then ended the round for the other thirty-one. The market never
-                // reached `.rosterBuild` in any season and the draft made 130 of 224 picks by
-                // season four.
+                // This should not fire. Seven picks a season against sixteen seats and a two-season
+                // tenure is fourteen at worst, and `.rosterBuild` trims before the next draft. It is
+                // here because the alternative to a pass is a stall, and a stall is what this whole
+                // slice exists to undo.
                 guard next.proMarket.passDraftPick() else { break }
                 passed += 1
                 continue
@@ -126,6 +127,105 @@ public enum ProRosterAISystem {
         )
     }
 
+    /// `.rosterBuild` — where a club turns the squad it drafted into the roster it plays.
+    ///
+    /// Dead code until 2026-08-23: this phase returned an empty transition, and before the draft was
+    /// unstuck the market never even reached it. `02` section 4.2 gives it two jobs, in this order.
+    ///
+    /// **Promote.** Every active vacancy is filled from the club's own practice squad, best-rated
+    /// first. This is the seat a returning veteran and a developing rookie now compete for; before
+    /// the amendment the rookie was guaranteed it because the draft seated him directly.
+    ///
+    /// **Trim.** Then the squad is cut back to its limit and its tenure, lowest-rated first. Tenure
+    /// is read from `contract.signedSeason` rather than a new stored field, because a drafted
+    /// player's contract is stamped with the season he entered and that is exactly the clock.
+    private static func buildRosters(
+        in state: GameState,
+        controlledTeamID: UUID?
+    ) throws -> ProRosterAITransition {
+        var next = state
+        var payloads: [DomainEventPayload] = []
+        var promoted: [UUID] = []
+
+        for teamID in state.proTeams.ids.sorted(by: { $0.uuidString < $1.uuidString })
+        where teamID != controlledTeamID {
+            while let team = next.proTeams[teamID],
+                  team.rosterIDs.count < ProRules.activeRosterLimit,
+                  let best = bestByRating(team.practiceSquadIDs, in: next) {
+                do {
+                    next = try ProMarketSystem.promoteFromPracticeSquad(
+                        playerID: best,
+                        teamID: teamID,
+                        in: next,
+                        validateIntegrity: false
+                    )
+                } catch {
+                    break
+                }
+                payloads.append(.proPracticeSquadMoved(
+                    playerID: best,
+                    teamID: teamID,
+                    promoted: true
+                ))
+                promoted.append(best)
+            }
+
+            while let team = next.proTeams[teamID],
+                  let worst = trimmable(team.practiceSquadIDs, in: next, season: next.proMarket.season) {
+                do {
+                    next = try ProManagementSystem.release(
+                        playerID: worst,
+                        from: teamID,
+                        in: next
+                    ).state
+                } catch {
+                    break
+                }
+                // No payload: there is no release event that means "trimmed from the squad", and
+                // `proCapComplianceRelease` means something else — a club cut to get under the cap.
+                // Free agency emits nothing when it declines to sign either. `02` section 4.2 does
+                // not make a trim news, so nothing here invents a schema field to say it is.
+            }
+        }
+
+        return ProRosterAITransition(
+            state: next,
+            eventPayloads: payloads,
+            signedPlayerIDs: promoted
+        )
+    }
+
+    /// Highest rated, ties on identifier, so the same squad promotes the same player on every run.
+    private static func bestByRating(_ ids: [UUID], in state: GameState) -> UUID? {
+        ids.compactMap { state.players[$0] }
+            .max { lhs, rhs in
+                lhs.overall.value == rhs.overall.value
+                    ? lhs.id.uuidString > rhs.id.uuidString
+                    : lhs.overall.value < rhs.overall.value
+            }?
+            .id
+    }
+
+    /// The player to cut next, or `nil` when the squad is legal. Over the limit, that is the worst
+    /// player; otherwise it is the worst player who has served his two seasons. `02` section 4.2:
+    /// 224 entering a year fits 448 into 512 seats, so the tenure is what keeps it there.
+    private static func trimmable(_ ids: [UUID], in state: GameState, season: Int) -> UUID? {
+        let players = ids.compactMap { state.players[$0] }
+        func worst(_ pool: [Player]) -> UUID? {
+            pool.min { lhs, rhs in
+                lhs.overall.value == rhs.overall.value
+                    ? lhs.id.uuidString < rhs.id.uuidString
+                    : lhs.overall.value < rhs.overall.value
+            }?.id
+        }
+        if players.count > ProRules.practiceSquadLimit { return worst(players) }
+        let served = players.filter { player in
+            guard let signed = player.contract?.signedSeason else { return false }
+            return season - signed >= ProRules.practiceSquadSeasons
+        }
+        return served.isEmpty ? nil : worst(served)
+    }
+
     private static func signFreeAgents(
         in state: GameState,
         controlledTeamID: UUID?
@@ -135,21 +235,12 @@ public enum ProRosterAISystem {
         var signed: [UUID] = []
         let teamIDs = state.proTeams.ids.sorted { $0.uuidString < $1.uuidString }
         for teamID in teamIDs where teamID != controlledTeamID {
-            // `02` §4.2: free agency signs while legal *and* while the roster leaves room for the
-            // picks the team still holds. Without the reserve the draft could never take a player
-            // at any seed -- free agency signs until the pool is dry, and a dry pool is exactly the
-            // pass that starts the draft, so the draft always opened with all 53 seats filled and
-            // every pick threw `activeRosterFull`.
-            //
-            // Counted from the draft order rather than from `ProRules.draftRounds`, so a team
-            // holding an unusual number of picks reserves for the picks it actually holds. Clamped
-            // at zero because the order arrives from disk.
-            let remainingPicks = next.proMarket.draftOrder
-                .dropFirst(next.proMarket.nextPick)
-                .filter { $0 == teamID }
-                .count
-            let signingLimit = max(0, ProRules.activeRosterLimit - remainingPicks)
-            guard let team = next.proTeams[teamID], team.rosterIDs.count < signingLimit else {
+            // The seat reservation is withdrawn — `02` section 4.2, 2026-08-23. It held back one
+            // active seat per remaining round so the draft would have somewhere to put its picks;
+            // a pick now enters on the practice squad and needs no active seat, so reserving one
+            // would hold seven seats empty for nobody and leave the club short all season.
+            guard let team = next.proTeams[teamID],
+                  team.rosterIDs.count < ProRules.activeRosterLimit else {
                 continue
             }
             let candidates = next.proMarket.freeAgentIDs

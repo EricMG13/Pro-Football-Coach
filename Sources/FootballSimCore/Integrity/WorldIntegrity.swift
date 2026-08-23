@@ -2039,8 +2039,12 @@ public enum WorldIntegrity {
                     let prospectID = $0.id
                     let drafted = market.draftedProspectIDs.contains(prospectID)
                     let rootPlayer = state.players[prospectID]
+                    // Both lists, since 2026-08-23: `02` section 4.2 puts a draft pick on the
+                    // practice squad, and counting only the active roster read every pick as owned
+                    // by nobody and refused the whole root.
                     let ownerCount = state.proTeams.values.reduce(into: 0) { count, team in
-                        count += team.rosterIDs.contains(prospectID) ? 1 : 0
+                        count += (team.rosterIDs.contains(prospectID)
+                            || team.practiceSquadIDs.contains(prospectID)) ? 1 : 0
                     }
                     return $0.draftSeason == market.season
                         && $0.player.id == $0.id

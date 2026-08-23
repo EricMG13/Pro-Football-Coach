@@ -344,10 +344,14 @@ public enum ProMarketSystem {
         return next
     }
 
+    /// `validateIntegrity` is false for the scheduler's `.rosterBuild` batch, for the same reason
+    /// `draftForScheduler` exists: the weekly step ends on a whole-root check, and a club filling
+    /// nine seats would otherwise pay for nine more.
     public static func promoteFromPracticeSquad(
         playerID: UUID,
         teamID: UUID,
-        in state: GameState
+        in state: GameState,
+        validateIntegrity: Bool = true
     ) throws -> GameState {
         guard let team = state.proTeams[teamID],
               team.practiceSquadIDs.contains(playerID) else {
@@ -361,7 +365,9 @@ public enum ProMarketSystem {
             $0.practiceSquadIDs.removeAll { $0 == playerID }
             $0.rosterIDs.append(playerID)
         }
-        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        if validateIntegrity {
+            guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        }
         return next
     }
 

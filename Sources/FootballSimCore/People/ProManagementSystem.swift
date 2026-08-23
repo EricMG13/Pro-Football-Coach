@@ -58,6 +58,7 @@ public enum ProManagementError: Error, Sendable, Equatable {
     case playerAlreadyRostered
     case playerIsNotProfessionalFreeAgent
     case activeRosterFull
+    case practiceSquadFull
     case playerNotOnRoster
     case capExceeded
     case negotiationNotFound
@@ -181,8 +182,19 @@ public enum ProManagementSystem {
         guard !ownedIDs.contains(playerID), player.eligibility == nil, player.contract == nil else {
             throw ProManagementError.playerIsNotProfessionalFreeAgent
         }
-        guard team.rosterIDs.count < ProRules.activeRosterLimit else {
-            throw ProManagementError.activeRosterFull
+        // The seat a signing takes is decided by what kind of signing it is, and `02` section 4.2
+        // (2026-08-23) makes that the whole rule: a draft pick enters on the practice squad, a free
+        // agent on the active roster. Deriving it from `kind` rather than threading a destination
+        // through five call sites keeps the two enums the one statement of the same fact.
+        switch kind {
+        case .freeAgency:
+            guard team.rosterIDs.count < ProRules.activeRosterLimit else {
+                throw ProManagementError.activeRosterFull
+            }
+        case .draft:
+            guard team.practiceSquadIDs.count < ProRules.practiceSquadLimit else {
+                throw ProManagementError.practiceSquadFull
+            }
         }
         let before = try capSnapshot(teamID: teamID, in: state)
         guard before.committedCap <= before.capLimit - contract.capHit(inYear: 0) else {
@@ -206,7 +218,12 @@ public enum ProManagementSystem {
 
         var next = state
         next.players.update(playerID) { $0.contract = stampedContract }
-        next.proTeams.update(teamID) { $0.rosterIDs.append(playerID) }
+        next.proTeams.update(teamID) {
+            switch kind {
+            case .freeAgency: $0.rosterIDs.append(playerID)
+            case .draft: $0.practiceSquadIDs.append(playerID)
+            }
+        }
         if validateIntegrity {
             guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
         }

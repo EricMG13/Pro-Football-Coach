@@ -80,7 +80,10 @@ func runProMarketTests() {
             )
             expectEqual(drafted.proMarket.nextPick, 1)
             expect(drafted.proMarket.draftedProspectIDs.contains(prospect.id))
-            expect(drafted.proTeams[teamID]?.rosterIDs.contains(prospect.id) == true)
+            // The practice squad, not the active roster — `02` section 4.2, 2026-08-23.
+            expect(drafted.proTeams[teamID]?.practiceSquadIDs.contains(prospect.id) == true)
+            expect(drafted.proTeams[teamID]?.rosterIDs.contains(prospect.id) == false,
+                   "a draft pick took a 53-man seat")
             expectEqual(
                 drafted.players[prospect.id]?.contract,
                 ProMarketSystem.rookieContract(for: prospect.player)
@@ -89,55 +92,65 @@ func runProMarketTests() {
             expect(WorldIntegrity.check(drafted).isValid)
         }
 
-        test("a club with no seat passes its pick and the draft carries on") {
-            // The defect this replaces: `makeDraftPicks` stopped the whole run on the first
-            // `activeRosterFull`, so one full club ended the round for every club behind it. Live,
-            // that left the market in `.draft` for fifteen weeks a season and the draft making 130
-            // of 224 picks by season four (`--pro-movement-probe`, seed 96,001).
+        test("every pick lands on the practice squad and the draft finishes in one pass") {
+            // Supersedes "a club with no seat passes its pick": a pick needs no active seat now, so
+            // the pass path it tested is unreachable. What replaces it is the property that made
+            // passing necessary — one club must never end the round for the thirty-one behind it —
+            // asserted the way the amendment achieves it.
             //
-            // The fixture is the extreme of the real shape: every club full except one, which is
-            // given exactly three seats. A stopping draft makes zero picks here; a passing one makes
-            // three and finishes.
+            // Every club full, which used to be the worst case and is now unremarkable.
             var state = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_140))
-            let seated = try require(state.proMarket.draftOrder.first)
-            removeProRosterPlayers(count: 3, teamID: seated, in: &state)
-            state = try ProMarketSystem.beginDraft(in: state)
-            for teamID in state.proTeams.ids where teamID != seated {
-                expectEqual(state.proTeams[teamID]?.rosterIDs.count, ProRules.activeRosterLimit,
-                            "the fixture left a second club with room")
+            for teamID in state.proTeams.ids {
+                expectEqual(state.proTeams[teamID]?.rosterIDs.count, ProRules.activeRosterLimit)
+                expectEqual(state.proTeams[teamID]?.practiceSquadIDs.count, 0)
             }
+            state = try ProMarketSystem.beginDraft(in: state)
 
             let transition = try ProRosterAISystem.process(at: state.calendar, in: state)
             let market = transition.state.proMarket
 
             expectEqual(market.phase, .rosterBuild, "the draft did not finish")
-            expectEqual(transition.signedPlayerIDs.count, 3)
-            expectEqual(market.draftedProspectIDs.count, 3)
-            expectEqual(transition.passedPicks, ProRules.draftPickCount - 3)
-            expectEqual(market.passedPickCount, ProRules.draftPickCount - 3)
-            expectEqual(market.nextPick, ProRules.draftPickCount)
-            expectEqual(transition.stoppedBecause, nil, "the draft stopped for an unhandled reason")
-            expectEqual(transition.state.proTeams[seated]?.rosterIDs.count,
-                        ProRules.activeRosterLimit)
-            expect(WorldIntegrity.check(transition.state).isValid,
-                   "a market holding passed picks failed root integrity")
-            expectEqual(try SaveEnvelope.decode(
-                GameState.self,
-                from: SaveEnvelope.encode(transition.state)
-            ), transition.state)
+            expectEqual(transition.signedPlayerIDs.count, ProRules.draftPickCount)
+            expectEqual(market.draftedProspectIDs.count, ProRules.draftPickCount)
+            expectEqual(market.passedPickCount, 0, "a pick was passed for want of a seat")
+            expectEqual(transition.stoppedBecause, nil)
+            let squads = transition.state.proTeams.values.reduce(0) { $0 + $1.practiceSquadIDs.count }
+            let active = transition.state.proTeams.values.reduce(0) { $0 + $1.rosterIDs.count }
+            expectEqual(squads, ProRules.draftPickCount, "the class did not land on the squads")
+            expectEqual(active, 32 * ProRules.activeRosterLimit, "the draft moved an active seat")
+            expect(WorldIntegrity.check(transition.state).isValid)
+        }
 
-            // A pass spends the pick, not the player: the three the seated club took are the three
-            // best in the class, because every club that passed ahead of it left them on the board.
-            let bestThree = state.proMarket.draftClass
+        test("rosterBuild promotes into vacancies best first, and trims what it cannot seat") {
+            var state = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_142))
+            state = try ProMarketSystem.beginDraft(in: state)
+            state = try ProRosterAISystem.process(at: state.calendar, in: state).state
+            expectEqual(state.proMarket.phase, .rosterBuild)
+
+            let teamID = try require(state.proTeams.ids.sorted(by: { $0.uuidString < $1.uuidString }).first)
+            let squadBefore = try require(state.proTeams[teamID]?.practiceSquadIDs)
+            expect(!squadBefore.isEmpty, "the club drafted nobody to promote")
+            removeProRosterPlayers(count: 3, teamID: teamID, in: &state)
+
+            let built = try ProRosterAISystem.process(at: state.calendar, in: state)
+            let team = try require(built.state.proTeams[teamID])
+
+            expectEqual(team.rosterIDs.count, ProRules.activeRosterLimit,
+                        "the vacancies were not filled")
+            // Best first: the three promoted are the three best-rated the squad held.
+            let promoted = Set(team.rosterIDs).intersection(squadBefore)
+            let bestThree = squadBefore
+                .compactMap { state.players[$0] }
                 .sorted {
-                    $0.player.overall.value == $1.player.overall.value
+                    $0.overall.value == $1.overall.value
                         ? $0.id.uuidString < $1.id.uuidString
-                        : $0.player.overall.value > $1.player.overall.value
+                        : $0.overall.value > $1.overall.value
                 }
                 .prefix(3)
                 .map(\.id)
-            expectEqual(Set(transition.signedPlayerIDs), Set(bestThree),
-                        "a passed pick took its prospect off the board with it")
+            expectEqual(promoted, Set(bestThree), "the club did not promote its best available")
+            expect(team.practiceSquadIDs.count <= ProRules.practiceSquadLimit)
+            expect(WorldIntegrity.check(built.state).isValid)
         }
 
         test("a market saved before passed picks existed decodes as none passed") {

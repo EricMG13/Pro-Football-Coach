@@ -71,6 +71,14 @@ public enum ProRules {
     /// build's attack hid a contract.
     public static let practiceSquadLimit = 16
 
+    /// How many seasons a player may sit on a practice squad before the club must cut him.
+    ///
+    /// `02` section 4.2, owner decision 2026-08-23. The draft puts 224 players a season onto squads
+    /// holding 512 between them, so an untrimmed league overflows in its third season; two seasons
+    /// fits 448 into 512 with headroom. Read against `contract.signedSeason`, which a drafted
+    /// player's deal is stamped with, rather than a stored counter — the clock already exists.
+    public static let practiceSquadSeasons = 2
+
     // MARK: - Money
 
     public static let baseSalaryCap = 255_000_000
