@@ -217,20 +217,87 @@
 .fl-hero__numeral { font-family: var(--font-figure); font-weight: 700; line-height: 1; letter-spacing: var(--track-tight); }
 .fl-hero__points { margin: 0; padding-left: var(--gap-lg); font: var(--type-callout); }
 
-.fl-field { position: relative; height: 200px; border-radius: var(--radius-card); overflow: hidden; }
+/* ---- The field, at the reference sheet's geometry -----------------------------
+   703.33 px per 100 yards. Every marking derives from --field-yard, so the field
+   cannot drift out of scale with itself. */
+
+.fl-field {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
 .fl-field__turf {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 100% at 50% 56%, var(--fl-turf-crown), transparent 70%),
-    linear-gradient(180deg, var(--fl-turf-hot), var(--fl-turf-mid) 55%, var(--fl-turf-night));
+    radial-gradient(69% 69% at var(--field-crown-x) var(--field-crown-y),
+      var(--fl-turf-crown) 0%, var(--fl-turf) 46%, var(--fl-turf-mid) 78%,
+      var(--fl-turf-shade) 100%);
 }
-.fl-field__mark { position: absolute; top: 50%; height: 72px; opacity: 0.42; transform: translateY(-50%); }
-.fl-field__mark--home { left: var(--gap-xl); }
-.fl-field__mark--away { right: var(--gap-xl); }
+
+/* Mowing stripes on the 5-yard pitch, and the scan line the reference carries. */
+.fl-field__stripes {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 1px, var(--field-scan) 1px 2px),
+    repeating-linear-gradient(90deg,
+      var(--field-stripe-light) 0 var(--field-five),
+      var(--field-stripe-dark) var(--field-five) calc(var(--field-five) * 2));
+}
+
+/* A 2 px line every five yards. */
+.fl-field__lines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg,
+    var(--field-yard-line) 0 2px, transparent 2px var(--field-five));
+}
+
+/* Hash marks on the 1-yard pitch, inset to the college rows. */
+.fl-field__hash {
+  position: absolute;
+  left: 0; right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(90deg,
+    var(--field-hash) 0 1.5px, transparent 1.5px var(--field-yard));
+}
+.fl-field__hash--top { top: 37.5%; }
+.fl-field__hash--bottom { bottom: 37.5%; }
+
+.fl-field__numbers { position: absolute; inset: 0; }
+.fl-field__yardno {
+  position: absolute;
+  top: 16%;
+  transform: translateX(-50%);
+  font: var(--weight-bold) 19px / 1 var(--font-display);
+  color: var(--field-line);
+  opacity: 0.66;
+  letter-spacing: var(--track-micro);
+}
+
+.fl-field__endzone {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.20;
+}
+.fl-field__endzone img { height: 108px; width: 108px; object-fit: contain; display: block; }
+.fl-field__endzone--home { left: 2%; }
+.fl-field__endzone--away { right: 2%; }
+
+/* The line of scrimmage is white; the line to gain is the one other place gold is
+   spent (`04` 6.1a(ii)). */
+.fl-field__los,
+.fl-field__gain { position: absolute; top: 0; bottom: 0; width: 2px; }
+.fl-field__los { background: var(--field-line); }
+.fl-field__gain { background: var(--action-primary); box-shadow: var(--glow-gold); }
+
 .fl-field__overlays {
   position: absolute;
-  inset: auto var(--gap-lg) var(--gap-lg) var(--gap-lg);
+  inset: auto var(--gap-lg) var(--gap-md) var(--gap-lg);
   display: flex;
   gap: var(--gap-sm-plus);
   flex-wrap: wrap;
@@ -238,6 +305,74 @@
 .fl-field__overlay {
   font: var(--weight-bold) var(--size-pill) / 1.2 var(--font-display);
   letter-spacing: var(--track-micro);
+  padding: 2px var(--gap-xs);
+  border-radius: var(--radius-row);
+  background: var(--surface-scrim);
+}
+
+/* ---- Scorebug: the one surface carrying both teams' identity ------------------- */
+
+.fl-bug {
+  display: flex;
+  align-items: stretch;
+  gap: var(--hairline);
+  height: 54px;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--surface-panel-deep);
+  box-shadow: var(--shadow-card), var(--inset-panel);
+}
+
+.fl-bug__situation,
+.fl-bug__clock {
+  display: grid;
+  place-items: center;
+  padding: 0 var(--gap-lg);
+  font: var(--weight-bold) var(--size-action-small) / 1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-secondary);
+  background: var(--world-raised);
+  flex: none;
+}
+.fl-bug__clock { letter-spacing: var(--track-micro); }
+
+.fl-bug__team {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm-plus);
+  padding: 0 var(--gap-lg);
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--surface-panel);
+}
+.fl-bug__team--away { justify-content: flex-start; }
+.fl-bug__team--home { justify-content: flex-end; }
+.fl-bug__team em { margin-left: auto; }
+.fl-bug__team--home em { margin-left: 0; margin-right: auto; }
+.fl-bug__team img { height: 32px; width: 32px; object-fit: contain; }
+.fl-bug__team b {
+  font: var(--weight-bold) var(--size-title) / 1 var(--font-display);
+  color: var(--content-primary);
+  letter-spacing: var(--track-micro);
+}
+.fl-bug__team em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--content-quiet);
+}
+.fl-bug__score {
+  font: var(--weight-bold) 34px / 1 var(--font-figure);
+  color: var(--content-primary);
+  letter-spacing: var(--track-tight);
+}
+/* Possession is live green, not gold -- gold is the commit and the line to gain. */
+.fl-bug__wedge {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--state-live);
 }
 
 .fl-figure { font-family: var(--font-figure); font-variant-numeric: tabular-nums lining-nums; }

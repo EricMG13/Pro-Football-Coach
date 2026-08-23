@@ -696,15 +696,27 @@ class Panel:
 
 @dataclass(frozen=True)
 class Field:
-    """The Match Day field. `overlays` are the only data on it -- the turf, the lines
-    and the hash marks are drawing, and drawing is not a readout."""
+    """The Match Day field, at the reference sheet's real geometry.
 
-    home: str  # mark key
+    703.33 px per 100 yards, so one yard is 7.033 and a 5-yard line lands every 35.17.
+    Mowing stripes run on the same 5-yard pitch, hash marks on the 1-yard pitch, and the
+    crown is a radial at 50% / 56%. Every number below derives from `--field-yard`; the
+    first draft of this primitive was a green rectangle with two logos on it, which is
+    what a field looks like when nobody measured one.
+
+    `spot` and `first_down` are yard lines 0-100 from the home goal line, so the line of
+    scrimmage and the line to gain sit where the football actually is."""
+
+    home: str
     away: str
+    spot: int = 34
+    first_down: int = 41
     overlays: tuple[str, ...] = ()
+    depth: float = 208.0
 
     def cells(self) -> int:
-        return len(self.overlays)
+        # the spot and the line to gain are data the player reads off the field
+        return len(self.overlays) + 2
 
     def readout_rows(self) -> int:
         return 0
@@ -716,24 +728,113 @@ class Field:
         return 0
 
     def golds(self) -> int:
-        return 0
+        # `04` 6.1a(ii): gold marks the committing action AND the live first-down line,
+        # and that second use is the only reason a surface may spend it twice.
+        return 1
 
     def height(self) -> float:
-        return _FIELD
+        return self.depth
+
 
     def render(self) -> str:
         from marks import mark_uri
 
+        yard = tokens.px("--field-yard")
+        numbers = "".join(
+            f'<span class="fl-field__yardno" style="left: {n * yard:g}px">{label}</span>'
+            for n, label in (
+                (10, "10"), (20, "20"), (30, "30"), (40, "40"), (50, "50"),
+                (60, "40"), (70, "30"), (80, "20"), (90, "10"),
+            )
+        )
         chips = "".join(
-            f'<span class="fl-field__overlay">{_ink(o, "--field-annotation", "--fl-turf-mid")}</span>'
+            f'<span class="fl-field__overlay">'
+            f'{_ink(o, "--field-annotation", "--fl-turf-mid")}</span>'
             for o in self.overlays
         )
         return (
-            '<div class="fl-field">'
+            f'<div class="fl-field" style="height: {self.depth:g}px">'
             '<div class="fl-field__turf" aria-hidden="true"></div>'
-            f'<img class="fl-field__mark fl-field__mark--home" src="{mark_uri(self.home)}" alt="">'
-            f'<img class="fl-field__mark fl-field__mark--away" src="{mark_uri(self.away)}" alt="">'
+            '<div class="fl-field__stripes" aria-hidden="true"></div>'
+            '<div class="fl-field__lines" aria-hidden="true"></div>'
+            '<div class="fl-field__hash fl-field__hash--top" aria-hidden="true"></div>'
+            '<div class="fl-field__hash fl-field__hash--bottom" aria-hidden="true"></div>'
+            f'<div class="fl-field__numbers" aria-hidden="true">{numbers}</div>'
+            f'<div class="fl-field__endzone fl-field__endzone--home" aria-hidden="true">'
+            f'<img src="{mark_uri(self.home)}" alt=""></div>'
+            f'<div class="fl-field__endzone fl-field__endzone--away" aria-hidden="true">'
+            f'<img src="{mark_uri(self.away)}" alt=""></div>'
+            f'<div class="fl-field__los" style="left: {self.spot * yard:g}px">'
+            f'<span class="fl-sr">Line of scrimmage, {self.spot} yard line</span></div>'
+            f'<div class="fl-field__gain" style="left: {self.first_down * yard:g}px">'
+            f'<span class="fl-sr">Line to gain, {self.first_down} yard line</span></div>'
             f'<div class="fl-field__overlays">{chips}</div>'
+            "</div>"
+        )
+
+
+@dataclass(frozen=True)
+class ScoreBug:
+    """The Broadcast register's one identity surface -- it carries BOTH teams' full
+    identity, which a management surface never does.
+
+    Cut-corner geometry from `--radius-card`, the possession wedge in gold, and a
+    situation line that is tracked uppercase rather than a table cell. Registry 20."""
+
+    home: str          # mark key
+    home_abbr: str
+    home_score: int
+    home_record: str
+    away: str
+    away_abbr: str
+    away_score: int
+    away_record: str
+    clock: str
+    situation: str
+    possession: str = "home"
+
+    def cells(self) -> int:
+        return 4  # two scores, the clock, the situation
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0  # the wedge is possession, drawn in live green, not gold
+
+    def height(self) -> float:
+        return 54.0
+
+    def _side(self, mark: str, abbr: str, score: int, record: str, side: str) -> str:
+        from marks import mark_uri
+
+        wedge = (
+            '<i class="fl-bug__wedge" aria-hidden="true"></i>'
+            if self.possession == side
+            else ""
+        )
+        return (
+            f'<span class="fl-bug__team fl-bug__team--{side}">'
+            f'<img src="{mark_uri(mark)}" alt="">'
+            f'<b>{escape(abbr)}</b>'
+            f'<em class="fl-figure">{escape(record)}</em>'
+            f'{wedge}'
+            f'<span class="fl-bug__score fl-figure">{score}</span></span>'
+        )
+
+    def render(self) -> str:
+        return (
+            '<div class="fl-bug">'
+            f'<span class="fl-bug__situation">{escape(self.situation)}</span>'
+            + self._side(self.away, self.away_abbr, self.away_score, self.away_record, "away")
+            + self._side(self.home, self.home_abbr, self.home_score, self.home_record, "home")
+            + f'<span class="fl-bug__clock fl-figure">{escape(self.clock)}</span>'
             "</div>"
         )
 
@@ -796,8 +897,16 @@ class Hero:
     def golds(self) -> int:
         return 0
 
+    def headline_lines(self) -> int:
+        """How many lines the headline takes. A Broadcast headline at 72 pt runs out of
+        709 pt fast, and assuming one line is what let Aftermath's third bullet fall off
+        the bottom of its own plate."""
+        # Archivo Narrow bold, measured: ~0.46 em per character at display sizes.
+        per_line = max(int(tokens.CONTENT_W / (self.HEADLINE[self.scale] * 0.46)), 1)
+        return max(1, -(-len(self.headline) // per_line))
+
     def height(self) -> float:
-        total = self.CHROME[self.scale] + self.HEADLINE[self.scale] * 1.02
+        total = self.CHROME[self.scale] + self.HEADLINE[self.scale] * 1.02 * self.headline_lines()
         if self.numeral:
             total += self.NUMERAL[self.scale] + _GAP_XS
         if self.points:

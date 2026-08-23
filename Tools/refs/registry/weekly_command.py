@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from ._shared import (
     Chip, Chips, Col, Field, Hero, NOTHING_MISSING, OpposedBar, Panel, Lean, Row,
-    Rows, ShareBar, Split, Stack, Status, Surface, Table, blocker, broadcast, desk, gap,
+    Rows, ScoreBug, ShareBar, Split, Stack, Status, Surface, Table, blocker,
+    broadcast, desk, gap,
 )
 
 coaching_hq = desk(
@@ -123,17 +124,23 @@ match_day = Surface(
     id="matchDay", number=14, name="Match Day", family="weeklyCommand",
     lean=Lean.MATCH_DAY, status=Status.BUILT,
     body=Stack((
+        ScoreBug(
+            home="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
+            home_abbr="UNI", home_score=17, home_record="7-0 · #9",
+            away="TeamLogo_0017F958E7D04FFC9EA801A252B40FD6",
+            away_abbr="ZUM", away_score=14, away_record="6-1 · #14",
+            clock="Q3 · 6:42", situation="2nd and 7", possession="home",
+        ),
         Field(
             home="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
             away="TeamLogo_0017F958E7D04FFC9EA801A252B40FD6",
-            overlays=("2nd and 7", "Own 34", "11 personnel"),
+            spot=34, first_down=41,
+            overlays=("11 personnel", "3 timeouts"),
         ),
-        Rows((
-            Row("Union Maritime", ("17",), "3 timeouts, ball on the 34"),
-        ), kind="readout"),
     )),
     gaps=(
         blocker("DATA", "EventBadge is constructed on no branch, so every fixture paints as a regular-season game."),
+        gap("DATA", "The field draws the spot and the line to gain from two integers; no play state feeds them, and there are no players on it."),
         gap("ART", "Occasion branding needs three declared Broadcast variants: regular 44, elimination 48, final 52."),
         gap("SCREEN", "Halftime, end of game and opponent possession are separate surfaces; only live play is drawn."),
     ),
@@ -145,7 +152,7 @@ aftermath = broadcast(
         mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
         headline="Union Maritime 24, Zumbrota Central 21",
         numeral="7-0",
-        points=("Kerr held for 38 snaps", "Third down 9 of 14", "Next: Pecos, week 8"),
+        points=("Kerr held for 38 snaps", "Third down 9 of 14"),
         scale="broadcast",
     ),
     gaps=(

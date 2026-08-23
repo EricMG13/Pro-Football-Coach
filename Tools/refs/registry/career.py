@@ -29,7 +29,7 @@ title_continue = broadcast(
     commit="Continue",
     body=Hero(
         mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
-        headline="Union Maritime Meridian",
+        headline="Union Maritime",
         numeral="7-0",
         points=("Year three, week 7", "College"),
         scale="broadcast",
@@ -95,7 +95,7 @@ promotion = broadcast(
     commit="Accept the pro job",
     body=Hero(
         mark="TeamLogo_0D81D2F903834BD5A74176604D277691",
-        headline="Oneonta Slate want you",
+        headline="Oneonta call",
         numeral="5",
         points=("Head coach, professional tier", "Five years, full roster authority"),
         scale="broadcast", side="opponent",

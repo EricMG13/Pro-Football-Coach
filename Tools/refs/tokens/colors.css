@@ -58,6 +58,15 @@
   --fl-turf-night: #05150D;
   --fl-endzone-opponent: #1B2431;
 
+  /* ---- Field markings (Match Day.dc.html, the owner-selected 1a direction) --------
+     Alphas on white and black, like material.css, because that is what they are: a
+     yard line is paint on grass, not a colour in the palette. */
+  --field-yard-line: rgba(246, 250, 255, 0.26);
+  --field-hash: rgba(246, 250, 255, 0.30);
+  --field-stripe-light: rgba(255, 255, 255, 0.030);
+  --field-stripe-dark: rgba(0, 0, 0, 0.070);
+  --field-scan: rgba(0, 0, 0, 0.070);
+
   /* ---- Broadcast ink ---------------------------------------------------- */
   --fl-live-ink: #FF8E9C;
   --fl-go-ink: #7DF0B6;

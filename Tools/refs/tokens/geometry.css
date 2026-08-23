@@ -20,6 +20,13 @@
   /* BROADCAST geometry outside Match Day is square. */
   --radius-broadcast: 0;
 
+  /* Field scale, from the reference sheet: 703.33 px per 100 yards at the install
+     floor. Every marking below derives from the yard, so the field cannot drift. */
+  --field-yard: 7.033px;
+  --field-five: 35.17px;
+  --field-crown-x: 50%;
+  --field-crown-y: 56%;
+
   --hairline: 1px;
   --min-target: 44px;
 
