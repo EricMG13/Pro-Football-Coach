@@ -26,7 +26,9 @@ targets:
         # orientation findings all traced back to this one line being absent, not to which
         # orientation it named - every screen was rotatable and two of them lost their controls
         # off the bottom edge when they were. One declared orientation is the property that
-        # matters. OrientationPolicyTest reads this file, so it cannot drift from 04.
+        # matters. The "Orientation policy" suite in Tests/SimTests/Suites/DesignContractTests.swift
+        # reads this file, so it cannot drift from 04. This comment named an OrientationPolicyTest
+        # until 2026-08-23; no type of that name has ever existed.
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_CFBundleDisplayName: "Pro Football Coach"
         SWIFT_VERSION: "5.10"
