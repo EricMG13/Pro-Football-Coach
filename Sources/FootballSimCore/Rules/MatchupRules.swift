@@ -211,6 +211,13 @@ public enum MatchupRules {
     /// (4, then 12, then 24), so multiplying them by a tier factor stepped the first break from 4
     /// to 5 between multipliers of 1.09 and 1.13 and jumped the explosive-run rate from 0.136 to
     /// 0.171 with nothing in between. Break *probability* moves continuously with the threshold.
+    ///
+    /// **0.05 until 2026-08-23.** `Assignment.atTheSecondLevel` puts a linebacker in front of the
+    /// carrier exactly when the lane was won, and a linebacker tackles better than the lineman he
+    /// replaced, so college explosive runs fell from 0.1395 to 0.1360 against a 0.1350 floor -- a
+    /// band already sitting on its floor with 0.0022 to spare before any of this moved. 0.08
+    /// re-centres it at 0.1488 against a band midpoint of 0.150. This is the tier-local lever the
+    /// paragraph above was written for, used for the thing it was written for.
     public static let collegeBreakTackleRelief = 0.08
     /// Lane quality above which the carrier is met at the second level rather than at the line,
     /// and above which he is into the secondary rather than either.
