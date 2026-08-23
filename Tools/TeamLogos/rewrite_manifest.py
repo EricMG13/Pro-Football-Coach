@@ -2,10 +2,21 @@
 """Rewrite the logo manifest so every mark depicts the team it belongs to.
 
     python3 Tools/TeamLogos/rewrite_manifest.py <names.json>
+    python3 Tools/TeamLogos/rewrite_manifest.py --rebrief
 
 `names.json` is the id/name/nickname dump the engine produces for the canonical seed. The manifest
 keeps its stable IDs, asset names, filenames and colours; what changes is the public name, the motif
 family, and the concept and prompt the artwork is generated from.
+
+`--rebrief` is the narrow form, for when the names in the manifest are already right and only the
+briefs have drifted -- what a re-key of the generated world leaves behind. It reads the nicknames
+out of the manifest itself and rewrites only the records whose brief names a different nickname.
+Families are redealt among those records alone, never across the whole manifest: the counts each
+family holds are unchanged, so the balance the full rewrite struck survives, and a record whose
+brief still matches its artwork is not disturbed into needing a new one.
+
+It changes no artwork. The packaged mark still shows what it was briefed for, and every rewritten
+record says so in its review notes until a regeneration run replaces it.
 
 Two things were wrong before. The concept was a scene -- "a bold falcon shaped by the Heath
 landscape of Altus" -- so the image model drew a landscape with a bird in it rather than a mark.
@@ -14,28 +25,39 @@ compass roundel. Both are fixed here: the subject is the nickname, and the promp
 vector artwork with the scene language removed.
 """
 
+import datetime
 import json
+import re
 import sys
 from collections import Counter
 
 # Every nickname noun the grammar can emit, with the shapes it can legitimately become. A noun
 # without a field cannot be drawn that way -- an anchor is not a creature -- and that is what drives
 # family assignment below. `emblem` is deliberately universal: anything can sit inside a crest.
+#
+# This table has to hold `NameGrammar.nicknameNouns` exactly. Seven entries here -- Drovers,
+# Foresters, Marauders, Harriers, Herons, Otters and Beacons -- outlived the pool: the grammar
+# replaced all seven in place on 2026-08-13 because each is a real programme's nickname, and this
+# file was not touched. Nothing noticed, because a noun the table does not know is a `KeyError`
+# only when someone re-briefs the team that drew it. They are replaced in place here for the same
+# reason the grammar replaced them in place: to keep the correspondence one-for-one and readable.
 SUBJECTS = {
     "Wardens": dict(figure="a warden, hood up and jaw set", tool="a warden's lantern and keyring",
                     emblem="a warden's lantern", place="a boundary post and chain"),
-    "Drovers": dict(figure="a drover under a broad-brimmed hat", tool="a drover's crook and yoke",
-                    emblem="a crossed crook and yoke", place="a drove-road gate"),
+    "Draymen": dict(figure="a drayman in a leather apron", tool="a dray cart and harness",
+                    emblem="a dray wheel and hames", place="a loading-yard ramp"),
     "Delvers": dict(figure="a delver under a lamped helmet", tool="a short delving pick",
                     emblem="crossed picks", place="a mine-adit arch"),
     "Sentinels": dict(figure="a sentinel in a crested helm", tool="a watch horn",
                       emblem="a watchtower", place="a lone watchtower on a ridge"),
     "Bulwarks": dict(tool="a shield boss", emblem="a bulwark wall",
                      place="a stepped rampart wall"),
-    "Foresters": dict(figure="a forester under a hooded cowl", tool="a felling axe",
-                      emblem="a crossed axe and pine", place="a stand of three pines"),
-    "Marauders": dict(figure="a marauder in a horned half-helm", tool="a boarding hook",
-                      emblem="a crossed hook and blade"),
+    "Wheelwrights": dict(figure="a wheelwright under a brimmed cap",
+                         tool="a spoked wheel and a travelling gauge",
+                         emblem="a spoked wheel inside its tyre band",
+                         place="a wheel pit and tyring platform"),
+    "Bargemen": dict(figure="a bargeman in a rolled cap", tool="a barge pole and mooring cleat",
+                     emblem="a barge prow and pole", place="a canal lock gate"),
     "Prospectors": dict(figure="a prospector under a wide hat", tool="a prospecting pick and pan",
                         emblem="a pick over an ore chunk", place="a driven claim stake"),
     "Voyagers": dict(figure="a voyager in a storm hood", tool="a ship's wheel",
@@ -47,21 +69,24 @@ SUBJECTS = {
                       emblem="a lantern on a staff", place="a milestone at a crossroads"),
     "Wreckers": dict(figure="a wrecker, jaw forward", tool="a wrecking hook on a chain",
                      emblem="a hook and broken spar", place="a shore of broken spars"),
-    "Harriers": dict(creature="a harrier, wings swept back and talons forward",
-                     emblem="a harrier's head"),
+    "Bitterns": dict(creature="a bittern, bill raised and neck stretched",
+                     emblem="a bittern's head", place="a reed bed"),
     "Stalkers": dict(creature="a stalking cat, head low and shoulders high",
                      figure="a stalker, hood drawn", emblem="a stalking cat's head"),
-    "Herons": dict(creature="a heron, neck drawn back to strike", emblem="a heron's head",
-                   place="a reed bank"),
+    "Millwrights": dict(figure="a millwright under a flat cap",
+                        tool="a millwright's spanner across a cogwheel",
+                        emblem="a cogwheel over a crossed spanner", place="a mill wheel and race"),
     "Colliers": dict(figure="a collier under a lamped helmet", tool="a coal hammer and lamp",
                      emblem="a miner's lamp", place="a pit headframe"),
-    "Otters": dict(creature="an otter, head up and jaw open", emblem="an otter's head"),
+    "Wainwrights": dict(figure="a wainwright in a work apron", tool="a wagon wheel and spokeshave",
+                        emblem="a wagon wheel", place="a wagon-shed frame"),
     "Ironsides": dict(figure="an ironside in a face-plate helm", tool="a riveted hull plate",
                       emblem="a riveted plate", place="an ironclad prow"),
     "Quarrymen": dict(figure="a quarryman under a brimmed hard hat", tool="a sledge and wedge",
                       emblem="a crossed sledge and chisel", place="a quarry step face"),
-    "Beacons": dict(tool="a beacon brazier", emblem="a beacon flame",
-                    place="a beacon fire on a tower"),
+    "Lamplighters": dict(figure="a lamplighter in a long coat",
+                         tool="a lamplighter's pole and lantern", emblem="a lit street lantern",
+                         place="a lamp standard on a corner"),
     "Kestrels": dict(creature="a kestrel hovering, wings held high", emblem="a kestrel's head"),
     "Tanners": dict(figure="a tanner in a leather apron and cap",
                     tool="a tanner's crescent knife", emblem="a crescent knife over a hide"),
@@ -173,9 +198,87 @@ not reproduce any real team's combination of colour and shape.
 Output one isolated 256 x 256 PNG with transparency around the mark."""
 
 
+MANIFEST = "Tools/TeamLogos/manifest.json"
+
+
+def briefed_nickname(prompt):
+    match = re.search(r"nickname, the (.+?), and nothing else", prompt)
+    return match.group(1) if match else None
+
+
+def rebrief():
+    """Rewrite only the briefs that name someone else's nickname, keeping the family balance."""
+    manifest = json.load(open(MANIFEST))
+    records = sorted(manifest["teams"], key=lambda t: t["stableID"])
+    stale = [r for r in records if r["name"].split()[-1].lower() not in r["prompt"].lower()]
+
+    # The families the stale records already hold, redealt among those same records. A record keeps
+    # a family its noun has a shape for where one is free, so the balance the full rewrite struck
+    # survives untouched while no record is left labelled `animalCreature` over a cogwheel.
+    capacity = Counter(record["family"] for record in stale)
+    assigned = {}
+    for depth in range(6):
+        for record in stale:
+            if record["stableID"] in assigned:
+                continue
+            order = preferences(record["name"].split()[-1])
+            if depth < len(order) and capacity[order[depth]] > 0:
+                capacity[order[depth]] -= 1
+                assigned[record["stableID"]] = order[depth]
+    for record in stale:
+        if record["stableID"] not in assigned:
+            family = max(capacity, key=lambda f: capacity[f])
+            capacity[family] -= 1
+            assigned[record["stableID"]] = family
+    for record in stale:
+        record["family"] = assigned[record["stableID"]]
+
+    today = datetime.date.today().isoformat()
+    # The same walk the full rewrite makes, so a rewritten record takes the frame index it would
+    # have been given there -- the counter runs over every record, not just the stale ones.
+    per_family_index = Counter()
+    for record in records:
+        index = per_family_index[record["family"]]
+        per_family_index[record["family"]] += 1
+        if record["stableID"] not in assigned:
+            continue
+        noun = record["name"].split()[-1]
+        was = briefed_nickname(record["prompt"]) or "another team"
+        record["concept"] = phrasing(record["family"], noun, index).capitalize() + "."
+        record["prompt"] = build_prompt(record, record["family"], noun, index)
+        record["reviewNotes"] = (
+            f"Re-briefed {today} for the {noun}. The packaged artwork is the mark briefed for the "
+            f"{was} and is awaiting a regeneration run."
+        )
+
+    manifest["teams"] = records
+    with open(MANIFEST, "w") as handle:
+        json.dump(manifest, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    print(f"re-briefed {len(stale)} of {len(records)} records")
+    for record in stale:
+        print(f"  {record['name']} -> {record['family']}")
+    # The redeal cannot invent shapes. The stale records hold more `animalCreature` slots than they
+    # have creatures to fill them -- the nouns they replaced were birds and animals and these are
+    # trades -- so some sit in a family they have no dedicated shape for and fall back to the
+    # emblem, exactly as `phrasing` allows the full rewrite's own overflow to. Reported rather than
+    # hidden: it is a re-seating job for the owner, not something this script may guess at.
+    fallbacks = [
+        record for record in stale
+        if not SUBJECTS[record["name"].split()[-1]].get(FIELD_FOR_FAMILY[record["family"]])
+    ]
+    if fallbacks:
+        print(f"{len(fallbacks)} of them draw the emblem because their family has no other shape:")
+        for record in fallbacks:
+            print(f"  {record['name']} ({record['family']})")
+
+
 def main():
+    if sys.argv[1:2] == ["--rebrief"]:
+        rebrief()
+        return
     names = {r["id"]: r for r in json.load(open(sys.argv[1]))}
-    manifest = json.load(open("Tools/TeamLogos/manifest.json"))
+    manifest = json.load(open(MANIFEST))
     records = sorted(manifest["teams"], key=lambda t: t["stableID"])
     missing = [r["stableID"] for r in records if r["stableID"] not in names]
     if missing:
@@ -227,7 +330,7 @@ def main():
         )
 
     manifest["teams"] = records
-    with open("Tools/TeamLogos/manifest.json", "w") as handle:
+    with open(MANIFEST, "w") as handle:
         json.dump(manifest, handle, indent=2, sort_keys=True)
         handle.write("\n")
     print(f"rewrote {len(records)} records; families {dict(sorted(counts.items()))}")

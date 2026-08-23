@@ -303,6 +303,25 @@ func runTeamLogoManifestTests() {
                 }
             }
         }
+        test("the artwork still owed is counted, not left to a red gate") {
+            // The brief above is text and was repaired in place; the picture was not. 52 marks are
+            // drawn for the nickname their team carried before the 2026-08-22 re-key and still
+            // show it, which no test can see -- nothing here opens a PNG and recognises a bittern.
+            // So the count is pinned instead. It was a deliberately red gate until 2026-08-23,
+            // which made a green suite impossible and told a reader nothing about which half of
+            // the work was outstanding. Pinning it means the number can only move when someone
+            // edits this line, which is the point: it falls when a regeneration run lands, and a
+            // re-key that strands more marks fails here instead of passing quietly.
+            let awaiting = try loadTeamLogoManifest().teams.filter {
+                $0.reviewNotes.localizedCaseInsensitiveContains("awaiting a regeneration run")
+            }
+            expectEqual(awaiting.count, 52,
+                        "the artwork owed changed; update this pin and docs/STATUS.md together")
+            for team in awaiting {
+                expect(team.reviewNotes.localizedCaseInsensitiveContains("briefed for the"),
+                       "\(team.name) does not say which nickname its packaged mark draws")
+            }
+        }
         test("motif families are balanced") {
             let teams = try loadTeamLogoManifest().teams
             for family in TeamLogoFamily.allCases {
