@@ -4,6 +4,45 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-23, later — a second documentation pass swept the canon documents the first one did not
+> touch, and found five more falsifier instruments that do not exist.** `docs/OPEN-DECISIONS.md`,
+> `docs/02-GAME-DESIGN.md`, `docs/03-MATCH-ENGINE.md`, `docs/04b-AUDIT-RUBRIC.md`, `PRODUCT.md` and
+> `docs/FUTURE-SIMULATION-CONTRACT.md` were checked by extracting every backticked Swift identifier
+> and resolving it against the tree, and every documented member name against the rules modules.
+>
+> - **Corrected in place.** `CLAUDE.md`'s document map described `04b` as "five dimensions, 0–4
+>   anchors" — the frame the owner replaced on 2026-08-11 — while `CLAUDE.md`'s own process section 5
+>   four screens below already said eight dimensions, 0–5, ≥31/40. The register range `D1–D14` was
+>   live in five places (`docs/OPEN-DECISIONS.md`'s own title, `README.md`, `CLAUDE.md`,
+>   `docs/DOC-MANIFEST.md` §4 and `docs/02-GAME-DESIGN.md`) after D15 was decided 2026-08-12 and D16
+>   on 2026-08-20. The two remaining `D1–D14` sites — `DOC-MANIFEST.md` line 90 and this file's own
+>   line in the document table — sit inside dated records and were left alone deliberately.
+> - **Five falsifier instruments named in the register do not exist.** `AgencyBudgetTests` (D1) and
+>   `SmallestDeviceLayoutTest` (D15) were `ReleaseGateID` cases with `nil` runners until commit
+>   `91a108d` ("test: remove unimplemented release gates", 2026-08-19) deleted them; the register was
+>   never updated to match, though `PRODUCT.md` was. `JeopardyTests` (D8) and `CoordinatorAITests`,
+>   `RosterAITests`, `AdaptationTests` (D10) have never been introduced in any commit under
+>   `Sources/` or `Tests/`, on any branch. Of D10's three bars, only roster legality has coverage,
+>   and by a different instrument than the register names — `WorldIntegrity.check` inside
+>   `--pro-soak`. `05`'s P9 and P10 gate lists name four of the five, so both phases carry gate lists
+>   they cannot satisfy as written. Both phases are ahead of the build, so these are owed, not
+>   dropped; the annotations say so at each site.
+> - **Canon ahead of code, recorded not fixed: `04` §6.4's heat scale.** The section was amended
+>   2026-08-22 to five diverging bands over 40–99 with a neutral 70–79 centre. `CoachWorldTokens.Heat`
+>   on `origin/main` is still the three-band model (`steadyFloor` 70, `strongFloor` 85), and
+>   `DesignContractTests`' guard parses `04` for the phrases "red below N" and "green from N upward",
+>   which the amended section no longer contains. The guard therefore fails with *"could not parse 04
+>   section 6.4's heat-scale sentence"* rather than with a banding mismatch — so since 2026-08-22
+>   nothing has been checking the heat scale at all, and the failure looks like a parser bug rather
+>   than an unimplemented amendment. This is the coverage-boundary failure `CLAUDE.md` names, in its
+>   sharpest form: the test did not go red when the thing it guards changed, it went unreadable. The
+>   implementation exists on unmerged `codex/*` branches ("Align heat bands with five-level design
+>   scale"), so it is deliberately not touched here.
+> - **Checked and clean:** `02`'s structural constants (105-player roster, 85 scholarships,
+>   conferences of 12–16, 7 draft rounds, 12–40 call-ins) all match the rules modules; every member
+>   name `02` and `docs/FUTURE-SIMULATION-CONTRACT.md` cite resolves; `PRODUCT.md`'s commitment and
+>   unverified-target tables both match `SuiteCatalog.swift` as it now stands.
+
 > **2026-08-23 — a documentation pass found two named gates that were never written, and eleven
 > stale claims about the tree.** The claims are corrected in place in `README.md`, `CLAUDE.md`,
 > `docs/03b-ARCHITECTURE.md`, `docs/05-IMPLEMENTATION-PLAN.md` and `docs/06-AUDIT-DISPOSITION.md`.
