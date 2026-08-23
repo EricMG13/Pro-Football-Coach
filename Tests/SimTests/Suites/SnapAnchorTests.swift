@@ -311,6 +311,78 @@ func runSnapAnchorTests() {
             }
         }
 
+        test("an anchor set at either field bound is structurally whole") {
+            // The bound is already visited twice in this suite, but only for one hand-picked
+            // outcome at each end, and the checks there are `expectIn(point.yard, 0...100)` --
+            // which `FieldPoint`'s initialiser clamps into range by construction, so they cannot
+            // fail whatever `choreograph` does. This asserts the things that can: the structural
+            // contract `ScreenReadModels` actually validates (22 actors, distinct identities) and
+            // the ordering `ActorWaypoint` documents but does not enforce.
+            //
+            // Swept over the whole play-type and result class at both bounds rather than the two
+            // pairs somebody chose, so a result that only misbehaves at the 1 is covered without
+            // anyone predicting which one it is.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let defense = Array(personnel.defense.prefix(11))
+            for yardLine in [1, 99] {
+                for playType in OffensivePlayType.allCases {
+                    for result in SnapResult.allCases {
+                        let play = PlayRecord(
+                            situation: Situation(down: 3, distance: 1, yardLine: yardLine),
+                            offensiveCall: OffensiveCall(playType: playType),
+                            defensiveCall: DefensiveCall(coverage: .man),
+                            outcome: SnapOutcome(
+                                result: result, yards: 1, secondsElapsed: 5, matchups: [],
+                                ballCarrierID: offense[1].id,
+                                passerID: offense[0].id,
+                                targetID: offense[2].id
+                            ),
+                            callInTriggers: []
+                        )
+                        let set = SnapAnchors.choreograph(play: play, offense: offense,
+                                                          defense: defense)
+                        let where_ = "\(playType.rawValue)/\(result.rawValue) at the \(yardLine)"
+
+                        // What `ScreenReadModels` rejects a Match Day snap for.
+                        expectEqual(set.actors.count, 22, "\(where_) did not field 22 actors")
+                        expectEqual(Set(set.actors.map(\.playerID)).count, set.actors.count,
+                                    "\(where_) repeated a player identity")
+                        for side in Side.allCases {
+                            expectEqual(set.actors.filter { $0.side == side }.count, 11,
+                                        "\(where_) put \(side.rawValue) on the field with the "
+                                            + "wrong number of players")
+                        }
+
+                        // `ActorAnchor.path` is documented "Ordered by fraction" and nothing
+                        // enforces it. `SnapAnchors.position` walks the legs assuming ascending
+                        // fractions, so an out-of-order path silently returns the wrong point.
+                        for actor in set.actors {
+                            let fractions = actor.path.map(\.fraction)
+                            expectEqual(fractions, fractions.sorted(),
+                                        "\(where_) produced a path whose waypoints are not "
+                                            + "ordered by fraction")
+                        }
+                        let ballStarts = set.ball.map(\.startFraction)
+                        expectEqual(ballStarts, ballStarts.sorted(),
+                                    "\(where_) produced ball segments out of time order")
+                        for segment in set.ball {
+                            expect(segment.endFraction >= segment.startFraction,
+                                   "\(where_) produced a ball segment that ends before it starts")
+                        }
+
+                        expect(set.durationSeconds > 0,
+                               "\(where_) produced a snap with no duration to play back")
+                        expect(!set.sentence.isEmpty,
+                               "\(where_) produced no VoiceOver sentence, which P13 requires")
+                        expect(set.foregroundIDs.count <= 3,
+                               "\(where_) marked more than the three foreground actors 04 "
+                                   + "section 9 allows")
+                    }
+                }
+            }
+        }
+
         test("a touchdown from the one produces a legal upper-bound anchor set") {
             let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
             let play = PlayRecord(
