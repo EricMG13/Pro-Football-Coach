@@ -80,6 +80,45 @@ func runJerseyNumberTests() {
             expect(checkedRosters >= 8, "checked \(checkedRosters) rosters")
         }
 
+        test("every roster in the world is legally numbered, at every swept seed") {
+            // The check above numbers eight of 134 programmes at one seed and no pro team at all.
+            // That is the coverage-boundary pattern CLAUDE.md names: the pro template is a
+            // different shape (53 against 105, six corners against nine) and nothing had ever
+            // numbered one. Enumerated by construction over every roster the world holds, swept,
+            // so a tier or a template added later is covered the day it is added.
+            for seed: UInt64 in [71_101, 71_102, 71_103] {
+                let state = GameState.bootstrap(seed: seed)
+                let rosters = state.programmes.values.map(\.rosterIDs)
+                    + state.proTeams.values.map(\.rosterIDs)
+                expectEqual(rosters.count, CollegeRules.programmeCount + ProRules.teamCount,
+                            "seed \(seed): the world does not hold every roster")
+                for rosterIDs in rosters {
+                    let players = rosterIDs.compactMap { state.players[$0] }
+                    expectEqual(players.count, rosterIDs.count,
+                                "seed \(seed): a roster references a missing player")
+                    let numbers = JerseyNumbers.assign(players)
+                    expectEqual(numbers.count, players.count,
+                                "seed \(seed): a player was left without a number")
+                    for unit in Unit.allCases {
+                        let inUnit = players.filter { $0.position.unit == unit }
+                        expectEqual(Set(inUnit.compactMap { numbers[$0.id] }).count, inUnit.count,
+                                    "seed \(seed): \(unit.rawValue) has two players wearing one "
+                                        + "number")
+                    }
+                    for number in numbers.values {
+                        expect(SharedRules.jerseyNumberRange.contains(number),
+                               "seed \(seed): \(number) is outside the legal range")
+                    }
+                    let spilled = players.filter {
+                        !JerseyNumbers.band(for: $0).contains(numbers[$0.id] ?? -1)
+                    }
+                    expect(spilled.isEmpty,
+                           "seed \(seed): \(spilled.count) players spilled out of their band, e.g. "
+                               + "\(spilled.first.map { "\($0.position.rawValue) #\(numbers[$0.id] ?? -1)" } ?? "")")
+                }
+            }
+        }
+
         test("the same roster numbers the same way, in any order") {
             let state = GameState.bootstrap(seed: 71_002)
             guard let programme = state.programmes.values.first else {
