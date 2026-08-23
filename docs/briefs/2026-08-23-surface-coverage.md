@@ -10,16 +10,22 @@ them is how the honest number gets lost.
 
 | Layer | Authority | Count | State |
 |---|---|---|---|
-| **Required** | `ScreenRegistry.swift`, enumerated in `Coach World.dc.html` | **62** | fixed |
+| **Required** | `ScreenRegistry.swift`, enumerated in `Coach World.dc.html` | **62 identities** | fixed |
+| **Distinct destinations** | the presentation contract | **47 canonical** + 15 aliases | fixed |
 | **Implemented** | SwiftUI views on `main` | **62 of 62** | complete |
-| **Drawn in the design system** | Press Box | **12 of 62** | 19% |
+| **Drawn in the design system** | Press Box | **19 of 47 canonical** | 40% |
 
 **No registry surface is unimplemented.** Every one of the 62 has a SwiftUI view on `main` —
 verified by mapping each registry `sid` to its view file. The gap is not missing screens.
 
-**The gap is that 50 of the 62 are built to a design language Press Box replaced.** They
-exist, they route, they compile; they were drawn before the register model, the gold budget,
-the measured palette and the accessibility contract existed.
+**The gap is that most are built to a design language Press Box replaced.** They exist, they
+route, they compile; they were drawn before the register model, the gold budget, the measured
+palette and the accessibility contract existed.
+
+**47, not 62, is the honest denominator.** The presentation contract resolves the 62 registry
+identities to 47 canonical destinations and 15 compatibility aliases that inherit one. An
+alias needs route verification, not a drawing. In the registry array the alias is the row
+with a non-zero fifth value, and the two counts agree exactly: 15.
 
 ---
 
@@ -52,15 +58,17 @@ is a Broadcast moment nothing has drawn.
 
 ### Undrawn (50), by family
 
+Counts are canonical destinations only; aliases are excluded from both columns.
+
 | Family | Drawn | Undrawn |
 |---|---|---|
-| **week** | 2/9 | 6b Inbox · 6c Opponent report / Film room · 6d Game plan · 6e Practice plan · 6f Team health · 6g Aftermath · 6h Game detail / Box score |
-| **personnel** | 1/8 | 7a Depth chart · 7f Player profile · 7c Development plan · 7d Staff profiles · 4c Staff market & profile · 7e Scheme book · 7b Personnel packages |
-| **recruiting** | 3/11 | 8c Shortlist · 8d Contact & visit planner · 8e Class overview · 8g Portal hub · 8h Retention decisions · 8i Portal market · 4d NIL allocation · 8j College offseason |
-| **pro** | 1/8 | 9a Cap & contracts · 9b Contract negotiation · 9c Roster cuts & transactions · 9d Pro scouting board · 9e Draft board · 9g Free agency · 9h Pro front office |
+| **week** | **9/9** | — complete |
+| **personnel** | 1/5 | 7a Depth chart · 7f Player profile · 7c Development plan · 7d Staff profiles |
+| **recruiting** | 3/7 | 8c Shortlist · 8d Contact & visit planner · 8e Class overview · 8j College offseason |
+| **pro** | 1/5 | 9a Cap & contracts · 9b Contract negotiation · 9c Roster cuts & transactions · 9h Pro front office |
 | **league** | 1/11 | 10i League map · 10h Team / programme profile · 10a Standings · 10b Schedule · 10c Rankings & playoff picture · 10d Bracket / postseason · 10e Statistics & leaders · 10f News · 10j Realignment event · 10k World search |
-| **career** | 4/13 | 4a Job board · 4b Offer · 11k Opportunities · 4e Job security · 4f Coaching carousel · 11d Record book · 11e Rivalries · 11c Career line · 11f Coaching tree |
-| **entry** | 0/2 | 11i New career & coach identity · 11j Appointment |
+| **career** | 4/9 | 11k Opportunities · 11d Record book · 11e Rivalries · 11c Career line · 11f Coaching tree |
+| **entry** | 0/1 | 11i New career & coach identity |
 
 **League is the thinnest at 1 of 11, and it is also the family Press Box has learned least
 about.** Ten of its eleven are tables of a kind the system has never drawn: a map, a bracket,
@@ -70,6 +78,39 @@ that will probably force a component, the way Compare forced `Versus`.
 
 **Entry is 0 of 2 and is the riskiest omission for its size.** Both surfaces are the first
 thing a player ever sees, and neither has been drawn against the register model at all.
+
+---
+
+## 1a. The reference sheets are superseded, and it is not a style question
+
+This Week was drawn from **`docs/reviews/2026-08-22-all-screen-presentation-contract.md`**, not
+from the reference sheets — after checking, and the check was worth making.
+
+**All 21 `.dc.html` sheets carry one mtime: 2026-08-21 14:19.** They arrived as a package. The
+presentation contract is a day newer and contradicts them on **facts**, not on styling. Every
+row below is a control or a figure the sheet draws and no read model holds:
+
+| Surface | The sheet draws | The contract says |
+|---|---|---|
+| Inbox | two costed replies, and an undo | "no receipt, undo, **reply/composition action**" |
+| Film room | a by-situation tendency table — "3rd & 2–4, tempo QB draw, 71%, +6.2 avg" | the model holds two rates, a confidence and an `unavailableReason` |
+| Game plan | an emphasis budget of 100, split three ways, "0 LEFT" | "no editable sliders", "**no cost**", the action is `onSelect` |
+| Practice plan | four days as columns, freshness spent left to right | "no separate remaining/unallocated-minutes field"; "each retained option is **already a complete allocation**" |
+| Team health | "High ankle, 11 days", 34% re-injury, "back for rivalry week" | "no **diagnosis**, recommendation, countdown, **return date**, treatment" |
+| Aftermath | `#19 → #12`, `+11`, `78 → 81 +3`, `−16` | "no **trend**, **prior-grade delta**" |
+| Box score | a `TEAM · CARSON · SOUTHERN` column pair | "no **opposed team totals**" |
+
+Drawn from the sheets, this family would have shipped seven surfaces of fabricated controls and
+figures — which is the failure this project names most often, at scale, in one pass.
+
+**Two of those corrections changed the archetype, not just the content.** Game plan and Practice
+plan are not workbenches: with no sliders, no budget and a single `onSelect`, they are choices
+between complete options. That makes them **forks**, and a fork spends zero gold. The reference
+gilds a `LOCK THE PLAN` bar on each; both bars go, because there is nothing to lock.
+
+**The sheets remain the composition reference** — shell, hierarchy, typography, density — which
+is what the reconciliation plan calls them: *"a visual shell and hierarchy prompt, never a source
+of facts."* Match Day is the one stated exception, where the drawing wins.
 
 ---
 
