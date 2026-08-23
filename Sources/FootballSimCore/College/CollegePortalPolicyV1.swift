@@ -536,7 +536,7 @@ public enum CollegePortalPolicyV1 {
             (maximumKnowledgeConfidence - confidence + 9) / 10
         )
         let estimatedAttributes = Dictionary(uniqueKeysWithValues:
-            ratedAttributes(for: player.position).map { attribute in
+            currentRatedAttributes(for: player.position).map { attribute in
                 (
                     attribute,
                     Rating(player.attributes[attribute].value

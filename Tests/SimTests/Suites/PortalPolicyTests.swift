@@ -301,6 +301,59 @@ func runPortalPolicyTests() {
             ), first)
         }
 
+        test("portal knowledge estimates every attribute the engine rates") {
+            // `base`'s batch (as built by portalPolicyFixture()) has exactly one intent, the
+            // quarterback forced at PortalPolicyTests.swift:24 -- and quarterback's rated set is
+            // untouched by the version-two widening, so it cannot show this change. Extend a
+            // local copy of the state the same way the fixture forces the quarterback: force a
+            // second roster player to wideReceiver and give them a completed prior season, so
+            // the batch this test builds contains a receiver.
+            var state = base.state
+            let receiverID = state.programmes[base.sourceProgrammeID]!.rosterIDs[1]
+            _ = state.players.update(receiverID) { player in
+                player.position = .wideReceiver
+                player.remove(.restless)
+            }
+            expect(state.people.updatePlayerCareer(receiverID) { career in
+                expect(career.append(PlayerCareerSeason(
+                    season: 0,
+                    organisationID: base.sourceProgrammeID,
+                    tier: .college,
+                    games: 8,
+                    starts: 5,
+                    overallAtEnd: Rating(70)
+                )))
+            })
+
+            let batch = portalPolicySnapshot(state)
+            var covered: Set<Position> = []
+            for intent in batch.intents {
+                guard let snapshot = CollegePortalPolicyV1.knowledgeSnapshot(
+                    observerProgrammeID: base.observerProgrammeID,
+                    playerID: intent.playerID,
+                    using: batch
+                ) else { continue }
+                covered.insert(snapshot.position)
+                // 02 section 4.3a: the set is the rated set, not a subset of it.
+                expectEqual(
+                    Set(snapshot.estimatedAttributes.keys),
+                    Set(snapshot.position.ratedAttributes),
+                    "\(snapshot.position) estimate omits an attribute the engine rates"
+                )
+                expectEqual(
+                    snapshot.estimatedOverall.value,
+                    snapshot.estimatedAttributes.values.reduce(0) { $0 + $1.value }
+                        / snapshot.estimatedAttributes.count
+                )
+            }
+            // Without a receiver in the batch every assertion above is vacuous -- the two
+            // attributes this whole change is about only exist at these two positions.
+            expect(
+                covered.contains(.wideReceiver) || covered.contains(.tightEnd),
+                "the batch produced no receiver or tight end, so this test asserted nothing"
+            )
+        }
+
         test("portal knowledge encoding is order-independent and enforces pool and season slices") {
             let batch = portalPolicySnapshot(base.state)
             let intent = batch.intents[0]
