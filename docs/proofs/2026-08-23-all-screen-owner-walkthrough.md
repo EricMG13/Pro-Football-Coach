@@ -55,12 +55,25 @@ For each, record tester, device, OS, and the result verbatim. A row is not passe
 | Switch Control | the committing action reachable without passing through the field diagram |
 | Reduce Motion | Match Day replaces travel with discrete state changes; no dot animates |
 | Reduce Transparency | the floodlit grain overlay drops; no furniture becomes unreadable |
-| Increase Contrast | the one gold line and the one gold action stay distinguishable from the pale tokens |
-| Differentiate Without Colour | offense and defense remain tellable apart without relying on pale versus navy |
+| Increase Contrast | **Expect this to fail — pre-checked.** No source file reads `colorSchemeContrast`, so nothing in the app responds to the setting. Confirm on device, then treat as the canon question below, not a bug to patch on the spot. |
+| Differentiate Without Colour | Nothing reads `accessibilityDifferentiateWithoutColor` either. The field may still pass on merit: every actor carries a position label and offense/defense differ by more than hue. Judge whether always-on redundancy satisfies the contract, or whether the setting must be read. |
 | ~~Dynamic Type, no control under 44 points~~ | **Now automated** -- `testEveryControlMeetsTheTouchFloorAt{Default,AX5}` walks every button screens 8-13 expose at both sizes. It found and fixed three violations. Check clipped labels by eye; the target floor is covered. |
 | Sound and haptics | every cue has a visual and a spoken equivalent |
 
-## C. The two insets the agent would not decide
+## C1. A canon question found while automating this matrix
+
+`docs/superpowers/plans/2026-08-22-all-screen-shell-and-hierarchy.md` asks to "Verify Increase
+Contrast" and to produce "seven-family 852/956/Increase Contrast proof". `simctl` can set Increase
+Contrast, so this row looked automatable -- but a grep of `Sources` finds **no reference to
+`colorSchemeContrast`, `accessibilityDifferentiateWithoutColor`, or any contrast-responsive
+branch**. Only `accessibilityReduceTransparency` is read, in two places.
+
+So the app does not respond to Increase Contrast at all. That is not a Task 4 regression; it is an
+app-wide gap against a stated requirement, and it cannot be closed by an agent, because the
+doc-first rule applies: what an increased-contrast Floodlit palette *is* has to be answered in
+`04` before it is implemented. Raised here rather than patched.
+
+## C2. The two insets the agent would not decide
 
 Both are recorded in the Task 4 report as open. They need a real device.
 

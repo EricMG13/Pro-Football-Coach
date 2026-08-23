@@ -926,3 +926,25 @@ from direction or colour fails instead of passing unnoticed.
 RED-checked by rewriting one binding as `model.offenseDirection == .leftToRight`, which fails at
 `ContractTests.swift:1135`; production restored. Core contracts 3,247 to 3,249 checks.
 
+## Increase Contrast is unimplemented (2026-08-23)
+
+Found while trying to automate another row of the owner's matrix. `simctl ui` can set exactly three
+things -- appearance, content size and `increase_contrast` -- so Increase Contrast looked
+automatable where Reduce Motion, Reduce Transparency and Differentiate Without Colour do not.
+
+It is not, because there is nothing to assert: **no file in `Sources` reads `colorSchemeContrast`,
+`accessibilityDifferentiateWithoutColor`, or any contrast-responsive branch.** Only
+`accessibilityReduceTransparency` is read, in `CoachWorldDeskComponents`. The all-screen plan asks
+to "Verify Increase Contrast" and for "seven-family 852/956/Increase Contrast proof", so the
+requirement is stated and unmet.
+
+Not a Task 4 regression and deliberately not patched here. What an increased-contrast Floodlit
+palette *is* -- given `04` section 6.1a makes Floodlit dark-only with no appearance switch -- is a
+design decision, and the doc-first rule says it is answered in `04` before it is implemented.
+Recorded for the owner in the walkthrough as a pre-checked expected failure, so the device pass
+confirms rather than discovers it.
+
+Differentiate Without Colour is the softer case: nothing reads the setting either, but every actor
+carries a position label and the weekly surfaces do not encode meaning in hue alone, so the app may
+satisfy the intent by always-on redundancy. That is a judgement for the owner, not a grep.
+
