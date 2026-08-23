@@ -2016,7 +2016,7 @@ func runReadModelProviderTests() {
             expectEqual(before?.provenance, .simulationSnapshot)
 
             let directory = FileManager.default.temporaryDirectory
-                .appendingPathComponent("pfc-save-4040", isDirectory: true)
+                .appendingPathComponent("pfc-save-4040-\(UUID().uuidString)", isDirectory: true)
             let saves = CoachWorldSaveStore(directory: directory)
             defer { try? FileManager.default.removeItem(at: directory) }
 
