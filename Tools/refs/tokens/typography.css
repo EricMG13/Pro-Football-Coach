@@ -1,0 +1,68 @@
+/* Type — 04 section 6.2 and DesignTokens.DisplaySize.
+   The literal px scale is the handoff's drawing scale in Archivo Narrow.
+   Authored floor is 12; 10.5 and 9 are permitted for tracked uppercase
+   micro-labels only, never for prose. */
+
+:root {
+  /* Display scale, verbatim */
+  --size-hero: 66px;        /* career moment, ceremony */
+  --size-name: 60px;
+  --size-score: 54px;
+  --size-situation: 52px;
+  --size-score-live: 40px;
+  --size-figure: 34px;
+  --size-screen: 25px;
+  --size-subject: 22px;     /* an opened message's subject line */
+  --size-title: 20px;
+  --size-clock: 19px;
+  --size-lead: 17px;
+  --size-panel: 16px;
+  --size-row: 15px;
+  --size-action: 14px;
+  --size-action-small: 12px;
+  --size-pill: 10.5px;
+  --size-flag: 9px;
+
+  /* Semantic roles (6.2's table) */
+  --type-display: 700 var(--size-title) / 1.05 var(--font-display);
+  --type-title: 700 var(--size-lead) / 1.15 var(--font-display);
+  --type-headline: 600 var(--size-row) / 1.25 var(--font-display);
+  --type-body: 400 13px / 1.45 var(--font-body);
+  --type-callout: 400 var(--size-action-small) / 1.4 var(--font-body);
+  --type-caption: 400 11px / 1.35 var(--font-body);
+
+  /* Floors: contract, not preference */
+  --type-authored-floor: 12px;
+  --type-working-prose: 13px;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Tracking, as the handoff states it — em against a size */
+  --track-label: 0.2em;       /* Label3 */
+  --track-flag: 0.15em;       /* 1.35px at 9px */
+  --track-micro: 0.08em;
+  --track-tight: -0.02em;     /* large figures only */
+
+  /* Figures are tabular so a score or a clock does not reflow as it counts */
+  --figure-features: "tnum" 1, "lnum" 1;
+}
+
+/* Numeral role. Prose does not become monospaced merely to look technical. */
+.fl-figure {
+  font-family: var(--font-figure);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: var(--figure-features);
+}
+
+/* Label3 — 9px uppercase, wide tracking, quiet ink.
+   Written sentence case in source and uppercased on render, so the string stays
+   readable to a translator and speakable to a screen reader. */
+.fl-label3 {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+}

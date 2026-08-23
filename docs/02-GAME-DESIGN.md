@@ -224,6 +224,33 @@ may still exceed that ceiling by other routes — a trade, a waiver claim, a pro
 practice squad — because the reservation is a policy about what the AI *chooses* to sign, not a new
 roster bound; `activeRosterLimit` remains the only hard one.
 
+**A pick a club cannot seat is passed, and the draft carries on — 2026-08-23.** The reservation
+above is stated against an average: "expiry frees about eleven a roster against seven rounds". The
+average holds and the *distribution* does not. Measured over five seasons at seed 96,001, expiry
+leaves clubs between **six and seventeen** seats short, so a club that lost only six cannot seat the
+seven picks it is entitled to however early free agency stops signing for it — it fills up on its
+own sixth pick and has nowhere to put the seventh.
+
+Until this entry the draft treated that as fatal: `ProRosterAISystem.makeDraftPicks` stopped the
+whole run on any thrown error, so one club with no seat ended the round for the other thirty-one,
+and the next week began at the same stuck pick and stopped again. The market never reached
+`.rosterBuild` in any season, sat in `.draft` for fifteen to seventeen weeks until the week-21 close
+took it, and **the draft lost 4, 27, 94 and 89 of its 224 prospects in seasons 1 through 4** —
+an intake failure that compounds, because a club short this season is shorter next season.
+
+A pick that `activeRosterFull` refuses is therefore **passed**: the pick is spent, the club takes
+nobody, and the club behind it is on the clock. Three alternatives were considered and rejected.
+Forcing a release to seat the pick is the alternative this document already rejected two paragraphs
+below — "a pick is not a cut instrument". Deferring the pick to a later week is what the code did
+and it never resolves, because nothing frees a seat mid-draft. Seating the pick on the practice
+squad would keep the player, and is the option to revisit if the lost picks matter, but it makes
+the draft a route into a squad this document does not otherwise put anyone into, and that is a
+design question rather than a defect fix. **Flagged for the owner on those terms.**
+
+Passing is a policy about what the AI does with a seat it does not have, in the same sense as the
+reservation: no roster bound moves, and a controlled club is never passed automatically, because its
+pick is the player's decision and the draft stops on it as before.
+
 **Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
 a contract whose remaining years are drawn deterministically so that **roughly a fifth of each
 roster reaches expiry each season** — terms of one to five years, spread evenly.

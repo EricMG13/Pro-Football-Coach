@@ -1,0 +1,20 @@
+/* Fonts.
+
+   Production ships the system face: SF Pro Condensed for display roles
+   (`.system(size:).width(.condensed)`) and the system face with
+   `.monospacedDigit()` for figures. Neither is available on the web.
+
+   Archivo Narrow is the drawing face the design handoff was authored in and the
+   face every reference surface in this project renders with. IBM Plex Mono is the
+   stated web substitute for the tabular-figure role
+   (DesignTokens.swift: "The handoff's IBM Plex Mono is a web substitute and is
+   not shipped"). Both are Google Fonts. SF Pro Condensed sets WIDER than Archivo
+   Narrow at the same point size — see 04 section 6.2's sizing pass. */
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap");
+
+:root {
+  --font-display: "Archivo Narrow", "SF Pro Condensed", "Helvetica Neue", system-ui, sans-serif;
+  --font-figure: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Prose and display are the same face. The system has no second text family. */
+  --font-body: var(--font-display);
+}

@@ -1,62 +1,70 @@
 # Claude build handoff
 
-## Latest handoff — two-tier consistency (2026-08-22)
+## Latest handoff — eight red suites on main, seven of them a merge (2026-08-22)
 
-Continue the uncommitted two-tier consistency work in the current working tree; preserve all
-existing dirty changes, including unrelated `docs/ux/` edits. The requested scope is implemented:
+`main` at `da0eb73` failed eight suites in CI run `32558005794`. Seven of the eight were the shape
+of a merge rather than a defect: PR #69 resolved file by file and kept one branch's tests beside
+the other branch's production code. `docs/STATUS.md`'s 2026-08-22 entry carries the full account
+and is the record to read; this is the pointer to it.
 
-- `--two-tier-consistency` is dispatched from `Tests/SimTests/main.swift` and runs the suite
-  registered in `SuiteCatalog`.
-- `TwoTierConsistencyGateTests` covers every §5.1 metric. Scalars use paired TOST with 90% CIs;
-  FG and drive outcomes use the canonically specified TVD checks. `uncoveredMetrics` is empty.
-- `GameSummary.regulationPoints` is backward-compatible: omitted/legacy values default to total
-  score and explicit values clamp to `0...total score`. Detailed summaries derive it from drives
-  ending in Q1–Q4; abstract summaries capture it before overtime.
-- `01-RESEARCH.md` and `03-MATCH-ENGINE.md` record the canonical points, yards/play, FG,
-  drive-outcome, and Q4 definitions. The college Q4 source calculation is 2022–2024 FBS-vs-FBS
-  annual range 26.047110%...26.690304%, giving a ±0.321597 pp TOST margin.
-- Abstract-only calibration was adjusted for the new gates; do not alter detailed snap, drive,
-  kick, clock, or scoring mechanics to make this suite pass.
+What was done, in order:
 
-### Verified release commands
+1. Merged the nine unmerged commits on `agent/floodlit-injury-evidence` (`c42b6e4`…`3a35bc6`).
+   They restore `DetailedGameSummaryBuilder`'s preserved losses and re-derive ten fingerprints, and
+   they close `Legal: shipped copy`, `League generation`, `Game loop` and `Authoritative game state`.
+2. Reconciled four assertions that could not hold together after the merge — the pre-kickoff
+   comparison root in `M4 tactical state`, the appended professional seat in `M5 career arc`, and
+   the week-20 terminal checkpoint and NIL-budget fixture in `College portal scheduler lifecycle`.
+3. Raised `SharedRules.minimumPlayableRosterByPosition[.runningBack]` to 2, for the reserve back
+   `DepthChart.offensiveTemplate` now fields. This was a new failure the merge created, caught by
+   the existing cross-check in `RulesTests`; no determinism lane moved with it.
 
-```bash
-swift build -c release -Xswiftc -enable-testing
-.build/arm64-apple-macosx/release/SimTests --two-tier-consistency-tuning
-.build/arm64-apple-macosx/release/SimTests --two-tier-consistency
-.build/arm64-apple-macosx/release/SimTests --save-document
-```
+### The one that is still red, and must not be re-pinned
 
-Results:
+`Lifecycle distributions hold their bands`. The professional past-decline share reads 0.228, 0.196,
+0.146, **0.073**, 0.170 at seasons 0, 1, 3, 6, 10 against a band of 0.08…0.30. It is a real
+measurement of two things at once: active professional rosters hold 1,411…1,533 against 32 × 53 =
+1,696 from the first offseason onward, and every professional enters at age 22, so the initial
+veteran tail retires out before the drafted cohorts reach decline. `--pro-soak` already asserts the
+roster-legality half and is already red for it.
 
-- tuning: 54 tests / 83 checks, all passed;
-- final disjoint 20-world holdout: 54 tests / 84 checks, all passed;
-- save document: 22 tests / 67 checks, all passed;
-- `git diff --check` passed;
-- GitNexus detected only the expected abstract `teamStatistics → SeededRandom` affected process.
+**Do not widen the band.** `--pro-movement-probe` found three things. One is not a defect, one is
+fixed, and one is open.
 
-### Sole remaining blocker
+**Not a defect — read the probe's season labels.** Its window labelled "season 1" is the weeks of
+season 0, when the market is legitimately closed; it opens at the season-0 boundary. "Free agency
+never ran" there is correct. An earlier revision of this file called that the bug. It is not.
 
-```bash
-.build/arm64-apple-macosx/release/SimTests --engine
-```
+**Fixed, 2026-08-23 — the draft could not finish.** Expiry leaves clubs six to seventeen seats short
+against seven rounds, so the club that lost fewest filled up on its own sixth pick, and
+`makeDraftPicks` treated the `activeRosterFull` as fatal: one full club ended the round for the
+other thirty-one, and the next week resumed at the same stuck pick. The market never reached
+`.rosterBuild` in any season and the draft made 130 of 224 picks by season four. A pick a club
+cannot seat is now passed (`02` section 4.2), leaving the prospect on the board for the club behind
+it. Picks landed went 220→223, 197→218, 130→189, 135→165 across seasons 2 to 5, active rosters
+1,436→1,439, 1,474→1,496, 1,456→1,526 and 1,271→1,341, and the weeks stuck in `.draft` 16→1.
 
-fails its two pre-existing pinned play-by-play fingerprints:
+**The draft fix did not close the band, and nudged it the other way.** After it, the past-decline
+share reads 0.228, 0.196, 0.134, **0.067**, 0.161 against 0.228, 0.196, 0.146, 0.073, 0.170 before.
+Every figure fell, which is the expected direction: the extra picks are all age-22 intake. It rules
+the draft out as the band's cause and points squarely at the two items below.
 
-```text
-pro:     expected 9120538774305745592, got 11206707792088495442
-college: expected 1997190051787914160, got 15235203604702228493
-```
+**Free agency's throughput is not a defect (2026-08-23).** With the draft finishing, the boundary
+count is exactly `1,696 - expiries` every season and a week-12 sample reads 1,696 in every season.
+The league is fully seated all year and short only in the instant between expiry and the market
+reopening. An earlier revision of this file said otherwise; with the draft stuck that was true.
 
-Do **not** repin or change detailed mechanics without owner approval. Current task changes in
-`Sources/FootballSimCore/Engine/` are confined to `DetailedGameSummaryBuilder`, which runs after
-`GameEngine.play` has made the `GameRecord` and therefore cannot affect its fingerprint. The match,
-reducer, and drive-engine paths have no current diff. This is an unrelated stale-pin/detailed-engine
-decision, not a two-tier consistency failure.
+**The band is not a sampling artefact — tested 2026-08-23, do not retry this.** The league is fully
+seated mid-season (1,696) and short only at the boundary the band samples (1,411…1,496), so the
+age-curve sample was moved in-season and measured. It came back 0.228, 0.228, 0.149, **0.056**,
+0.147 against 0.228, 0.196, 0.134, 0.067, 0.161 at the boundary — season 6 *worse*, because a full roster carries
+the 223 rookies the draft has just seated. Reverted. The model does not retain enough post-decline
+professionals on any sample point.
 
-If approval arrives, first identify the deliberate detailed-engine change that moved the outputs;
-then update the two pins only if that change is accepted, rerun `--engine`, and complete the project
-policy reviews (`rewrite-tournament`, `confidence-review`, and GitNexus change detection).
+**The free-agent pool picked its members by coin toss — fixed 2026-08-23.** `openOffseason` capped
+the pool at `maximumFreeAgentIDs` (512) with `sorted { $0.uuidString < ... }.prefix(512)`, so once
+the unattached population passed 512 it kept the same arbitrary slice every season and everyone else
+was unsignable for the rest of the save. Cut by rating now, ties on identifier, same bound.
 
 ---
 

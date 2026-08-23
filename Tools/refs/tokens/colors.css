@@ -1,0 +1,164 @@
+/* Colour — 04 section 6.1a (Floodlit, 2026-08-16) and 6.1b (Match Day, 2026-08-18).
+   Dark only. There is no production light palette, no derived light register,
+   and no user-facing appearance switch.
+
+   Base values were the shipped hexes from
+   Sources/ProFootballCoachUI/DesignTokens.swift. THAT IS NO LONGER TRUE for
+   --fl-warning and the heat scale: `04` sections 6.1a(ii) and 6.4 amended both on
+   2026-08-22 and DesignTokens.swift still ships the retired warning hex. Canon leads the
+   Swift here; the app carries the gap. Role aliases carry the names
+   every view actually reads (`palette.actionPrimary`, `palette.stateWarning`).
+   Tokens name purpose, never hue. */
+
+:root {
+  /* ---- Grounds ---------------------------------------------------------- */
+  --fl-page: #060A12;
+  --fl-work: #100E16;
+  --fl-raised: #12203A;
+  --fl-room-deep: #07060B;
+
+  /* ---- Ink -------------------------------------------------------------- */
+  --fl-ink-1: #F6FAFF;
+  --fl-ink-2: #A9BACE;
+  --fl-ink-3: #7A8A9E;
+
+  /* ---- Gold: the committing action, and nothing else --------------------- */
+  --fl-gold: #FFC53D;
+  --fl-gold-light: #FFE196;
+  --fl-gold-deep: #D89713;
+  --fl-gold-ink: #150F02;
+  --fl-lamp: #FFF2CE;
+
+  /* ---- State ------------------------------------------------------------ */
+  --fl-live: #37E08A;
+  --fl-positive: #4FD08C;
+  /* Left the yellow band on 2026-08-22: at 6.1 degrees from gold, identical saturation
+     and 0.6% luminance apart, a caution and a commit were the same colour at 11 pt under
+     a thumb. 24.1 degrees from gold, 5.57:1 on page. `04` 6.1a(ii). */
+  --fl-warning: #C9704A;
+  --fl-negative: #FF3B54;
+  --fl-info: #6FA8DC;
+
+  /* ---- Tier ------------------------------------------------------------- */
+  --fl-college: #B07BD6;
+  --fl-pro: var(--fl-info);            /* alias, 6.1a(ii) */
+
+  /* ---- Field ------------------------------------------------------------ */
+  --fl-field-turf: #072616;
+  --fl-field-line: var(--fl-ink-1);    /* alias, 6.1a(ii) */
+  --fl-field-annotation: #FFCE6A;
+  --fl-field-live: var(--fl-positive); /* alias, 6.1a(ii) */
+
+  /* ---- Broadcast turf ramp (6.1b) --------------------------------------- */
+  --fl-turf: #1C6E42;
+  --fl-turf-hot: #37A868;
+  --fl-turf-crown: #2A8850;
+  --fl-turf-mid: #124E2E;
+  --fl-turf-shade: #0A311D;
+  --fl-turf-night: #05150D;
+  --fl-endzone-opponent: #1B2431;
+
+  /* ---- Field markings (Match Day.dc.html, the owner-selected 1a direction) --------
+     Alphas on white and black, like material.css, because that is what they are: a
+     yard line is paint on grass, not a colour in the palette. */
+  --field-yard-line: rgba(246, 250, 255, 0.26);
+  --field-hash: rgba(246, 250, 255, 0.30);
+  --field-stripe-light: rgba(255, 255, 255, 0.030);
+  --field-stripe-dark: rgba(0, 0, 0, 0.070);
+  --field-scan: rgba(0, 0, 0, 0.070);
+
+  /* ---- Broadcast ink ---------------------------------------------------- */
+  --fl-live-ink: #FF8E9C;
+  --fl-go-ink: #7DF0B6;
+  --fl-cool-ink: #9CC8EE;
+  --fl-bowl-ink: #C9A968;
+
+  /* ---- Per-match identity grounds --------------------------------------- */
+  --fl-club-field: #0F5637;
+  --fl-club-ink: #EAF3EE;
+  --fl-opponent-field: #123A5E;
+  --fl-opponent-accent: #9CC5E8;
+  --fl-opponent-ink: #C7DEF3;
+
+  /* ---- Ball ------------------------------------------------------------- */
+  --fl-ball-highlight: #A6572A;
+  --fl-ball-mid: #7A3E1C;
+  --fl-ball-shade: #46220F;
+
+  /* ---- Flattened glass (6.1c) ------------------------------------------- */
+  --fl-glass-flat: #11141E;
+  --fl-glass-flat-deep: #0B0D14;
+  --fl-overlay-scrim: #04070C;
+
+  /* ======================================================================
+     ROLE ALIASES — what views read. Use these, not the base values above.
+     ====================================================================== */
+  --world-page: var(--fl-page);
+  --world-work: var(--fl-work);
+  --world-raised: var(--fl-raised);
+
+  --content-primary: var(--fl-ink-1);
+  --content-secondary: var(--fl-ink-2);
+  --content-quiet: var(--fl-ink-3);
+
+  --action-primary: var(--fl-gold);
+  --action-secondary: var(--fl-ink-2);
+  /* An alias, not a repeat: a future divergence must be a deliberate edit. */
+  --action-destructive: var(--state-negative);
+
+  --state-live: var(--fl-live);
+  --state-positive: var(--fl-positive);
+  --state-warning: var(--fl-warning);
+  --state-negative: var(--fl-negative);
+  --state-info: var(--fl-info);
+
+  --college-identity: var(--fl-college);
+  /* Alias, per 6.1a(ii). */
+  --pro-identity: var(--state-info);
+
+  --field-turf: var(--fl-field-turf);
+  --field-line: var(--fl-field-line);
+  --field-annotation: var(--fl-field-annotation);
+  --field-live: var(--fl-field-live);
+
+  /* Surfaces */
+  --surface-panel: var(--fl-glass-flat);
+  --surface-panel-deep: var(--fl-glass-flat-deep);
+  --surface-scrim: var(--fl-overlay-scrim);
+
+  /* Ink on a filled control is always the ground, never white.
+     Measured: on gold 12.55, live 11.50, positive 10.13, warning 10.87,
+     info 7.84, negative 5.67. No separate ink token exists. */
+  --ink-on-fill: var(--fl-page);
+  --ink-on-gold: var(--fl-gold-ink);
+
+  /* Hairlines. Two jobs, two values (6.1a).
+     Structural rule groups and is near-invisible; a legible seam is meant to be
+     seen. Neither carries meaning alone. */
+  --rule-structural: rgba(122, 138, 158, 0.20);
+  --rule-legible: rgba(122, 138, 158, 0.38);
+  --rule-glass: rgba(255, 255, 255, 0.13);
+  --rule-row: rgba(255, 255, 255, 0.14);
+
+  /* The 40-99 heat scale: FIVE bands diverging around a neutral centre (`04` 6.4,
+     amended 2026-08-22). The three-band red/amber/green it replaces made an average
+     starter read as a caution -- the warm hue now sits BELOW the median, and 70-79 is
+     neutral ink, not amber. Always a SECOND reading of a printed figure.
+     Every band clears 4.5:1 on page, raised and panel, and sits >=24 degrees from gold;
+     `checks.check_heat_bands` computes both rather than trusting this comment. */
+  --heat-well-below: var(--state-negative);   /* 40-59 */
+  --heat-below: var(--state-warning);         /* 60-69 */
+  --heat-average: var(--content-secondary);   /* 70-79, neutral */
+  --heat-above: #7FCB9E;                      /* 80-84, positive lightened */
+  --heat-well-above: var(--state-positive);   /* 85-99 */
+
+  /* The committing action's fill, and the only gradient that means
+     "this moves the game forward". Gold never means "this is good". */
+  --gold-field: linear-gradient(135deg, var(--fl-gold-light), var(--fl-gold) 52%, var(--fl-gold-deep));
+  --glow-gold: 0 2px 24px rgba(255, 197, 61, 0.42);
+}
+
+/* Refused: the handoff's `ink-3` #65788F. It measures 4.37 / 4.23 / 3.58 on
+   page / work / raised and fails 4.5:1 on every ground it is drawn on.
+   --content-quiet (#7A8A9E, 5.62 / 5.43 / 4.61) is the same role and ships
+   in its place. Do not reintroduce it. */

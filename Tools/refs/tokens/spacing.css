@@ -1,0 +1,32 @@
+/* Spacing — DesignTokens.Gap and .Pad.
+
+   Deliberately NOT a 4/8 grid. Floodlit tunes gaps per surface; snapping them
+   to a grid is what makes a dense screen read as a template. Copy the value. */
+
+:root {
+  --gap-hair: 2px;
+  --gap-tight: 3px;
+  --gap-xxs: 4px;
+  --gap-xs: 6px;
+  --gap-sm: 7px;
+  --gap-sm-plus: 8px;
+  --gap-md: 9px;
+  --gap-md-plus: 11px;
+  --gap-lg: 12px;
+  --gap-lg-plus: 14px;
+  --gap-xl: 18px;
+  --gap-xxl: 20px;
+
+  /* Per-surface padding, stated as (vertical, horizontal) */
+  --pad-panel: 11px 15px;
+  --pad-row: 10px 12px;
+  --pad-card: 12px 13px;
+  --pad-alert: 11px 16px;
+  --pad-band: 14px 16px;
+
+  /* Dense table tracks (6.3). AX5 expands and reflows rather than shrinking. */
+  --track-row-dense: 24px;
+  --track-row-dense-max: 28px;
+  --row-min-height: 32px;      /* a dense readout */
+  --row-min-target: 44px;      /* the moment it can be tapped */
+}

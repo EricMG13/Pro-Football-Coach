@@ -121,10 +121,36 @@ func runCareerArcTests() {
             )
             expect(promoted.state.career.college == nil)
             expectEqual(promoted.state.careerArc.currentJob?.tier, .professional)
+            // The guard is that promotion does not *lose* the college career: the record it began
+            // with survives intact as a prefix. The professional seat is then appended, because
+            // `people.staffCareers` is the one authority the coaching tree and the season history
+            // archive both read, and a promotion missing from it is a promotion missing from every
+            // history surface (`CareerControlState.seatProfessionalPromotion`, owner decision
+            // 2026-08-20).
+            let promotedRecord = promoted.state.people.staffCareers[coachID]
             expectEqual(
-                promoted.state.people.staffCareers[coachID],
-                careerRecord,
+                promotedRecord.map { Array($0.assignments.prefix(careerRecord.assignments.count)) },
+                careerRecord.assignments,
                 "promotion changed or dropped the coach's career record"
+            )
+            expectEqual(
+                promotedRecord?.seasonRecords,
+                careerRecord.seasonRecords,
+                "promotion changed the coach's season records"
+            )
+            expectEqual(
+                promotedRecord?.assignments.count,
+                careerRecord.assignments.count + 1,
+                "promotion did not record exactly one new seat"
+            )
+            expectEqual(
+                promotedRecord?.assignments.last,
+                StaffCareerAssignment(
+                    season: controlled.calendar.season,
+                    organisationID: proTeam.id,
+                    role: .headCoach
+                ),
+                "the professional seat the promotion took is missing from the career record"
             )
             expectEqual(
                 promoted.state.history.archive,
