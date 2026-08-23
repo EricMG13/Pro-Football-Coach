@@ -70,9 +70,7 @@ roster_cuts = desk(
             (("Rafe Coombe", "LB", "$4,100,000", "$900,000"),
              ("Bry Landover", "OG", "$1,950,000", "$450,000")),
         )),
-        Panel("Position", Rows((
-            Row("Squad", ("56 of 53",), "Three to release"),
-        ), kind="readout")),
+        Panel("Position", Meter(56, 53, "Active roster", "")),
     )),
     gaps=(
         blocker("DATA", "ProManagementReadModel holds no transactions collection; this list cannot be real."),

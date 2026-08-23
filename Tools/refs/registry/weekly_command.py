@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from ._shared import (
     Chip, Chips, Col, Field, Hero, NOTHING_MISSING, OpposedBar, Panel, Lean, Row,
-    Rows, ScoreBug, ShareBar, Split, Stack, StatCompare, Status, Surface, Table,
-    blocker, broadcast, desk, gap,
+    Meter, Rows, ScoreBug, ShareBar, Split, Stack, StatCompare, Status, Surface,
+    Table, blocker, broadcast, desk, gap,
 )
 
 coaching_hq = desk(
@@ -110,9 +110,10 @@ team_health = desk(
              ("Ruben Sallow", "LB", "Out", "Week 10"),
              ("Teo Marchetti", "OT", "Limited", "Week 7")),
         )),
-        Panel("Load", Rows((
-            Row("Squad fatigue", ("Amber",), "Sixth week without a bye; four over 90 percent snaps"),
-        ), kind="readout")),
+        Panel("Load", Stack((
+            Meter(6, 8, "Weeks without a bye", ""),
+            ShareBar(4 / 53, "Over 90 percent snaps", "4 players"),
+        ))),
     )),
     gaps=(
         gap("DATA", "Return weeks are point estimates; no confidence is modelled or drawn."),

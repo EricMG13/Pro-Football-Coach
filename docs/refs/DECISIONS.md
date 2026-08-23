@@ -250,3 +250,29 @@ large, vitals tracked, overall as a badge in its band, attributes as figure-plus
 times `escape()` turned it into `&amp;middot;` and printed it. `page._ascii` converts the
 real character at the emitter, so the data should always carry the character. Rule 23 makes
 the third occurrence a build failure.
+
+### 24. Batch 4: the three shapes the copy was already asking for
+
+The surfaces left after batch 3 were not uniformly table-shaped. Three phrases in the copy
+were the tell, and each names a shape:
+
+- **"X of Y"** is a capacity, and a capacity wants a track. Class places 2 of 22, contacts
+  used 6 of 12, weeks without a bye 6 of 8, and the active roster at **56 of 53** -- the one
+  case the over-capacity state exists for. The bar overruns its track rather than clamping,
+  because a roster sheet that cannot show itself breached is not a roster sheet.
+- **A person** is a card, not a row. Staff Room and Shortlist follow Compare.
+- **A run of results** is a sequence. Schedule splits into played, as a form line, and
+  to come, as a table -- two different questions that were sharing one table.
+
+Stakeholders was five moods in a table; approval is a proportion, so it is five bars.
+
+`PlayerCard` now takes a person with no squad number, which is what a coordinator is.
+
+Still only tables and rows: **28 of 59**, from 41 before batch 1. Shapes in use: ShareBar
+18, Hero 14, PlayerCard 8, Meter 5, FormLine 3, StatCompare 3, Chips 3, ScoreBug 1,
+Field 1, AttributeDial 1.
+
+The 28 that remain are mostly right as tables -- Inbox, Standings, Rankings, Bracket,
+Statistics, Record Book, Coaching Tree. The ones still worth a shape are Coaching HQ,
+Game Plan, Development Plan and Recruiting Board, all of which want a card or a track that
+the current copy does not yet name.

@@ -6,6 +6,8 @@ than over it."""
 
 from __future__ import annotations
 
+STAFF_MARK = "TeamLogo_00EBE0C02B2B4988A450BB870D6D3881"
+
 from ._shared import (
     AttributeDial, BandLegend, Chip, Chips, Col, Heat, Hero, NOTHING_MISSING, Panel,
     PlayerCard, Row, Rows, ShareBar, Split, Stack, Status, Table, blocker, desk,
@@ -128,15 +130,14 @@ development_plan = desk(
 
 staff_room = desk(
     id="staffRoom", number=20, name="Staff Room", family="personnel", status=Status.BUILT,
-    body=Panel("Staff", Table(
-        (Col("Name", 18, "left", False), Col("Role", 22, "left", False),
-         Col("Rating", 7, "right"), Col("Contract", 9, "left", False)),
-        (("Perrin Oduya", "Offensive coordinator", "82", "2 years"),
-         ("Halle Bright", "Defensive coordinator", "79", "1 year"),
-         ("Cyrus Mbeki", "Recruiting coordinator", "85", "3 years"),
-         ("Ines Fallon", "Strength", "74", "Rolling"),
-         ("Tobias Renk", "Quarterbacks", "71", "1 year")),
-    )),
+    body=Stack((Panel("Staff", Stack((
+        PlayerCard("", "OC", "PERRIN", "ODUYA", "2 YEARS LEFT", 82,
+                   (("Development", 84),), mark=STAFF_MARK),
+        PlayerCard("", "DC", "HALLE", "BRIGHT", "1 YEAR LEFT", 79,
+                   (("Development", 76),), mark=STAFF_MARK),
+        PlayerCard("", "RC", "CYRUS", "MBEKI", "3 YEARS LEFT", 85,
+                   (("Development", 88),), mark=STAFF_MARK),
+    ), direction="row")), BandLegend())),
     gaps=(
         gap("SCREEN", "Staff market and profile is an alias into this list; a coach has no dossier of their own."),
         gap("DATA", "Staff influence on development is not exposed anywhere the player can read it."),

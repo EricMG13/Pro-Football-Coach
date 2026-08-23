@@ -12,8 +12,8 @@ a registry that only models screens, and each one declares that as a gap."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, FormLine, Hero, Panel, Row, Rows, Split, Stack, Status, Surface,
-    Table, blocker, broadcast, desk, dossier, gap,
+    Chip, Chips, Col, FormLine, Hero, Panel, Row, Rows, ShareBar, Split, Stack,
+    Status, Surface, Table, blocker, broadcast, desk, dossier, gap,
 )
 from surface import Lean
 
@@ -74,14 +74,13 @@ stakeholders = desk(
     id="stakeholders", number=54, name="Stakeholders", family="career",
     status=Status.WRAPPER, parent="CareerHubView",
     evidence="Sources/ProFootballCoachUI/CareerHubView.swift -- switch focus, sixty lines",
-    body=Panel("Who is watching", Table(
-        (Col("Stakeholder", 18, "left", False), Col("Mood", 10, "left", False),
-         Col("Wants", 36, "left", False)),
-        (("Athletic director", "Pleased", "A conference title inside five years"),
-         ("Boosters", "Warm", "A win over Zumbrota, delivered"),
-         ("Faculty", "Neutral", "Academic standing held"),
-         ("Players", "Warm", "Snap distribution kept honest")),
-    )),
+    body=Panel("Approval", Stack((
+        ShareBar(0.82, "Athletic director", "Pleased", "--state-positive"),
+        ShareBar(0.74, "Boosters", "Warm", "--state-positive"),
+        ShareBar(0.50, "Faculty", "Neutral", "--content-secondary"),
+        ShareBar(0.71, "Players", "Warm", "--state-positive"),
+        ShareBar(0.38, "Local press", "Cool", "--state-warning"),
+    ))),
     gaps=(
         blocker("DATA", "Mood is a label with no model; nothing changes it and nothing reads it back."),
         gap("SCREEN", "Sixty lines, and no moment where expectations are actually set."),

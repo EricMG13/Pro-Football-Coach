@@ -7,8 +7,8 @@ branch. Those gaps are the placement spec Stream A's Phase 2 builds against."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, StatCompare, Status,
-    Table, blocker, broadcast, desk, dossier, gap,
+    Chip, Chips, Col, FormLine, Hero, Panel, Row, Rows, ShareBar, Split, Stack,
+    StatCompare, Status, Table, blocker, broadcast, desk, dossier, gap,
 )
 
 MARK_GAP = "Wants a competition mark at 24 px beside the title; none exists on any branch."
@@ -83,15 +83,18 @@ standings = desk(
 
 schedule = desk(
     id="schedule", number=44, name="Schedule", family="league", status=Status.BUILT,
-    body=Panel("Season", Table(
-        (Col("Wk", 3, "right"), Col("Opponent", 22, "left", False),
-         Col("H/A", 4, "left", False), Col("Result", 9, "left", False)),
-        (("5", "Kirksville State Cedar", "H", "W 34-10"),
-         ("6", "Edgartown Cedar", "A", "W 21-17"),
-         ("7", "Zumbrota Central Marsh", "A", "W 24-21"),
-         ("8", "Pecos Bramble", "H", "Sat 15:30"),
-         ("9", "Ephraim Maritime River", "A", "Sat 12:00"),
-         ("10", "Weiser Valley Flint", "H", "Sat 19:00")),
+    body=Stack((
+        Panel("Played", FormLine((
+            ("W", "24-13", "KIR"), ("W", "31-17", "WAT"), ("W", "20-14", "EPH"),
+            ("W", "34-10", "KIR"), ("W", "21-17", "EDG"), ("W", "24-21", "ZUM"),
+        ))),
+        Panel("To come", Table(
+            (Col("Wk", 3, "right"), Col("Opponent", 22, "left", False),
+             Col("H/A", 4, "left", False), Col("Kickoff", 9, "left", False)),
+            (("8", "Pecos Bramble", "H", "Sat 15:30"),
+             ("9", "Ephraim Maritime River", "A", "Sat 12:00"),
+             ("10", "Weiser Valley Flint", "H", "Sat 19:00")),
+        )),
     )),
     gaps=(
         gap("ART", MARK_GAP),

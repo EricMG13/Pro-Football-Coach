@@ -6,8 +6,11 @@ Retention Decisions, Portal Market and NIL Allocation all route there, and
 
 from __future__ import annotations
 
+SHORTLIST_MARK = "TeamLogo_00EBE0C02B2B4988A450BB870D6D3881"
+
 from ._shared import (
-    BandLegend, Chip, Chips, Col, FormLine, Heat, Hero, Panel, Row, Rows, ShareBar,
+    BandLegend, Chip, Chips, Col, FormLine, Heat, Hero, Meter, Panel, PlayerCard,
+    Row, Rows, ShareBar,
     Split, Stack, Status, Table, ValueRing, blocker, broadcast, desk, dossier, gap,
 )
 
@@ -71,11 +74,14 @@ prospect_profile = dossier(
 
 shortlist = desk(
     id="shortlist", number=26, name="Shortlist", family="recruiting", status=Status.BUILT,
-    body=Panel("Shortlisted", Rows((
-        Row("Kalen Ruthers", ("QB", "4"), "Visit booked for week 9"),
-        Row("Bram Teasdale", ("OT", "3"), "Committed, hold the place"),
-        Row("Wren Kovalik", ("LB", "3"), "Wants a defensive coordinator meeting"),
-    ), kind="tappable")),
+    body=Stack((Panel("Shortlisted", Stack((
+        PlayerCard("", "QB", "KALEN", "RUTHERS", "4 STARS · PECOS", 86,
+                   (("Scheme fit", 88),), mark=SHORTLIST_MARK),
+        PlayerCard("", "OT", "BRAM", "TEASDALE", "3 STARS · COMMITTED", 74,
+                   (("Scheme fit", 71),), mark=SHORTLIST_MARK),
+        PlayerCard("", "LB", "WREN", "KOVALIK", "3 STARS · VISITING", 72,
+                   (("Scheme fit", 79),), mark=SHORTLIST_MARK),
+    ), direction="row")), BandLegend())),
     gaps=(
         gap("INTERACTION", "Removing from the shortlist has no designed confirmation."),
     ),
@@ -91,9 +97,7 @@ contact_visit = desk(
             (("Kalen Ruthers", "Official visit", "3", "Week 9"),
              ("Wren Kovalik", "Home visit", "2", "Week 8")),
         )),
-        Panel("Budget", Rows((
-            Row("Contacts left", ("6 of 12",), "Resets at the dead period"),
-        ), kind="readout")),
+        Panel("Budget", Meter(6, 12, "Contacts used", "")),
     )),
     gaps=(
         gap("RULE", "Contact cost is drawn but the rules module does not define a per-action tariff."),
@@ -110,11 +114,9 @@ class_overview = desk(
             (("Bram Teasdale", "OT", "3", "Pending"),
              ("Isolde Grange", "K", "2", "Pending")),
         )),
-        Rows((
-            Row("Places", ("2 of 22",), "Twenty still open"),
-            Row("Average stars", ("2.5",), "Conference average is 3.1"),
-            Row("Positions unfilled", ("QB, WR, DT",), "Three of the four priorities"),
-        ), kind="readout"),
+        Meter(2, 22, "Class places filled", ""),
+        ShareBar(2.5 / 5, "Average stars", "2.5"),
+        ShareBar(1 / 4, "Priorities filled", "1 of 4"),
     )),
     gaps=(
         gap("DATA", "Conference average is drawn but no cross-programme aggregate is computed."),
