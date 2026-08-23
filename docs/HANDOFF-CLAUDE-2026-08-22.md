@@ -23,8 +23,27 @@ resume sequence below, most of which is now done.
 Done since: the three Task 4 review findings and their contracts; the AX5 focused route (the
 `isHittable` false positive described under "Exact interruption point" -- XCUITest reports it true
 for a row inside the scroll content but below the viewport, so the tap was synthesized off-screen);
-two pre-existing red UI tests that were failing at `83452c1`; two more logo reds; and the Match Day
-1a reconciliation including the 22-actor defect.
+two pre-existing red UI tests that were failing at `83452c1`; two more logo reds; the Match Day 1a
+reconciliation including the 22-actor defect and the single top-right plate; **the real
+retained-game Match Day capture inside the production navigator**, which found and fixed a receipt
+drawn across the scorebug; and a self-introduced VoiceOver label defect found by confidence review.
+
+## What is left, and who can do it
+
+Neither remaining item is the agent's to close.
+
+1. **The manual device and assistive-technology matrix.** `CLAUDE.md` makes simulator and device
+   demonstration an owner action -- "hand off a written walkthrough script, never claim it
+   happened". The script is written and handed off:
+   `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md`. It also carries the two inset questions
+   this work deliberately left open, which need a real 17-class device.
+2. **A fresh independent review.** Package ready at
+   `.superpowers/sdd/review-6ed8433..723af3f.diff` -- 3,846 lines, 23 files, all nine commits from
+   the Task 4 base. A review by the author of a change is not the independent review the gate asks
+   for, so this session has not performed one.
+
+`.superpowers/sdd/progress.md` stays `All-screen Task 4: pending` until the walkthrough carries real
+results and a fresh reviewer approves. Tasks 5 to 12 of the plan have not been started.
 
 The **full UI suite is green**: all 21 tests, 0 failures. It runs as two passes because content
 size is external to the tests -- 14 at `large`, the 7 `AtAX5` tests at genuine
