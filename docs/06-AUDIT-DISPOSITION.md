@@ -74,7 +74,7 @@ has no dispatched command: `SaveOffMainActorTest`, `SaveCoalescingTest`, `SaveWr
 `SaveOpenIsReadOnlyTest`, `ReduceMotionContractTest`, `DynamicTypeContractTest`,
 `ContrastByConstructionTest`, `VoiceOverLabelTest`, `TouchTargetTest`, `ErrorSurfaceTest`, and the
 orientation assertion under its shipped name. **Two do not exist at all**:
-`DestructiveActionPlacementTest` (row 18) and `SmallestDeviceLayoutTest` (rows 23, and D15's
+`DestructiveActionPlacementTest` (row 18) and `SmallestDeviceLayoutTest` (row 23, and D15's
 falsifier). Neither is registered, neither has a runner, and no `verify.sh` lane runs one — so
 nothing here fails while they are absent, which is the failure mode this document was written
 against. Naming a test is not the same as having one; see `docs/STATUS.md`'s 2026-08-23 entry.
