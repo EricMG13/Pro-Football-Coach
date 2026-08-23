@@ -288,13 +288,16 @@ dropped silently.
 
 ## 7. What about the source tree?
 
-`Sources/`, `Tests/`, `App/`, `Package.swift` and `build/` are **Tier C: no authority**. They are the
-prior implementation — a pro-only game with an arcade mode — and the rebuild does not carry them
-forward by default. They are not documents, so they are not archived here; they are left in place as
-readable prior art until `docs/05-IMPLEMENTATION-PLAN.md` says what happens to them.
+`Sources/`, `Tests/`, `App/` and `Package.swift` are **Tier C: no authority**. Code never overrules
+canon; a gameplay question answered only in a source file is a defect, not a decision.
 
-Porting any of it requires a logged justification naming what would be lost by rebuilding it.
-Discarding the simulation engine requires the same justification in the other direction, enumerated
-against `docs/STATUS.md`: the calibration bands, the soak invariants, the cross-process determinism
-fix, the bounded save growth, and the cap system's practice-squad defences. Rebuilding may well be
-right. It is not free.
+**Superseded 2026-08-10.** This section was written while the tree still held the prior
+implementation — a pro-only game with an arcade mode — and told the reader it was prior art awaiting
+disposal. P0 removed it. What is under those paths now is the rebuild: three SwiftPM targets
+(`FootballSimCore`, `ProFootballCoachUI`, `CoachWorldApp`), the `SimTests` executable suite, and the
+thin `@main` shell. `build/` is gone and gitignored. `docs/PORT-LOG.md` records what survived the
+removal and why, in both directions; `docs/03b-ARCHITECTURE.md` §1 owns the layout the tree now has.
+
+The Tier C rule itself is unchanged and outlives the transition: porting anything from the prior
+build requires a logged justification in `docs/PORT-LOG.md` naming what would be lost by rebuilding
+it, and discarding something requires the same justification in the other direction.

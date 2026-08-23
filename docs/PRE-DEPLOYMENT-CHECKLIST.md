@@ -16,21 +16,27 @@ owner-checked ones are owner-checked because no agent in this project's environm
 ## 1. Machine gates — all green, on the same commit
 
 - [ ] Build green for both library targets and the app.
-- [ ] Full test suite green by D11's mechanism, with the pass/fail counts recorded.
+- [ ] Full test suite green by D11's mechanism, with the pass/fail counts recorded, and the run
+      **ending in TestKit's `N tests, M checks` summary** — a lane that stops short of it exercised
+      an unknown fraction of the suite (`03b` §5).
 - [ ] All calibration bands hold under TOST, both tiers.
 - [ ] `TwoTierConsistencyTests` green — the detailed and abstracted models are statistically
       equivalent on every listed metric.
 - [ ] Cross-process determinism proven: same seed, two separate process invocations, identical
       play-by-play hash.
-- [ ] The `hashValue` source scan passes.
-- [ ] The engine/UI boundary scan passes — zero `import SwiftUI` under `FootballSimCore/`.
-- [ ] The design-token scan passes — zero spacing, radius, colour or font-size literals in views.
+- [ ] **All five source scans in `03b` §1 pass**, not a chosen three: the engine/UI boundary (zero
+      `import SwiftUI` under `FootballSimCore/`), the authoritative root (no file importing a UI
+      framework names `GameState`), seeding (no `hashValue`, `Hasher(` or `hash(into:)`), ambient
+      randomness (no `UUID()`, `Date()` or `Date.now`), and design tokens (no spacing, radius,
+      colour, font-size or animation-duration literal in a view).
 - [ ] The 20-season soak passes every assertion, at shipping league size.
 - [ ] Save size after 20 seasons is under the 8 MB ceiling; every bounded collection verified bounded
       by growth check.
 - [ ] Migration fixtures pass at every schema version boundary.
-- [ ] All ten accessibility contract tests green, including orientation and the coverage
-      meta-assertion.
+- [ ] **Every gate `SuiteCatalog` files under the `accessibility` lane** is green, including
+      orientation and the coverage meta-assertion. Enumerated from the catalog, never from a list
+      copied into this file — a count written here becomes the coverage boundary the day a gate is
+      added.
 - [ ] `CommitmentCoverageTest` green — every row in `PRODUCT.md`'s commitment table names a test that
       exists.
 - [ ] `ReachabilityTest` green — no unreachable screen ships.

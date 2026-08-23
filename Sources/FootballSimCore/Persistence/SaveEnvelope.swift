@@ -9,7 +9,8 @@ public enum SaveEnvelopeError: Error, Equatable {
     /// one-step migrations; until that table exists, an older save is refused rather than fed to
     /// the current decoder, which would succeed with wrong data rather than throw.
     case unmigratableVersion(found: UInt32, supported: UInt32)
-    /// A header flag this build does not implement — today, the reserved "body is compressed" bit.
+    /// A header flag this build does not implement. Bit 0 ("body is compressed") is implemented;
+    /// every other bit is still reserved, so a file that sets one was written by something newer.
     case unsupportedHeaderFlags(found: UInt8)
     /// A reserved header byte carries data, so the file was written by something this build does
     /// not understand.
@@ -26,12 +27,13 @@ public enum SaveEnvelopeError: Error, Equatable {
 ///
 ///     0..<4    magic, ASCII "PFC1"
 ///     4..<8    schemaVersion, UInt32 little-endian
-///     8        flags — bit 0 reserved for "body is compressed", currently always 0
+///     8        flags — bit 0, "body is compressed", set by every save this build writes
 ///     9..<16   reserved, always zero
 ///     16...    body
 ///
-/// Reading the version is a 16-byte read. The flags byte is deliberate headroom: 03b section 4 wants
-/// the body gzipped, and adding that later must not move the version field or invalidate a save.
+/// Reading the version is a 16-byte read. The flags byte was deliberate headroom, and it has since
+/// been spent: compression landed without moving the version field or invalidating a save, because
+/// the reader branches on bit 0 and a save written before the flag existed still has it clear.
 public struct SaveEnvelope: Sendable {
     public static let currentSchemaVersion: UInt32 = 1
     public static let headerLength = 16
@@ -153,9 +155,10 @@ public struct SaveEnvelope: Sendable {
             throw SaveEnvelopeError.unmigratableVersion(found: version,
                                                         supported: currentSchemaVersion)
         }
-        // The writer zeroes the flags and reserved bytes; a reader that never checks them turns
-        // "headroom for gzip" into a promise nothing keeps. A compressed body handed to JSONDecoder
-        // fails as dataCorrupted, which tells the player nothing.
+        // The writer sets bit 0 and zeroes everything else; a reader that never checks the rest
+        // turns the remaining headroom into a promise nothing keeps. A body compressed by some
+        // future scheme and handed to JSONDecoder fails as dataCorrupted, which tells the player
+        // nothing.
         let header = Array(data.prefix(headerLength))
         guard header[8] & ~compressedBodyFlag == 0 else {
             throw SaveEnvelopeError.unsupportedHeaderFlags(found: header[8])
