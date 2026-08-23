@@ -103,8 +103,15 @@ run_sim() {
     # a red suite and says nothing about the suites that never ran -- which is how 40 of 143 went
     # unexercised between 2026-08-20 and 2026-08-23 while every release claim quoted the full run.
     if ! grep -qE '^[0-9]+ tests, [0-9]+ checks$' "$log"; then
-        bad "$label — TRUNCATED: no TestKit summary, so every suite after the last one reported \
-never ran (see $log)"
+        local detail="no TestKit summary, so every suite after the last one reported never ran"
+        # Name the signal when there is one, and the flag that turns it into a location: TestKit
+        # writes "> suite / test" to stderr under TRACE_TESTS=1, so the last line is the test that
+        # died. That is what found the 2026-08-23 trap, in one run.
+        if [ "$status" -ge 128 ]; then
+            detail="$detail; killed by signal $((status - 128)) — rerun with TRACE_TESTS=1, which"
+            detail="$detail names the last test that started"
+        fi
+        bad "$label — TRUNCATED: $detail (see $log)"
         return 1
     fi
     if [ "$status" -eq 0 ]; then

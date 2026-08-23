@@ -107,8 +107,10 @@ private func portalOffer(
             window: window,
             position: admissionEvidence.position,
             estimatedOverall: admissionEvidence.estimatedOverall,
+            // Policy scouting set, not `Position.ratedAttributes` -- the two agree at quarterback,
+            // which is every caller here today, and disagree at receiver and tight end.
             estimatedAttributes: Dictionary(uniqueKeysWithValues:
-                admissionEvidence.position.ratedAttributes.map {
+                CollegePortalPolicyV1.ratedAttributes(for: admissionEvidence.position).map {
                     ($0, Rating(admissionOverall))
                 }
             ),
@@ -923,8 +925,8 @@ func runPortalContractTests() {
                 // `CollegePortalKnowledgeSnapshot`'s own precondition validates against. `3bba7c9`
                 // gave receivers `.vision` and `.elusiveness` for the match engine and deliberately
                 // left the v1 knowledge schema alone, so building this snapshot from the live list
-                // tripped the precondition and killed the process -- taking the last fourteen
-                // suites of the no-argument run with it.
+                // tripped the precondition and killed the process -- taking the forty suites
+                // registered after this one with it.
                 estimatedAttributes: Dictionary(uniqueKeysWithValues:
                     CollegePortalPolicyV1.ratedAttributes(for: .wideReceiver)
                         .map { ($0, Rating(70)) }

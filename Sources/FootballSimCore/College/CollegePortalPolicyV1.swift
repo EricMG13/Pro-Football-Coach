@@ -141,6 +141,15 @@ public enum CollegePortalPolicyV1 {
         .awareness, .schemeFit, .temperament, .workEthic, .clutch,
     ]
 
+    /// What a scout estimates, per position, frozen with the rest of policy version one.
+    ///
+    /// This deliberately lags `Position.ratedAttributes` and must not be edited to catch up: these
+    /// keys are what every archived knowledge snapshot was written with, and
+    /// `CollegePortalKnowledgeSnapshot.isValid` checks a decoded snapshot's keys against this table,
+    /// so adding one here makes existing career records undecodable. Receiver and tight end are
+    /// where the two currently differ -- `Position` rates them on `.vision` and `.elusiveness` for
+    /// the carrier duel and no scout estimates either. Closing that gap is a policy version two,
+    /// not an edit. `PortalMatchingTests` asserts the direction the lag may run in.
     private static let knowledgeAttributesByPosition: [Position: [Attribute]] = [
         .quarterback: sharedKnowledgeAttributes + [
             .accuracyShort, .accuracyMid, .accuracyDeep, .armStrength, .decision, .poise,

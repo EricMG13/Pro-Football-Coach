@@ -152,6 +152,63 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-23 — the full lane finishes again, and the trap that stopped it was a test reaching for
+> the wrong attribute table.** The no-flag SimTests run died inside `--portal-contracts` with exit
+> 133, zero bytes on stdout and stderr, and no summary. `lldb` put it at `CollegePortalState.swift`
+> line 327 -- `CollegePortalKnowledgeSnapshot`'s initialiser failing its own `precondition` -- called
+> from `PortalContractTests.swift:914`, which built a wide receiver snapshot keyed by
+> `Position.wideReceiver.ratedAttributes`. That is not the table a scout works from.
+> `Position` gained `.vision` and `.elusiveness` for receivers and tight ends when the carrier duel
+> started reading them; the frozen `CollegePortalPolicyV1.knowledgeAttributesByPosition` did not
+> follow, and must not, because its keys are what every archived knowledge snapshot was written
+> with -- `3bba7c9` added them on 2026-08-20 and correctly left the frozen table alone. Fourteen keys
+> against the twelve the precondition wanted, so the snapshot was invalid, so a fail-fast
+> initialiser took the whole run with it. Receiver and tight end are the only two positions where
+> the lists differ; the other thirteen match exactly.
+>
+> **Two sessions found this independently on the same day, and the trap site was fixed twice.**
+> `8900f40` landed first and is what `main` carries; this branch's duplicate was dropped on rebase,
+> keeping `8900f40`'s comment. What remains here is the rest of the class, which the trap site was
+> only the first instance of: **three test sites named the wrong table, and the other two are fixed
+> here.** The shared `portalOffer` helper -- latent, because every caller passes quarterback, where
+> the two tables agree -- and a `PortalPolicyTests` assertion that compared a generated snapshot's
+> keys against `Position.ratedAttributes` and passed only because the sampled entrant happened not
+> to be a receiver. The lag is now written down at the frozen table, where someone would otherwise
+> "correct" it, and the direction it may run in is asserted over `Position.allCases`: the scouting
+> set may lag the rating set and may never lead it, since scouting an attribute the position does
+> not rate estimates a rating nothing sets. It must also carry `.schemeFit`, which
+> `CollegePortalOffer.isValid` compares against.
+>
+> **For the owner, not a defect to fix here:** receivers and tight ends are scouted without
+> `.vision` or `.elusiveness`, two attributes the engine now rates them on, so portal knowledge of a
+> receiver is blind to the part of his game the carrier duel reads. Closing that is a policy version
+> two, not an edit to a frozen table.
+>
+> **`verify.sh` now judges a lane by its summary line, not by its exit status.** A `precondition`
+> compiles to a bare trap under `-O`: the process dies on a signal with no message, so the lane's
+> log simply stopped mid-run. The lane did fail -- `pipefail` carries the status past the `tee` --
+> but a truncated run and an honest red are the same status, and the report said nothing about the
+> forty suites that never started. `run_sim` now requires TestKit's terminal `N tests, N checks`
+> line and reports `TRUNCATED` without it. That check is `0ab1bdf`'s, from the same parallel branch,
+> and it is the stronger one: it catches a run that stops for any reason, where the signal-only
+> check it replaced here caught only a killed process. This branch keeps the part that was still
+> missing -- naming the signal, and pointing at `TRACE_TESTS=1`, which is what turned "it stopped"
+> into a file and a line in one run. The predicate was checked against both real logs from this
+> session: it rejects the aborted run and accepts the complete one.
+>
+> **The no-flag lane runs end to end again: 1,065 tests, 825,900 checks, 143 suites** against 103
+> before the fix -- measured on `2de6268` plus the trap fix, before this branch was rebased onto a
+> `main` 52 commits further on, so the totals are evidence that the truncation is gone rather than a
+> current count. The 40 suites it had not been reaching at all: the ledger batch, jersey numbers,
+> depth charts, every read-model provider, the logo manifest and its six asset families, route
+> availability, cap compliance, season rollover, staff pruning, and all five M8 design and
+> accessibility gates. On that tree it exited nonzero on **6 failing tests / 57 failed checks**,
+> every one pre-existing there: the four confirmed identical against a `2de6268` baseline binary in
+> the entry below, plus the 52 team-logo manifest checks that were the re-brief work list -- since
+> written and drawn, in the two 2026-08-23 logo entries further down. `--portal-contracts` **28
+> tests / 138 checks**, `--portal-policy` **12 / 715**, `--portal-matching` **18 / 171**, all green
+> on this branch after the rebase.
+
 > **2026-08-23 — live portal capacity reads the active coverage floor, and the frozen copy of it
 > is gone.** `CollegePortalMatchingV1` measured every destination's `minimumCoverageDeficits`
 > against `CollegePortalPolicyV1`'s own frozen `minimumPlayableRosterByPosition` rather than
@@ -202,8 +259,10 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > evidence") on the baseline binary as well as this one. Everything registered after
 > `runPortalContractTests()` in `main.swift` -- the ledger batch, jersey numbers, depth charts,
 > read models, the logo families, cap compliance, season rollover, staff pruning and every M8
-> design and accessibility gate -- therefore did not run in the full lane on either tree, and a
-> wrapper reads that aborted run as exit 0.
+> design and accessibility gate -- therefore did not run in the full lane on either tree.
+> `verify.sh` does report that as a failure -- it sets `pipefail`, so the trap's status survives the
+> `tee` -- but the log it points at just stops mid-run with no summary and no message, which is what
+> made it look like a lane that was still going rather than one that had died.
 
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what

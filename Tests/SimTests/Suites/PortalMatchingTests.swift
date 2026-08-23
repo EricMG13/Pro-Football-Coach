@@ -291,6 +291,25 @@ func runPortalMatchingTests() {
             expect(Position.allCases.allSatisfy {
                 !CollegePortalPolicyV1.ratedAttributes(for: $0).isEmpty
             })
+
+            // The frozen scouting set is allowed to lag `Position.ratedAttributes` -- its keys are
+            // what archived knowledge snapshots were written with, so it cannot follow a rating
+            // change without making those undecodable, and it does lag today at receiver and tight
+            // end, which rate `.vision` and `.elusiveness` that no scout estimates. What it may
+            // never do is run ahead: scouting an attribute the position does not rate estimates a
+            // rating nothing sets, which reads the floor for every player alive. Enumerated over
+            // `Position.allCases`, so a position added to either table is covered the day it is
+            // added.
+            for position in Position.allCases {
+                let scouted = Set(CollegePortalPolicyV1.ratedAttributes(for: position))
+                expect(scouted.isSubset(of: Set(position.ratedAttributes)),
+                       "\(position) is scouted on \(scouted.subtracting(Set(position.ratedAttributes))), "
+                           + "which it does not rate")
+                // Load-bearing rather than decorative: `CollegePortalOffer.isValid` compares the
+                // fit evidence's observed scheme fit against this key, so a position missing it
+                // could never carry a valid offer.
+                expect(scouted.contains(.schemeFit), "\(position) is scouted without scheme fit")
+            }
         }
 
         test("capacity deficits are measured against the active coverage floor") {
