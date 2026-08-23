@@ -54,6 +54,13 @@ count is exactly `1,696 - expiries` every season and a week-12 sample reads 1,69
 The league is fully seated all year and short only in the instant between expiry and the market
 reopening. An earlier revision of this file said otherwise; with the draft stuck that was true.
 
+**The band is not a sampling artefact — tested 2026-08-23, do not retry this.** The league is fully
+seated mid-season (1,696) and short only at the boundary the band samples (1,411…1,496), so the
+age-curve sample was moved in-season and measured. It came back 0.228, 0.228, 0.149, **0.056**
+against 0.228, 0.196, 0.134, 0.067 at the boundary — season 6 *worse*, because a full roster carries
+the 223 rookies the draft has just seated. Reverted. The model does not retain enough post-decline
+professionals on any sample point.
+
 **The free-agent pool picked its members by coin toss — fixed 2026-08-23.** `openOffseason` capped
 the pool at `maximumFreeAgentIDs` (512) with `sorted { $0.uuidString < ... }.prefix(512)`, so once
 the unattached population passed 512 it kept the same arbitrary slice every season and everyone else

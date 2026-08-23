@@ -83,6 +83,18 @@ The honest picture: what exists, what is verified, what is not.
 > revision of this entry said free agency's two-signings-a-season throughput kept it short; with the
 > draft stuck that was true, and with the draft fixed it is not.
 >
+> **The band is not a sampling artefact, and that was tested rather than assumed — 2026-08-23.**
+> The obvious suspicion, once the league proved to be fully seated mid-season, was that the band
+> samples at the boundary trough: `n` reads 1,411…1,496 there against 1,696 a few weeks later, and
+> the band's own anchor is "a 53-man mean". The sibling injured-share band had already moved its
+> sample in-season for a related reason. So the age-curve sample was moved to the same in-season
+> week and measured. **It reads 0.228, 0.228, 0.149 and 0.056 at the sampled seasons, against 0.228,
+> 0.196, 0.134 and 0.067 at the boundary — season 6 is *worse*, not better.** The full roster
+> carries the 223 rookies the draft has just seated, and that dilutes the veteran share by more than
+> the departed veterans concentrate it. The experiment was reverted. **The model genuinely does not
+> retain enough post-decline professionals, on any sample point**, which is an owner decision about
+> the model and not a test that is looking in the wrong place.
+>
 > **The free-agent pool was choosing its members by coin toss — fixed 2026-08-23.**
 > `ProMarketSystem.openOffseason` rebuilds the pool each offseason from every unattached
 > professional, and `maximumFreeAgentIDs` caps it at 512, which the unattached population passes
