@@ -156,7 +156,12 @@ A screen fails before scoring if any of these is true:
 - internal fixture, prototype or `REFERENCE DATA` copy appears inside the game frame;
 - there is no visible team, opponent, season, person, place, football object or consequence;
 - an AI-style verdict invents authority without sample, staff ownership or uncertainty;
-- the first viewport is a contents page for the real task rather than the task itself.
+- the first viewport is a contents page for the real task rather than the task itself;
+- an unavailable control is removed, or greyed in silence, instead of staying drawn beside the
+  reason it is unavailable — a control that vanishes teaches the coach the screen is inconsistent,
+  and one that greys out silently teaches them it is broken. Read models pair the two by
+  construction (`isAvailable`/`unavailableReason`, `canContinue`/`continueReason`); dropping the
+  second half is the finding.
 
 Prototype truth disclosure belongs in gallery chrome outside the native device frame.
 
@@ -177,7 +182,11 @@ within two taps. Comparisons happen on one surface; a flow that requires remembe
 screen is over budget regardless of fit. Pixels are spent before taps; working memory is never
 spent. Verdicts, bands and change marks are drawn only where the simulation owns the computation
 behind them: a verdict without an engine baseline, a band without a recorded observation, or a
-change mark without a retained delta is fabrication under §4.4. **Motion is spent only to carry a
+change mark without a retained delta is fabrication under §4.4. **A remainder is the same class and
+was missed until 2026-08-23: never *derive* one.** Where the read model retains it — `CapSummary`
+holds `remaining` — it prints; where it does not, the surface states committed-of-total instead and
+lets the coach do the subtraction it cannot honestly do for them. The rule was never "do not show a
+remainder". **Motion is spent only to carry a
 state change that is already true without it** — a value settling to its new figure, a panel
 entering, a snap replaying — never to manufacture meaning motion alone supplies; every duration and
 curve is drawn from §6.7's closed register, the same discipline §6.6 already holds symbols to. At
@@ -192,8 +201,8 @@ the inventory does not price is a finding, not a licence.
 The currencies and caps above stand. What follows are the measured numbers behind them, which this
 section previously stated only as ratios.
 
-At the install floor the content box is 709 × 319 pt, but the **usable scroll viewport measures
-291 pt**, and **241 pt** once a surface reserves a committing bar outside the scroll. The budgets
+At the install floor the content box is **761 × 319 pt** — 709 until the icon rail was removed on
+2026-08-23, §6.6 — but the **usable scroll viewport measures 291 pt**, and **241 pt** once a surface reserves a committing bar outside the scroll. The budgets
 follow from the viewport, not from the box:
 
 | Tier | Row height | Viewport | Rows | Columns | Cells |
@@ -202,6 +211,13 @@ follow from the viewport, not from the box:
 | Working | 44 pt | 291 | 6 | 8 | **48** |
 | Committing | 44 pt | 241 | 5 | 8 | **40** |
 | Broadcast | — | 390 | — | — | **12** |
+
+**The 2026-08-23 widening does not buy a ninth column.** Removing the icon rail took the content box
+from 709 to 761, and the temptation is to spend all 52 pt on another fact. The cell counts above are
+capped by working memory, not by pixels — this section's own rule is that *pixels are spent before
+taps and working memory is never spent* — so the extra width is spent inside the eight columns, on
+identity that was being truncated. A ninth column is a change to the budget and must be argued as
+one.
 
 Eight columns is the working figure inside this section's existing six-to-nine range.
 
@@ -286,6 +302,22 @@ default-seed team.*
 - **Originality gate.** Exact and near-duplicate checks protect the packaged set, but automated
   checks do not establish legal clearance. A human performs a manual similarity review before a
   mark is approved; the owner retains final originality and real-team-similarity approval.
+
+### 5.x Team identity is resolved once, at the stage (2026-08-23 amendment)
+
+The controlled team's colours are resolved **once**, where the stage is composed, and only when the
+chrome read model actually carries a club. Every surface below reads the resolved value from the
+environment; none of them resolves it, and none of them may substitute a default when it is absent.
+
+**Nil is the honest teamless case, and it must be reachable by construction rather than by
+discipline.** Title, New Career, Job Board, Offer and Settings-before-a-career are all reached
+before a club exists. If each surface has to remember to opt out of team colour, the one that
+forgets ships a screen wearing a club the coach does not have — and it will be a screen nobody looks
+at twice, because those are the screens people forget. Resolving at the stage makes the teamless
+case the *default* for a teamless save.
+
+The resolution point is also the only sensible place to run the contrast check: it holds the club's
+pair once, so 4.5:1 text and 3:1 non-text are verified once rather than at every consumer.
 
 ## 6. Foundations
 
@@ -495,6 +527,25 @@ carries no other meaning.** It is never a rating, never a state, never a positio
 decoration. **A surface spends gold at most once**, twice only on Match Day where the second is the
 first-down line.
 
+**The budget is per surface, and 2026-08-23 sharpened it into three cases.** "At most once" was
+read as a ceiling when it is really a rule about what the gold *says*.
+
+1. **One committing action — gild it.** The ordinary case.
+2. **Several equal actions — the budget is zero, by construction.** Where a surface offers two or
+   more options that all move the game forward, gilding one is the interface telling the coach which
+   to take. The promotion decision, both weekly plans and the contact planner are all this case.
+   *Symmetry is the argument*, which makes the options' alignment a correctness problem rather than
+   a tidiness one.
+3. **A destructive action takes `state.negative`, not a neutral.** Equal in weight is not equal in
+   kind: resigning a post and accepting one are both irreversible, but only one of them ends
+   something, and the semantic colour is what says so.
+
+**Team colour never carries an action.** It owns identity and selection, and stops there. A
+team-coloured commit means a different thing per save — a club whose primary is green gives every
+commit the colour of a positive state, one whose amber gives it the colour of a caution — and a
+contrast resolver guards legibility without touching that collision. Gold means one thing in this
+system: *this moves the game forward*.
+
 Consequently `state.warning` leaves the yellow-orange band. Its replacement must sit at least 24°
 from gold's hue of 42.1° and clear 4.5:1 on `world.page`; **`#C9704A` satisfies both**, at 24.1° and
 5.57:1.
@@ -594,21 +645,31 @@ Source: the same owner-supplied handoff §6.1b records, `FLOODLIT-SURFACES.md` �
 shared stage they all render inside, and the eight moves they are all built from.
 
 **The stage.** Composed at the install floor with absolute positions. There is no tab bar and no
-nav rail beyond the icon column — navigation lives in the identity header, family on the left and
+nav rail and no icon column — navigation lives in the identity header, family on the left and
 jump-to on the right.
 
 | Element | Geometry |
 |---|---|
 | World backdrop | full bleed, bottom bleed 0.55, receding as density rises but never absent |
-| Identity header | top 3, leading 115, trailing 20; two rows, 22 then 16 |
-| Icon rail | leading 59, top 46, width 44; 44 pt targets, `.row` radius, 2 pt gaps |
-| Content | leading 115, top 46, to the trailing gutter at 20 — max width **709** |
+| Identity header | top = safe-area top inset + 4, leading 63, trailing 20; two rows, 22 then 16 |
+| Content | leading 63, top 46, to the trailing gutter at 20 — max width **761** |
 | Grain | over everything, 128 px tile, overlay, 0.5 |
 
-`844 − 115 − 20 = 709`, so the content column is the frame minus the rail and the gutter, and the
-number is derived rather than chosen. **Title, Job Board and Offer start at leading 63 and carry no
-icon rail** — they sit outside the coaching week, so the rail would name places the player cannot
-go from there.
+`844 − 63 − 20 = 761`, so the content column is the frame minus the leading inset and the gutter,
+and the number is derived rather than chosen. It is already one of the named widths below.
+
+**The icon rail was removed on 2026-08-23** (owner decision; the standard is
+`docs/FRONTEND-CHANGE-LEDGER.md` A1). Navigation lives entirely in the identity header — family on
+the left, jump-to on the right — so a 44 pt column of glyphs beside it was a second navigation for
+the same set of places. Removing it generalises the exception this section already carried: **Title,
+Job Board and Offer started at leading 63 and carried no rail** because they sit outside the coaching
+week. Every management surface now uses that geometry, and the content column gains 52 pt.
+
+**The header's top is measured from the safe-area inset, not from the frame.** The prior `top 3` was
+the only geometry in this section taken from the frame edge, and on a 17-generation window — 20 pt
+top and bottom, §7 — it put the identity band above the inset. The `+ 4` matches the convention the
+rest of this document already uses: the leading inset clears at `59 + 4 = 63` and the bottom band
+clears the home indicator at `21 + 4 = 25`.
 
 **Three worlds, one variable.** The backdrop is `pitch | facility | film`, and it is the single
 thing that changes per screen. It is a read-model fact, not a view's guess. **Film is the one place
@@ -617,7 +678,8 @@ other surface carries.
 
 **Content column widths are deliberate, not fluid** (`FLOODLIT-SURFACES.md` §4): 150, 250, 300,
 330, 345, 380, 396, 400, 402, 404, 410, 420, 428, 430, 474, 697, 709, 761. A surface either uses
-the full 709 or a named narrower column with the world showing beside it.
+the full **761** or a named narrower column with the world showing beside it. 709 stays on the list
+as a narrower column; it is no longer the full width.
 
 **The hero object breaks the safe area on purpose** — the week arc, the jersey cut-out, the
 attribute dial, the hand of play cards. Do not inset it to be tidy.
@@ -659,9 +721,10 @@ size are allowed to differ; tappable size is not allowed to drop below 44.
 
 ### 6.1d The identity band (2026-08-22 amendment)
 
-§6.1c places a 19 pt mark in the identity header beside a separate icon rail. Club identity is
+§6.1c placed a 19 pt mark in the identity header beside a separate icon rail. Club identity was
 consequently near-absent from every management surface, which is what makes a football game read as a
-database.
+database. (The rail itself is gone as of 2026-08-23, §6.6; the band below is what replaced both it
+and the 19 pt mark.)
 
 On every management surface the club's colour, mark, name and record are carried in a **single band
 that encloses the whole of the navigation row** — mark, club name, record and rank, the family name,
@@ -695,6 +758,22 @@ are verified without shrinking working text.
 | Caption | 10–11 pt | metadata, column labels and dense table cells |
 | Numeral | 10–28 pt tabular | table ratings through score, clock, money and rank |
 | Broadcast numeral | 20–34 pt tabular, compressed heavy | score, clock, down and distance in BROADCAST furniture only |
+
+**The display end of this scale is register-aware (2026-08-23 amendment).** The floors above are
+floors, and a single global display size cannot express §2.1's presentation lean: 32 pt is right for
+a Desk surface and absurd on a ceremony; 66 pt is right for a ceremony and absurd on a roster. A flat
+scale flattens Broadcast into Desk, which is the product-that-is-neither the lean exists to prevent,
+and it collides with §9's amendment that Match Day reproduces the reference typography as drawn.
+
+| Lean | hero | subject name | figure | situation | screen | title | lead | row |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **Broadcast** | 66 | 60 | 54 | 52 | 25 | 20 | 17 | 15 |
+| **Desk**, **Dossier** below the seam | 32 | 26 | 32 | 26 | 16 | 16 | 15 | 13 |
+
+The working end does not move and is identical in both: panel 16, action 14, action-small 12, pill
+10.5, flag 9. **What licenses the large end is scarcity, not taste** — §6.7's earned ceremony is five
+a season. A Dossier surface takes the Broadcast row above its seam and the Desk row below it, which
+is what the seam is for.
 
 **Width axis (codified 2026-08-12).** The system family's width variants are part of the voice, not
 a decoration: Display, Title and Headline ship condensed (`.width(.condensed)` in
@@ -1006,6 +1085,13 @@ before relying on either. The 44 × 44 pt touch floor is HIG-verified (Apple's s
 - Sound and haptics have visual and spoken equivalents.
 - Loading never displays invented percentage progress.
 - Empty, error, interrupted and resume states remain inside the composition they belong to.
+- **Increase Contrast has a branch, and the inks deliberately do not move in it (2026-08-23).**
+  Hairlines step up and translucent material drops toward opaque, because those two are the parts
+  of §6.1a's language that a low-contrast setting genuinely hides. The **text and figure inks stay
+  exactly where they are**: every one of them is already measured at or above 4.5:1 on its own
+  ground (§6.1a), so a further lift would either overshoot into a second palette nobody has
+  contrast-checked, or — worse — quietly imply the default palette needed the help. A setting that
+  repairs a palette is a report that the palette was wrong.
 
 ### 7.1 What the AX5 contract asserts in the suite — added 2026-08-13
 

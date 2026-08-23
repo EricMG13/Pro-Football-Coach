@@ -144,9 +144,9 @@ Also missing, and each currently has no home:
   two of them. Only `contentPrimary` and `contentSecondary` are legal on a banner.
 - `maskTrailing` — the fade on a strip with more content than room
 
-### A4b · The type scale — a conflict that needs an owner call
+### A4b · The type scale — RESOLVED 2026-08-23, register-aware
 
-**ASK.** The reconciliation plan sets a single global `DisplaySize` and halves the display end.
+**CHANGE. Settled under the owner's 2026-08-23 grant; written into `04` §6.2.** The reconciliation plan sets a single global `DisplaySize` and halves the display end.
 
 | | hero | name | score | situation | screen | title | lead | row |
 |---|---|---|---|---|---|---|---|---|
@@ -165,13 +165,15 @@ the register model exists to prevent.
 It also collides with the reconciliation's own Match Day amendment, which says the reference wins
 there and reproduces its typography as drawn — while `score: 32` says otherwise.
 
-**Recommended:** make the scale register-aware rather than re-valued. Desk and Dossier take the
-reconciled values; Broadcast keeps the large end, and the ceremony budget (five a season) is what
-licenses it. **Do not resolve this by picking one number.**
+**Resolved: register-aware, not re-valued.** Desk and Dossier-below-the-seam take the reconciled
+values; Broadcast and Dossier-above-the-seam take the large end, and §6.7's earned ceremony — five a
+season — is what licenses it. Neither column was picked over the other, which is the point: the
+grant settles the *model*, and under the model two-thirds of the numbers come from the reconciliation
+plan. **A grant that made Press Box win every number would have been the wrong grant.**
 
-### A4c · Team-aware primary actions — a second conflict
+### A4c · Team-aware primary actions — RESOLVED 2026-08-23, gold always
 
-**ASK.** The plan makes the primary action take the controlled team's colour when
+**CHANGE. Written into `04` §6.1a.** The plan makes the primary action take the controlled team's colour when
 `CoachWorldTeamIdentity` resolves 4.5:1 text and 3:1 non-text, falling back to neutral/gold
 otherwise. Press Box says the commit is **always gold**.
 
@@ -184,12 +186,14 @@ ink rather than in the club accent.
 Gold means one thing in this system: *this moves the game forward*. A team-coloured commit means a
 different thing per save.
 
-**Recommended:** keep gold for the commit; let team colour own identity and selection, which is
-what it already does in the band. Owner call.
+**Resolved: the commit is always gold, and team colour never carries an action.** Identity and
+selection are what team colour owns, which is what it already does in the band. The contrast resolver
+guards legibility and cannot see the collision, so passing its check is not evidence the colour is
+safe.
 
-### A4d · Team identity injected once at the stage — adopt this
+### A4d · Team identity injected once at the stage — ADOPTED 2026-08-23
 
-**ADD, and it is better than what Press Box has.** The plan resolves `CoachWorldTeamIdentity` once
+**ADD. Written into `04` §5.x. This is the case where the reconciliation plan beats Press Box.** The plan resolves `CoachWorldTeamIdentity` once
 at `CoachWorldFloodlitStage`, only when `chrome?.club` exists, and injects it through the
 environment — so **teamless entry screens retain nil automatically** rather than each surface
 remembering to opt out.
@@ -645,17 +649,49 @@ It also decides whether a whole product direction is real. The design system has
 is a thing the simulation models. **Owner decision:** build the delegation model, or drop both
 surfaces and the argument with them. Do not draw around it.
 
-### D6 · Canon has not been amended
+### D6 · ~~Canon has not been amended~~ — CLOSED 2026-08-23, and the ask was half wrong
 
-**ASK — owner decision.** The standard does not automatically amend the repository's canon, and two
-documents now describe a different system:
+**Closed. Two of its three claims did not survive checking, which is worth more than the ask was.**
 
-- **`docs/04-UX-AND-DESIGN-SYSTEM.md`** — predates the register model, the measured palette, the gold
-  budget and the token-enforced accessibility contract.
-- **`docs/04b-AUDIT-RUBRIC.md`** — scores against `04`, so it moves when `04` moves.
+**What was wrong.** This said `04` "predates the register model". It does not. `04` §2.1 *is* the
+register model — Broadcast / Desk / Dossier, the told-versus-working axis, and the note that a
+frequency-first rule misclassifies Match Day — merged in commit `2f6d2fd4` and dated 2026-08-22, the
+day before this ledger opened. §6.1a carries the measured palette and the gold-once rule, §6.1d the
+identity band, §6.4 the five-band heat scale, §4.5 the density budget. The reasoning sits in
+`docs/ux/10-CANON-AMENDMENT-04.md`, whose parts A–F all landed.
 
-`CLAUDE.md`'s doc-first rule says canon is amended before implementation. Naming these is the
-escalation; neither has been edited.
+**I wrote this ask without opening either file.** The design system had been reading the presentation
+contract and the reference sheets, so it inferred canon's state from what the sheets implied rather
+than from canon. That is the same failure the "sheets are older than the contract" correction caught,
+one level up: *infer nothing about a document you have not read.*
+
+**What was right, and is now done.** The 2026-08-23 work is genuinely newer than `04`, and it has
+been written in rather than left in a design tool the repository cannot open:
+
+| `04` | What landed |
+|---|---|
+| §4.4 | An unavailable control stays drawn beside its reason. Removing it or greying it in silence is a listed failure. |
+| §4.5 | **Never *derive* a remainder** — the same class as the change-mark-without-a-delta rule this section already held. Where the read model retains one it prints. |
+| §5.x | Team identity resolved once at the stage; nil is the honest teamless case, reachable by construction rather than by discipline. |
+| §6.1a | The gold budget in three cases, including **zero for several equal actions**, and destructive actions taking `state.negative`. Team colour never carries an action. |
+| §6.2 | The display end of the type scale is register-aware. The working end does not move. |
+| §6.6 | **The icon rail is removed**; every management surface takes the leading 63 that Title, Job Board and Offer already used, and the content column derives to **761**. The header's top comes off the safe-area inset, not the frame. |
+| §7 | Increase Contrast raises hairlines and drops material and **moves no ink** — every ink is already measured, and a setting that repairs a palette is a report that the palette was wrong. |
+
+`04b` moved with it: its enforcement list asserted *"both appearances meet contrast"* four months
+after §6.1a retired the light register, so it was a check that could not fail. It now names the one
+appearance that ships, plus the contrast branch, the gold count and the unavailable-reason pairing —
+all countable in source, which is why they belong in that list rather than in prose.
+
+**One stale banner fixed with it.** `docs/ux/10-CANON-AMENDMENT-04.md` still read *"DRAFT, not canon
+until merged into `04` itself"* long after it was merged. That is precisely the failure
+`DOC-MANIFEST.md` exists to prevent: a cold builder reads a merged decision as an open proposal and
+re-litigates it. It now says what it is — the reasoning, not the rule.
+
+**What is NOT claimed.** None of this has been compiled, and none of it is implemented in Swift.
+`04` now describes the system; `DesignTokens.swift`, `FloodlitChrome.swift` and the stage do not yet
+match it, and Parts A to C of this ledger are that gap. Amending canon before implementation is the
+order `CLAUDE.md` requires, not evidence that the implementation exists.
 
 ---
 

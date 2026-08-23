@@ -1,6 +1,11 @@
 # 10 — Proposed amendment to `docs/04-UX-AND-DESIGN-SYSTEM.md`
 
-**Status: DRAFT, for owner approval. Not canon until merged into `04` itself.**
+**Status: MERGED into `docs/04-UX-AND-DESIGN-SYSTEM.md` — this file is the reasoning, not the rule.**
+Corrected 2026-08-23: this said "DRAFT, not canon until merged into `04` itself" long after commit
+`2f6d2fd4` merged all six parts. §2.1, §6.1a, §6.1d, §6.4's five-band heat scale and §4.5's density
+budget all carry the amendment now, so `04` is the authority and a disagreement between the two is a
+defect in this file. A stale DRAFT banner on merged work is the exact failure `DOC-MANIFEST.md`
+exists to prevent — a cold builder reads it as an open proposal and re-litigates a closed decision.
 Dated 2026-08-22. Follows `04`'s existing amendment convention (`6.1a`, `6.1b`, `6.1c`, `6.7`).
 
 ---
