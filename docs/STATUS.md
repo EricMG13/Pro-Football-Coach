@@ -95,6 +95,36 @@ The honest picture: what exists, what is verified, what is not.
 > retain enough post-decline professionals, on any sample point**, which is an owner decision about
 > the model and not a test that is looking in the wrong place.
 >
+> **Post-decline retention behaves as specified. What the model lacks is arrival at decline —
+> measured 2026-08-23.** `--pro-movement-probe` now classifies every declining professional a season
+> later as kept, retired, or alive-but-unattached:
+>
+> ```text
+> season 2: of 353 declining a season ago — kept=171 retired=161 unattached=21
+> season 3: of 308 declining a season ago — kept=118 retired=148 unattached=42
+> season 4: of 227 declining a season ago — kept=107 retired=95  unattached=25
+> ```
+>
+> **Retirement is 42-48% of the exits and the market only 6-14%**, so the market is not discarding
+> veterans; the retirement hazard is ending them, and `SeasonLifecycleSystem.retires` matches its
+> stated `(k + 1) x retirementProbabilityPerYearAfterDecline` exactly. Retention, given a player
+> reaches decline, is the thing that works.
+>
+> **The deficit is upstream, and it is arithmetic between two canon constants.** The band's ceiling
+> assumes a career of `D - 22` pre-decline seasons plus 3.05 post-decline ones, about 11.4 seasons.
+> Sustaining 11.4-season careers across 32 x 53 = 1,696 active seats requires about **149 entrants a
+> season**. The draft supplies **224** (`ProRules.draftPickCount`, seven rounds of 32), and every one
+> of them takes a 53-man seat. That forces a mean career of 1,696 / 224 = **7.6 seasons**, so the
+> average professional leaves at about 30 — which is where the decline ages start. Most never arrive
+> at decline at all, and the measured mean age of 25.1 to 25.8 is what that looks like.
+>
+> The two constants cannot both be right, in the same way `minimumPlayableRosterByPosition` and
+> `DepthChart.offensiveTemplate` could not both be right. **This one is an owner decision, because
+> every way of reconciling them is a design change**: fewer rounds; draft picks seating on the
+> 16-man practice squad this model defines and has never once populated, so not every pick consumes
+> a 53-man seat; or a re-derived floor that accounts for the pre-decline attrition the current
+> derivation omits entirely.
+>
 > **The free-agent pool was choosing its members by coin toss — fixed 2026-08-23.**
 > `ProMarketSystem.openOffseason` rebuilds the pool each offseason from every unattached
 > professional, and `maximumFreeAgentIDs` caps it at 512, which the unattached population passes

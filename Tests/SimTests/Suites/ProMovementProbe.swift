@@ -27,6 +27,9 @@ func runProMovementProbe() {
         .flatMap(Int.init) ?? 3
     var state = GameState.bootstrap(seed: 96_001)
     var ownerByPlayer = proOwnership(state)
+    // Where a declining player is a season later: still employed, retired out of the store, or
+    // alive and unattached. The three are different defects and the band cannot tell them apart.
+    var decliningLastSeason: Set<UUID> = []
 
     print("PROBE: bootstrap rosters=\(ownerByPlayer.count) freeAgents=\(state.proMarket.freeAgentIDs.count)")
 
@@ -63,6 +66,23 @@ func runProMovementProbe() {
             // offseason later in the market's life.
             if state.calendar.week == 12 {
                 midSeasonActive = state.proTeams.values.reduce(0) { $0 + $1.rosterIDs.count }
+                let rostered = Set(state.proTeams.values.flatMap(\.rosterIDs))
+                if !decliningLastSeason.isEmpty {
+                    var kept = 0
+                    var retired = 0
+                    var unattached = 0
+                    for id in decliningLastSeason {
+                        if rostered.contains(id) { kept += 1 }
+                        else if state.players[id] == nil { retired += 1 }
+                        else { unattached += 1 }
+                    }
+                    print("PROBE season \(targetSeason): of \(decliningLastSeason.count) "
+                        + "declining a season ago — kept=\(kept) retired=\(retired) "
+                        + "unattached=\(unattached)")
+                }
+                decliningLastSeason = Set(
+                    rostered.filter { state.players[$0]?.isDeclining == true }
+                )
             }
 
             for event in transition.emittedEvents {
