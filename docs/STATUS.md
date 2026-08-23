@@ -47,26 +47,33 @@ The honest picture: what exists, what is verified, what is not.
 > live limits still decodes* is a real regression test that fails on the unfixed code: restoring the
 > frozen ceiling to `isValid` gives `expected Optional(112), got nil`.
 >
-> **Verified on this tree, release mode, from one build carrying both changes.**
-> `--portal-policy` **13 tests / 716 checks** (the cross-check included), `--portal-matching`
-> **19 / 145** (both capacity tests included), `--portal-transaction` **17 / 133**,
-> `--architecture-only` **29 / 245** so every pinned cross-process fingerprint still holds and none
-> needed re-deriving, and `--portal-scheduler` **13 / 27,861**. That last lane also prints the
-> portal characterization, and it is byte-identical to the figure `d5400e1` recorded for a detached
-> build at `2de6268`, and to the run on this tree before the `programmeCount` change:
-> `entrantWindows=431 retained=99 transferred=224 returned=108 transferNILTotal=6400
-> transferNILMin=0 transferNILMax=500`. Behaviour neutrality is otherwise argued from numeric
-> identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a fresh detached baseline, which is
-> a weaker claim than `d5400e1`'s and is stated as such.
+> **Verified on the merged tree, release mode, from one build.** `--portal-contracts`
+> **28 tests / 138 checks**, `--portal-policy` **13 / 716** (the cross-check included),
+> `--portal-matching` **19 / 145** (both capacity tests included), `--portal-transaction`
+> **17 / 133**, and `--architecture-only` **29 / 245** — so every pinned cross-process fingerprint
+> still holds and none needed re-deriving, which is the number to read twice, because the merge
+> brought in `56d2911`'s re-brief of the 52 marks the earlier re-key stranded. Before the merge the
+> same five lanes (less `--portal-contracts`) held the same figures, and `--portal-scheduler` ran
+> **13 / 27,861** with a characterization byte-identical to the figure `d5400e1` recorded for a
+> detached build at `2de6268`: `entrantWindows=431 retained=99 transferred=224 returned=108
+> transferNILTotal=6400 transferNILMin=0 transferNILMax=500`. Behaviour neutrality is otherwise
+> argued from numeric identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a fresh
+> detached baseline, which is a weaker claim than `d5400e1`'s and is stated as such.
 >
-> **One pre-existing failure, proved rather than argued.** `--portal-contracts` traps with exit 133,
-> zero bytes on stdout and stderr and no summary, at `PortalContractTests.swift:869` ("policy-v1
-> admission components rederive from compact immutable evidence"). A detached worktree built at
-> `b25a60d` — this branch's merge-base on `main` — traps identically, and `TRACE_TESTS=1` puts the
-> last-entered test at that same name on both binaries, so the lane was already red before this
-> change. It matches the trap `d5400e1` recorded on the `2de6268` baseline binary.
-> Everything registered after `runPortalContractTests()` in `main.swift` therefore still does not
-> run in the no-flag lane, and a wrapper reads that aborted run as exit 0.
+> **The one failure was pre-existing, and it is now gone — the branch was simply based too far
+> back.** `--portal-contracts` trapped here with exit 133, zero bytes on stdout and stderr and no
+> summary, at `PortalContractTests.swift:869` ("policy-v1 admission components rederive from compact
+> immutable evidence"). A detached worktree at `b25a60d` — this branch's original base — trapped
+> identically, with `TRACE_TESTS=1` naming the same last-entered test on both binaries, so it was
+> never this change's doing. But proving it against `b25a60d` proved it against a baseline `main`
+> had already moved past: `8900f40` fixes exactly that trap, rebuilding the `wideReceiverKnowledge`
+> probe from the frozen v1 attribute list instead of `Position.ratedAttributes`, which
+> `CollegePortalKnowledgeSnapshot`'s own precondition had started refusing after `3bba7c9` gave
+> receivers `.vision` and `.elusiveness`. A detached build at `6610a8c` runs the lane green at
+> **28 tests / 138 checks**. So `origin/main` was merged into this branch at `2700515` — cleanly,
+> no conflicts — and the lane is green here too. **Reporting it as "pre-existing, not mine" and
+> stopping would have been true and useless**; the lane was red because the branch was stale, and
+> the fix was to stop being stale.
 >
 > **Residual hazard, named and not fixed here.** The three `maximumPositionRoomSize` checks are
 > still shared between decode and live construction — `CollegePortalIntentEvidence.init` and its
