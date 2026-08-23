@@ -1,0 +1,10 @@
+/* Coach World Floodlit — global CSS entry point.
+   Consumers link this one file. Import list only; never inline rules here. */
+@import url("tokens/fonts.css");
+@import url("tokens/colors.css");
+@import url("tokens/typography.css");
+@import url("tokens/spacing.css");
+@import url("tokens/geometry.css");
+@import url("tokens/material.css");
+@import url("tokens/motion.css");
+@import url("tokens/frame.css");

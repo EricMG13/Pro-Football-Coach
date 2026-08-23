@@ -919,8 +919,15 @@ func runPortalContractTests() {
                 window: offer.knowledge.window,
                 position: .wideReceiver,
                 estimatedOverall: Rating(70),
+                // The frozen v1 table, not `Position.ratedAttributes`, because that is the list
+                // `CollegePortalKnowledgeSnapshot`'s own precondition validates against. `3bba7c9`
+                // gave receivers `.vision` and `.elusiveness` for the match engine and deliberately
+                // left the v1 knowledge schema alone, so building this snapshot from the live list
+                // tripped the precondition and killed the process -- taking the last fourteen
+                // suites of the no-argument run with it.
                 estimatedAttributes: Dictionary(uniqueKeysWithValues:
-                    Position.wideReceiver.ratedAttributes.map { ($0, Rating(70)) }
+                    CollegePortalPolicyV1.ratedAttributes(for: .wideReceiver)
+                        .map { ($0, Rating(70)) }
                 ),
                 estimatedPotential: offer.knowledge.estimatedPotential,
                 confidence: offer.knowledge.confidence,

@@ -20,3 +20,7 @@ Pro-Football-Coach/
 # Owner-supplied competitor reference screenshots. Third-party copyright:
 # research material only, never redistributed. See CLAUDE.md legal guardrail.
 FM Screenshots/
+
+# Python bytecode from the Tools scripts; committed once by accident.
+__pycache__/
+*.pyc

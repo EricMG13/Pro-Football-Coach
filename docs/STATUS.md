@@ -265,13 +265,31 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 >
 > The manifest is re-keyed onto the merged world, **matching each team to a mark briefed for the
 > nickname it actually carries** rather than by position: 114 teams hold a mark whose brief names
-> their own nickname, against 34 under a positional re-key. The remaining **52 carry a mark
-> briefed for a different team and are named, one per failing check, by "every mark brief depicts
-> the team it belongs to" in `--team-logo-manifest`.** That gate is red on purpose and the red is
-> the work list; each of those records carries a `reviewNotes` line saying which team its mark was
-> briefed for. Forty of the 52 are the seven nicknames this merge introduced — Wainwrights,
-> Wheelwrights, Millwrights, Bargemen, Lamplighters, Draymen, Bitterns — which replaced seven real
-> programme nicknames and so have no artwork at all yet.
+> their own nickname, against 34 under a positional re-key. The remaining **52 carried a mark
+> briefed for a different team**. Forty of the 52 are the seven nicknames this merge introduced —
+> Wainwrights, Wheelwrights, Millwrights, Bargemen, Lamplighters, Draymen, Bitterns — which
+> replaced seven real programme nicknames and so have no artwork at all yet.
+>
+> **2026-08-23 — the 52 briefs are written; the 52 pictures are not.** `rewrite_manifest.py
+> --rebrief` rewrote those records' concept and prompt from the nickname each team now carries,
+> redealing motif families among those 52 alone so the 28/28/28/28/27/27 balance is untouched and
+> no record whose brief already matched its artwork was disturbed. It also filled the hole that
+> caused the failure to be unfixable: the script's `SUBJECTS` table still described Drovers,
+> Foresters, Marauders, Harriers, Herons, Otters and Beacons — the seven the grammar retired in
+> place on 2026-08-13 — and knew nothing of the seven that replaced them, so re-briefing any team
+> that drew one raised `KeyError`.
+>
+> Twelve of the 52 sit in `animalCreature` holding an emblem: the stale set held more creature
+> slots than it has creatures, the new nouns being trades rather than birds. The script names all
+> twelve on stdout. Re-seating them is an owner call, not a guess the script may make.
+>
+> **What is still outstanding is artwork, and only artwork.** Each of the 52 packaged PNGs still
+> draws the nickname its team carried before the re-key, and each record's `reviewNotes` names
+> which one. `"every mark brief depicts the team it belongs to"` now passes, because every brief
+> now does; the outstanding picture count is pinned at 52 by `"the artwork still owed is counted,
+> not left to a red gate"` in the same suite, which fails if that number moves in either direction
+> without this section moving with it. It was a deliberately red gate until 2026-08-23; a red gate
+> as a work list makes a green suite impossible and hides which half of the job is done.
 >
 > `--legal-only` passes at 30 tests / 193 checks. No PNG was added, removed or re-rendered: every
 > one of the 166 packaged marks is still shipped and still owner-approved as artwork; what is

@@ -1,0 +1,56 @@
+/* Material — 04 sections 6.1a and 6.1c.
+
+   Glass, grain, blur and a directional sheen are permitted for Floodlit.
+   Held as alphas on white/black rather than hexes, because that is what they are.
+
+   Two rules bound it:
+   1. Nothing decorative may carry meaning. A panel's material never encodes a value.
+   2. Blur only where something is genuinely in front of something else.
+      Non-hero glass FLATTENS to a solid fill (--surface-panel) rather than
+      stacking blur over a transformed plane, which smears. */
+
+:root {
+  --glass-fill: 0.055;
+  --glass-deep: 0.70;
+  --glass-line: 0.13;
+  --glass-sheen: 0.10;
+  --glass-track: 0.08;
+  --glass-hairline: 0.045;
+  --glass-blur: 24px;
+
+  --depth-glass-opacity: 0.56;
+  --depth-deep-opacity: 0.82;   /* lowest value preserving 4.5:1 body text
+                                   where a panel crosses a mown stripe */
+  --depth-panel-border-opacity: 0.38;
+
+  --shadow-panel: 0 18px 40px rgba(0, 0, 0, 0.62);
+  --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.50);
+  --shadow-popover: 0 20px 48px rgba(0, 0, 0, 0.74);
+  --shadow-stage: 0 24px 60px rgba(0, 0, 0, 0.60);
+
+  /* The panel's three inset strokes: top light line, hairline boundary. */
+  --inset-panel: inset 0 1px 0 rgba(246, 250, 255, 0.09),
+                 inset 0 0 0 1px rgba(122, 138, 158, 0.26);
+
+  /* 148° directional sheen across a glass panel */
+  --sheen-panel: linear-gradient(148deg, rgba(255, 255, 255, 0.10), transparent 62%);
+
+  /* Grain: 128px tile, overlay, 0.5, over everything */
+  --grain-tile: 128px;
+  --grain-opacity: 0.5;
+
+  /* Three worlds, one variable. The backdrop is the single thing that changes
+     per screen, and it is a read-model fact, not a view's guess.
+     Film is the one place the light goes cold. */
+  --world-pitch: radial-gradient(52% 62% at 78% 2%, rgba(255, 242, 206, 0.22), transparent 70%),
+                 linear-gradient(180deg, rgba(7, 6, 11, 0) 58%, rgba(7, 6, 11, 0.55) 100%),
+                 repeating-linear-gradient(90deg, rgba(246, 250, 255, 0.04) 0 1px, transparent 1px 92px),
+                 linear-gradient(135deg, #060A12, #100E16 50%, #060A12);
+  --world-facility: radial-gradient(60% 55% at 12% 0%, rgba(255, 242, 206, 0.14), transparent 68%),
+                    linear-gradient(180deg, rgba(7, 6, 11, 0) 54%, rgba(7, 6, 11, 0.60) 100%),
+                    linear-gradient(135deg, #070A11, #12111A 52%, #070A11);
+  --world-film: radial-gradient(46% 58% at 50% -6%, rgba(156, 200, 238, 0.16), transparent 72%),
+                linear-gradient(180deg, rgba(4, 7, 12, 0) 50%, rgba(4, 7, 12, 0.70) 100%),
+                linear-gradient(135deg, #05070E, #0B0D14 50%, #05070E);
+  --world-bottom-bleed: 0.55;
+}
