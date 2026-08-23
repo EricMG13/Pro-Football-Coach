@@ -109,27 +109,51 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
-> **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
-> Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
-> `GameState.bootstrap(seed: 20_260_812)` generates: **94 of the 166 team identifiers moved**, and
-> of the 72 that survived only 34 kept their name. The logo manifest is keyed by that identifier,
-> so it described a world that no longer exists — including six names the legal sweep refuses,
-> which is how it was found: `LegalTests` failed on shipped copy carrying "Slate Foresters",
-> "Thunder Otters", "Iron Marauders", "Cinder Harriers" and two "Storm" names.
+> **2026-08-23 — the mark catalogue is keyed by nickname, not by team identifier.**
+> The 2026-08-22 merge changed what `GameState.bootstrap(seed: 20_260_812)` generates and moved 94
+> of the 166 team identifiers. The logo catalogue was keyed by that identifier, so it described a
+> world that no longer existed; re-keying it onto the merged world (`9e50b57`) still left **52
+> teams wearing a mark drawn for somebody else**, named one per failing check by
+> `--team-logo-manifest`. That was the second time one generator change invalidated the whole
+> catalogue, and it would have been the second of many: a team identifier is a **position in the
+> generated random stream**, so anything that shifts generation re-keys every mark. The same
+> coupling is why marks resolved at exactly one seed — `ReadModelProviderTests` asserted it, in a
+> test called "alternate seeds do not borrow canonical logos".
 >
-> The manifest is re-keyed onto the merged world, **matching each team to a mark briefed for the
-> nickname it actually carries** rather than by position: 114 teams hold a mark whose brief names
-> their own nickname, against 34 under a positional re-key. The remaining **52 carry a mark
-> briefed for a different team and are named, one per failing check, by "every mark brief depicts
-> the team it belongs to" in `--team-logo-manifest`.** That gate is red on purpose and the red is
-> the work list; each of those records carries a `reviewNotes` line saying which team its mark was
-> briefed for. Forty of the 52 are the seven nicknames this merge introduced — Wainwrights,
-> Wheelwrights, Millwrights, Bargemen, Lamplighters, Draymen, Bitterns — which replaced seven real
-> programme nicknames and so have no artwork at all yet.
+> A mark depicts a **nickname**, and nicknames come from a fixed 40-noun pool in `NameGrammar`. The
+> manifest is now an inventory of marks keyed by that noun (schema 2), the catalogue is a
+> `[nickname: [asset]]` table, and a team picks among the marks for its nickname by an FNV-1a hash
+> of its identifier's **bytes** — never `hashValue`, which is salted per launch. Resolution no
+> longer depends on the seed, on the identifier, or on generation staying still.
 >
-> `--legal-only` passes at 30 tests / 193 checks. No PNG was added, removed or re-rendered: every
-> one of the 166 packaged marks is still shipped and still owner-approved as artwork; what is
-> outstanding is which team each one belongs to.
+> **What that costs, stated plainly.** 137 of the shipped marks depict a noun the pool still holds
+> and are carried forward untouched. **29 were drawn for the seven nicknames the 2026-08-13 legal
+> sweep removed** — Beacons, Drovers, Foresters, Harriers, Herons, Marauders, Otters — and no save
+> can ever produce those names again, so those imagesets are deleted; the packaged PNGs go from
+> 3,388,004 to 2,724,584 bytes, and `git show` recovers any of them. Nine pool nouns have **no
+> artwork at all**: Bargemen, Bitterns, Chandlers, Draymen, Lamplighters, Millwrights, Ramparts,
+> Wainwrights, Wheelwrights. At the canonical seed **38 of the 166 teams carry one of those and
+> now show the initials chip** rather than another team's mark. That is a visible change and it is
+> the honest one — a wrong mark is worse than no mark — but it is a change the owner should see
+> before a build goes out.
+>
+> The manifest carries **36 pending briefs** for those nine nouns, four each, which is the live
+> average of 4.4 marks per nickname rounded down; they are the work order for the next generation
+> run and they claim no artwork, no palette and no approval. `Tools/TeamLogos/brief_marks.py`
+> writes them and reads the pool out of `NameGrammar.swift`; the test reads the same pool through
+> the new `NameGrammar.nicknameNounVocabulary`, so **a noun added to the pool fails a check the day
+> it is added** rather than the day somebody remembers the artwork.
+>
+> The gate that could not see any of this is replaced. "Every mark brief depicts the team it
+> belongs to" compared the manifest against itself; **"every team in a generated world wears a mark
+> drawn for its nickname" bootstraps four seeds and asks the app's own resolution path what each of
+> 166 teams would be shown.** Measured: `--team-logo-manifest` **10 tests / 15,212 checks**,
+> against 9 tests / 17,882 checks with 52 failed before; `--legal-only` **30 tests / 193 checks**;
+> `--screen-read-models` **74 tests / 10,000 checks**; all six `--team-logo-assets` families green.
+>
+> **Not verified.** No PNG was re-rendered and none can be here — what each packaged mark actually
+> depicts is still an owner judgement, recorded per record in `reviewNotes`, not something any test
+> in this repo asserts.
 
 > **Current-tree verification boundary — 2026-08-21.** On the working tree at `a547404`, the
 > canonical release-mode `--catalog` command lists **19 registered gates, 19 runnable commands,

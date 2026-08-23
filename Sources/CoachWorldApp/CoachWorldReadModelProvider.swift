@@ -430,14 +430,21 @@ public enum CoachWorldReadModelProvider {
 
     static func teamReference(_ id: UUID, in state: GameState) -> CoachWorldTeamReference {
         let colours = state.identities[id]?.colours
-        let name = state.programmes[id]?.name
-            ?? state.proTeams[id]?.displayName
-            ?? "Unknown team"
+        let programme = state.programmes[id]
+        let proTeam = state.proTeams[id]
+        let name = programme?.name ?? proTeam?.displayName ?? "Unknown team"
+        // The mark comes off the stored nickname rather than the public name. A public name is a
+        // rendering -- `ProTeam.displayName` has two forms, one of them a compatibility projection
+        // for old saves -- and splitting a rendering to find the noun makes the artwork depend on
+        // how the name is composed today.
+        let nickname = programme?.nickname ?? proTeam?.nickname
         return CoachWorldTeamReference(
             stableID: id.uuidString,
             name: name,
             abbreviation: abbreviation(name),
-            mark: CoachWorldTeamLogoCatalog.mark(forStableID: id.uuidString),
+            mark: nickname.flatMap {
+                CoachWorldTeamLogoCatalog.mark(forNickname: nicknameNoun($0), teamID: id)
+            },
             primaryColorHex: colours?.primary.hex,
             secondaryColorHex: colours?.secondary.hex
         )
@@ -457,6 +464,15 @@ public enum CoachWorldReadModelProvider {
     static func abbreviation(_ name: String) -> String {
         let letters = name.filter { $0.isLetter }
         return String(letters.prefix(3)).uppercased()
+    }
+
+    /// The noun a nickname ends in, which is what a mark depicts.
+    ///
+    /// `NameGrammar.nickname(using:)` composes an adjective and a noun from
+    /// `nicknameNounVocabulary`, and the noun is the whole of what a mark is drawn from -- a
+    /// "Bramble Millwrights" wears a millwright, and the Bramble is not drawn.
+    static func nicknameNoun(_ nickname: String) -> String {
+        String(nickname.split(separator: " ").last ?? "")
     }
 
     static func snapshotID(_ kind: String, _ id: UUID, _ calendar: CalendarState) -> String {
