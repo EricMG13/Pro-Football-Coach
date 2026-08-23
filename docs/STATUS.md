@@ -4,6 +4,49 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-23 — a documentation pass found two named gates that were never written, and eleven
+> stale claims about the tree.** The claims are corrected in place in `README.md`, `CLAUDE.md`,
+> `docs/03b-ARCHITECTURE.md`, `docs/05-IMPLEMENTATION-PLAN.md` and `docs/06-AUDIT-DISPOSITION.md`.
+> Two findings are canon ahead of code and are recorded here rather than fixed, because neither is a
+> documentation defect:
+>
+> - **`SmallestDeviceLayoutTest` does not exist.** `06` §2 row 23 names it as the disposition of P1
+>   #23, `05`'s P11a entry gate lists it, and D15 (2026-08-12) makes it two-tier: every registry
+>   surface un-clipped with all controls reachable at the install floor 844 × 390, and at full budget
+>   at the promise floor 852 × 393. Nothing in `Tests/` or `Sources/` mentions the name, it is not in
+>   `SuiteCatalog.swift`'s `ReleaseGateID`, and no `verify.sh` lane runs it. The install-floor
+>   capture method exists (iPhone 17e is the only 844 × 390 simulator) but is a manual procedure, not
+>   an assertion.
+> - **`DestructiveActionPlacementTest` does not exist.** `06` §2 row 18 names it as the disposition of
+>   the irreversible "sim the rest of the game and commit it" action sitting in the navigation bar's
+>   cancellation slot. Same status: no symbol, no gate registration, no lane.
+> - **`04` §6.5's registry-to-code synchronisation is not enforced.** That section says its 23 names
+>   "map 1:1 onto Swift types in `Sources/ProFootballCoachUI/`" and that the mapping is "enforced
+>   through the existing `ContractTests.swift` source-contract pattern". `ContractTests.swift`
+>   exercises several of the components individually by name, but nothing walks the table, so an
+>   entry with no type fails nothing. Measured: four ship under exactly the registry name, seven
+>   under a `CoachWorld` prefix the table does not use, one (`LowerThird`) as `MatchLowerThird`, and
+>   eleven have no type under either spelling. `04` §6.5 now carries the itemised list; nine of the
+>   eleven are the screen-local implementations §6.5 already books as owing extraction, and entries 3
+>   and 13 are simply unbuilt. Reconciling is a rename plus the walking test — P11/M8 work.
+>
+> Both are counted inside `06`'s "13 addressed with a named test" tally, so that tally has read 13
+> while 11 shipped. `06` now says which eleven, and says these two are absent. Nothing fails while
+> they are missing — which is the precise failure mode `06` exists to prevent, and the reason this
+> is recorded as an open gap rather than closed by editing the tally down.
+>
+> The corrected claims, in brief: `README.md` linked to `docs/HANDOFF-2026-08-10.md` (deleted
+> 2026-08-10), described `Sources/ProFootballCoachUI/` as "empty until P11" (99 files), omitted
+> `Sources/CoachWorldApp/` entirely, and told a reader to `open ProFootballCoach.xcodeproj` at the
+> repository root (XcodeGen writes it beside the spec, at `App/`). `README.md`, `03b` §5 and `05`'s
+> G1/G2 rows all documented `swift build && swift run -c release SimTests`, which does not work:
+> `-Xswiftc -enable-testing` is required and `verify.sh` has passed it since it was written. `03b`
+> §1's module tree, §2's four snapshot type names (`WeekState`, `MatchFrame`, `LeagueView` — none
+> ever written), §3's `SimulationActor` (ships as `CareerSession`), §5's four-directory test tree
+> (one flat `Tests/SimTests/Suites/`), and the `OrientationPolicyTest` named by `CLAUDE.md`, `03b` §7
+> and `06` §2 row 17 (ships as the "Orientation policy" suite in `DesignContractTests.swift`) were
+> each corrected against `ls` and `grep`, not against memory.
+
 > **2026-08-22 — `main` was red for eight suites, and seven of them were a merge, not a defect.**
 > CI run `32558005794` on `da0eb73` failed `Legal: shipped copy`, `League generation`, `Game loop`,
 > `Authoritative game state`, `College portal scheduler lifecycle`, `M5 career arc`, `M4 tactical
