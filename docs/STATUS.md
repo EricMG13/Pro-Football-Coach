@@ -152,6 +152,54 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-23 — the heat scale caught up with canon, and the parser that hid the gap was the
+> reason it could.** `--core-contracts` was red on `main` for one check:
+> `Design token sync / Heat.color's banding matches 04 section 6.4's stated heat scale`, failing in
+> its own guard with "the parser, not the tokens, is what failed". That was accurate and it
+> understated the position. `60f0c2d` amended `04` §6.4 on 2026-08-22 from a three-band
+> red/amber/green scale to a **five-band table** diverging around a neutral centre, so that an
+> average starter stops reading as a caution. Nothing downstream followed: `CoachWorldTokens.Heat`
+> still held a three-case switch, and the test read canon with `matches(of: "red below (\d+)")`, so
+> the moment canon became a table the check stopped examining the tokens at all. **A test that
+> reads canon in one syntax is a test canon can silently outrun.**
+>
+> **Now implemented.** `Heat` carries the five bands — 40-59 `state.negative`, 60-69
+> `state.warning`, 70-79 `content.secondary`, 80-84 `state.positive` lightened, 85-99
+> `state.positive` — and is the single definition every surface that colours a rating already
+> resolved through (nine files, `CoachWorldRatingRing` among them), so all nine moved together. The Above band is **derived, not a new hex**:
+> `state.positive` mixed 30% toward `content.primary` (`#81DDAE` as it resolves today), so
+> re-valuing the positive role moves the band with it rather than leaving it behind, which is the
+> failure this whole entry is about.
+>
+> **`state.warning` moved with it, because §6.4 names "the amended `state.warning`".** §6.1a(ii)
+> derived `#C9704A` on 2026-08-22 — 24.1° off gold, 5.57:1 on `world.page` — and the palette still
+> shipped `#FFB03A` at 6.1° off gold. Gold marks the committing action and carries no other
+> meaning; a caution that close to it is the collision the amendment calls "the serious one". `04`
+> §6.1a's table and its filled-ink measurements now state the shipped value.
+>
+> **The test now reads the table.** `canonHeatBands` parses §6.4's rows, asserts the five bands
+> partition `scaleFloor...scaleCeiling` with no gap or overlap, and checks every rating from 40 to
+> 99 against the role its band names — plus §6.4's two stated constraints, 4.5:1 on `world.page`
+> and 24° off gold, at every rating. It ships the planted-offender self-test the other scans do:
+> the superseded prose sentence must **not** parse as bands.
+>
+> **The other three collisions are closed too, as declared aliases** — the resolution §6.1a(ii)
+> itself names. Each shared value is declared once in the token layer and referenced by every role
+> that takes it, so `state.negative`/`action.destructive` and `state.info`/`pro.identity` are one
+> declaration apiece instead of a literal typed twice, and **`state.live` now resolves to
+> `state.positive`'s `#4FD08C`** in place of `#37E08A`. That is a visible change — the live
+> indicator is very slightly duller green — and it removes a second-order incoherence the collision
+> table never reached: `field.live` already shipped `#4FD08C` while `state.live` shipped `#37E08A`,
+> so the two roles that both mean *in play* did not agree with each other.
+>
+> **Enforcing it by construction found two more pairs than canon's table listed:**
+> `content.primary`/`field.line` and `content.secondary`/`action.secondary`. The table was measured
+> over state and action roles, so it could not see a pair spanning content and field — the coverage
+> boundary again. `DesignContractTests` now asserts **no colour literal appears twice** in
+> `DesignTokens.swift`, with a planted-duplicate self-test, and deliberately does *not* pin which
+> roles are equal: canon wants diverging a pair on purpose to stay possible, and a pinned equality
+> would forbid it.
+
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
 > `GameState.bootstrap(seed: 20_260_812)` generates: **94 of the 166 team identifiers moved**, and
@@ -3482,6 +3530,20 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 | `PRODUCT.md` | Rewritten from the §6.3 gap argument | — |
 
 **Nothing in this table has been compiled, because there is nothing to compile yet.**
+
+> **Superseded 2026-08-23.** That sentence is true of the *table*, which lists documents only, and
+> false of the repository it now reads as describing. `Sources/` holds three targets and 317 Swift
+> files; `Tests/SimTests` is a running suite. What is compiled, and what each run actually covered,
+> is the dated evidence above this section — not this table, which was never extended past the
+> document package and is kept for that record.
+>
+> The same pass corrected the structural documents that had drifted from the tree: `03b` §1 (the
+> module layout, and `CoachWorldApp`, which it never mentioned), `03b` §2–§3 (three type names that
+> were never built), `03b` §4 (the save is zlib-compressed and shipping, not gzip-and-pending),
+> `03b` §5 (the test layout and the `-Xswiftc -enable-testing` flag a release run cannot omit),
+> `DOC-MANIFEST` §7 (it still described the pre-P0 tree as prior art), and `06` (two of its fifteen
+> named tests do not exist). `README.md` pointed at a deleted handoff and at an Xcode project path
+> `xcodegen` does not write.
 
 ---
 

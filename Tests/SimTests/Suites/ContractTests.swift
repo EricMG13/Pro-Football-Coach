@@ -489,7 +489,9 @@ private func codingKeyRepresentableTypes(in files: [(path: String, text: String)
 // this file committing it.
 private let ambientIdentityExemptDirectories = ["Model"]
 
-private func contrastRatio(
+/// Not `private`: `DesignContractTests` checks 04 section 6.4's heat bands against the same 4.5:1
+/// floor, and a second copy of the WCAG formula is a second thing to drift.
+func contrastRatio(
     _ foreground: CoachWorldTokens.ColorValue,
     _ background: CoachWorldTokens.ColorValue
 ) -> Double {
