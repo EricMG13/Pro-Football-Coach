@@ -4,6 +4,63 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-22 — `main` was red for eight suites, and seven of them were a merge, not a defect.**
+> CI run `32558005794` on `da0eb73` failed `Legal: shipped copy`, `League generation`, `Game loop`,
+> `Authoritative game state`, `College portal scheduler lifecycle`, `M5 career arc`, `M4 tactical
+> state` and `Lifecycle distributions hold their bands`. Two sessions had been working in parallel,
+> and PR #69's merge resolved file by file: it took the **tests** from one branch and the
+> **production code** from the other. The clearest instance is `DetailedGameSummaryBuilder`, where
+> the merge restored `max(0, play.outcome.yards)` — dropping every loss from team and rushing yards
+> — while keeping the `EngineTests` case that asserts losses are preserved *by name*.
+>
+> Nine commits on `agent/floodlit-injury-evidence` (`c42b6e4`…`3a35bc6`) already fixed that clamp
+> and re-derived ten fingerprints, and had never been merged. Merging them closes four of the eight.
+> The other three were tests that had each passed on the branch that wrote them and could not pass
+> together, and are now reconciled to the behaviour canon actually specifies — the pre-kickoff root
+> for the tactical comparison, the appended professional seat for the career record, the week-20
+> tick for the terminal recruiting checkpoint, and a NIL fixture that stops assuming a fully
+> committed budget has room in it. The merge also surfaced one genuinely new failure, `Pro rules`:
+> `DepthChart.offensiveTemplate` gained the reserve back the run resolver picks its alternate
+> carrier from, while `SharedRules.minimumPlayableRosterByPosition` still guaranteed one, so a
+> roster at the minimum could not field the formation it is required to field. The floor is now 2,
+> and none of the four determinism lanes moved with it.
+>
+> **`Lifecycle distributions hold their bands` is the one that is a real finding**, and it is not
+> re-pinnable. The share of professionals at or past their position's decline age reads 0.228, 0.196,
+> 0.146, **0.073**, 0.170 at seasons 0, 1, 3, 6 and 10 against a band of 0.08…0.30. The band was not
+> widened. Two facts under it, both measured in the same run: active professional rosters hold
+> 1,411…1,533 players from season 1 onward against 32 × 53 = 1,696, so the league is roughly nine
+> players a team short of legal and has been since its first offseason; and professional intake is
+> entirely age 22, so the initial veteran tail retires out by season 6 and the drafted cohorts do
+> not reach decline until season 9. The trough is those two together. `--pro-soak` already asserts
+> the roster-legality half and is already red for it. **This needs an owner decision — fill the
+> rosters or restate the band as a steady-state property — and it is not a calibration constant
+> search.**
+>
+> `--pro-movement-probe`, the instrument already built for this question, says where the players go.
+> It is a probe and exits 0; the numbers are the point:
+>
+> ```text
+> PROBE: bootstrap rosters=1696 freeAgents=0
+> PROBE season 1: expired=293 returned=0 relocated=0 noPriorClub=0 toPracticeSquad=0
+> PROBE season 1: rosters=1403 unaccounted=477 poolLeft=293 freeAgency free agency never ran
+> PROBE season 2: expired=257 returned=2 relocated=68
+> PROBE season 2: rosters=1436 unaccounted=829 poolLeft=480 freeAgency weeks=5 depth min=223 max=293
+> PROBE season 3: expired=199 returned=3 relocated=37
+> PROBE season 3: rosters=1474 unaccounted=1111 poolLeft=512 freeAgency weeks=4 depth min=440 max=480
+> ```
+>
+> Two things stand out and neither is model thinness. **Free agency never ran at all in the first
+> offseason** — 293 contracts expired, nobody returned, nobody relocated, and the league went from
+> 1,696 to 1,403 in one step it never recovered from. `ProRosterAISystem.signFreeAgents` skips a
+> team while `rosterIDs.count >= 53 - remainingPicks`, and a pass that signs nobody calls
+> `beginDraft`, so if the first pass sees rosters that have not yet been emptied, free agency ends
+> before it begins. And **`poolLeft` reaches 512 by season 3, which is `ProMarketState.maximumFreeAgentIDs`
+> exactly**: the pool is saturated, and `addFreeAgent`'s `guard freeAgentIDs.count < maximumFreeAgentIDs`
+> then refuses every further release, which is where `unaccounted` — 477, 829, 1,111 — comes from.
+> These are the two threads to pull; neither was pulled in this pass, because both sit inside the
+> professional turnover FSC-013 defers and both would move roster composition league-wide.
+
 > **2026-08-20 — Calibration continuation:** the fresh isolated
 > `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**
 > and M3 recruiting calibration **20 tests / 412 checks**. The M3 terminal-week defect was fixed
