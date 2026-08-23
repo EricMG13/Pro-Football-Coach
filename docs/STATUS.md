@@ -50,16 +50,39 @@ The honest picture: what exists, what is verified, what is not.
 > PROBE season 3: rosters=1474 unaccounted=1111 poolLeft=512 freeAgency weeks=4 depth min=440 max=480
 > ```
 >
-> Two things stand out and neither is model thinness. **Free agency never ran at all in the first
-> offseason** — 293 contracts expired, nobody returned, nobody relocated, and the league went from
-> 1,696 to 1,403 in one step it never recovered from. `ProRosterAISystem.signFreeAgents` skips a
-> team while `rosterIDs.count >= 53 - remainingPicks`, and a pass that signs nobody calls
-> `beginDraft`, so if the first pass sees rosters that have not yet been emptied, free agency ends
-> before it begins. And **`poolLeft` reaches 512 by season 3, which is `ProMarketState.maximumFreeAgentIDs`
-> exactly**: the pool is saturated, and `addFreeAgent`'s `guard freeAgentIDs.count < maximumFreeAgentIDs`
-> then refuses every further release, which is where `unaccounted` — 477, 829, 1,111 — comes from.
-> These are the two threads to pull; neither was pulled in this pass, because both sit inside the
-> professional turnover FSC-013 defers and both would move roster composition league-wide.
+> **Read the season labels carefully — an earlier revision of this entry did not.** The probe's
+> window labelled "season 1" is the *weeks of season 0*, during which the market is legitimately
+> closed: it opens at the season-0 boundary, which is the last advance in that window. "Free agency
+> never ran" there is correct and is not a defect. Free agency does run, from season 1 onward, for
+> three to six weeks a season.
+>
+> **The defect the probe actually found is in the draft, and it is fixed — 2026-08-23.** Every club
+> is short after expiry, but by six to seventeen seats against seven rounds, so the club that lost
+> fewest fills up on its own sixth pick. `ProRosterAISystem.makeDraftPicks` treated the resulting
+> `activeRosterFull` as fatal and `break`ed the whole run, so one full club ended the round for the
+> other thirty-one and the next week resumed at the same stuck pick. The market never reached
+> `.rosterBuild` in any season and the draft made 130 of 224 picks by season four. A pick a club
+> cannot seat is now passed — `02` section 4.2, 2026-08-23 — leaving the prospect on the board for
+> the club behind it. Measured, before to after: picks landed 220→223, 197→218, 130→189, 135→165 in
+> seasons 2 to 5, active rosters 1,436→1,439, 1,474→1,496, 1,456→1,526, 1,271→1,341, and the weeks
+> the market spends stuck in `.draft` 16→1, 17→1, 16→1, 15→1.
+>
+> **The draft fix did not close the band, and moved it slightly the wrong way — measured.** Re-run
+> at seed 84,010 after the fix, the past-decline share reads 0.228, 0.196, **0.134**, **0.067**,
+> **0.161** at seasons 0, 1, 3, 6, 10, against 0.228, 0.196, 0.146, 0.073, 0.170 before it. Every
+> figure fell. That is the expected direction and it is confirmation rather than a regression: the
+> picks the draft now lands are all age-22 intake, so seating more of them dilutes the veteran share
+> further. It rules the draft out as the cause of the band and points at the two open items below,
+> which are the ones that decide whether a veteran comes back onto a roster at all.
+>
+> **What is still open, and it is what keeps the league short.** Free agency signs at most one
+> player per club per week and stops for a club once it reaches `activeRosterLimit - draftRounds`,
+> which is 46; across a season that is about two signings a club against seven to eleven expiries,
+> so 1,696 is never regained. And **`poolLeft` reaches 512 by season 3, which is
+> `ProMarketState.maximumFreeAgentIDs` exactly** — the pool is saturated, and the bound then refuses
+> every further release, which is where the probe's growing `unaccounted` count comes from. Both sit
+> inside the professional turnover FSC-013 defers and both would move roster composition
+> league-wide, so neither was pulled here.
 
 > **2026-08-20 — Calibration continuation:** the fresh isolated
 > `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**
