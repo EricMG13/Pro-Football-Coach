@@ -35,7 +35,10 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
                 workspace
             }
         }
+        // See `RosterView`: `.contain` first, or this identifier renames every descendant.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("player-profile-screen")
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 18) }
     }
 
     private var palette: CoachWorldTokens.Palette {

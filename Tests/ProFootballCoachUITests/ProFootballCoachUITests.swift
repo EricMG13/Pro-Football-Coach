@@ -6,10 +6,20 @@ final class ProFootballCoachUITests: XCTestCase {
     }
 
     func testCoachingHQRosterPlayerProfileVerticalSlice() {
+        assertCoachingHQRosterPlayerProfileVerticalSlice(usesAX5: false)
+    }
+
+    /// The same route at an accessibility size. Task 5 asks for this family's route in both, and a
+    /// route that only ever ran at default cannot evidence the reflowed one.
+    func testCoachingHQRosterPlayerProfileVerticalSliceAtAX5() {
+        assertCoachingHQRosterPlayerProfileVerticalSlice(usesAX5: true)
+    }
+
+    private func assertCoachingHQRosterPlayerProfileVerticalSlice(usesAX5: Bool) {
         let app = XCUIApplication()
         app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
         app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "8"
-        app.launch()
+        launch(app, ax5: usesAX5)
 
         XCTAssertTrue(
             app.descendants(matching: .any)["coaching-hq-screen"]
@@ -30,7 +40,7 @@ final class ProFootballCoachUITests: XCTestCase {
             .firstMatch
         XCTAssertTrue(context.exists)
         XCTAssertGreaterThan(context.frame.width, 0)
-        XCTAssertLessThan(context.frame.width, 132)
+        if !usesAX5 { XCTAssertLessThan(context.frame.width, 132) }
         let family = app.buttons["Open all tasks, This week"]
         let currentSibling = app.buttons["Coaching HQ"]
         XCTAssertGreaterThanOrEqual(family.frame.height, 44)
@@ -133,6 +143,65 @@ final class ProFootballCoachUITests: XCTestCase {
             XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-dominant").count, 0)
             let attachment = XCTAttachment(screenshot: app.screenshot())
             attachment.name = "Weekly command \(screenID) — \(usesAX5 ? "AX5" : "default")"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            app.terminate()
+        }
+    }
+
+    func testPersonnelFamilyExposesItsCanonicalDestinationsAtDefault() {
+        assertPersonnelFamily(usesAX5: false)
+    }
+
+    func testPersonnelFamilyExposesItsCanonicalDestinationsAtAX5() {
+        assertPersonnelFamily(usesAX5: true)
+    }
+
+    /// Canonical destinations 16 to 20 -- Roster, Depth Chart, Player Profile, Development, Staff
+    /// Room -- each stamped with `canonical-screen-<id>` by `CanonicalScreenStamp`.
+    ///
+    /// Exactly one stamp per screen, so a surface cannot claim two identities and an alias cannot
+    /// quietly render a second copy of its destination. A destination with no retained career
+    /// evidence must say so rather than render an empty shell, which is the same rule the weekly
+    /// command family's proof applies to IDs 15 and 47.
+    private func assertPersonnelFamily(usesAX5: Bool) {
+        for screenID in 16...20 {
+            let app = XCUIApplication()
+            app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+            app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(screenID)"
+            launch(app, ax5: usesAX5)
+
+            let stamps = app.descendants(matching: .any)
+                .matching(identifier: "canonical-screen-\(screenID)")
+            // Every canonical stamp on the surface, not only the expected one. Counting just the
+            // expected id proves a surface renders its destination; it does not prove the surface
+            // is only that destination, which is the claim above.
+            let anyStamp = app.descendants(matching: .any)
+                .matching(NSPredicate(format: "identifier BEGINSWITH %@", "canonical-screen-"))
+            let unavailable = app.staticTexts
+                .matching(NSPredicate(format: "label CONTAINS %@", "unavailable."))
+                .firstMatch
+
+            if stamps.firstMatch.waitForExistence(timeout: 30) {
+                XCTAssertEqual(
+                    stamps.count, 1,
+                    "screen \(screenID) stamped \(stamps.count) times"
+                )
+                XCTAssertEqual(
+                    anyStamp.count, 1,
+                    "screen \(screenID) also carries \(max(anyStamp.count - 1, 0)) other "
+                        + "canonical destination stamps"
+                )
+            } else {
+                XCTAssertTrue(
+                    unavailable.exists,
+                    "screen \(screenID) rendered neither its canonical stamp nor an honest "
+                        + "unavailable state"
+                )
+            }
+
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "Personnel \(screenID) — \(usesAX5 ? "AX5" : "default")"
             attachment.lifetime = .keepAlways
             add(attachment)
             app.terminate()

@@ -71,7 +71,15 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 }
             }
         }
+        // `children: .contain` before the identifier, not the identifier alone. An accessibility
+        // property applied to a container propagates down and the outer one wins, so a bare
+        // `.accessibilityIdentifier` here renamed every descendant to `roster-screen` -- the
+        // composition's own `ax-reflow` marker included, which made the accessibility-size proof
+        // unable to see its own precondition. `.contain` names this container and leaves its
+        // children their own identifiers.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("roster-screen")
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 16) }
         .onChange(of: model.players.map(\.stableID), initial: true) { _, stableIDs in
             if !stableIDs.contains(selectedPlayerID) {
                 selectedPlayerID = stableIDs.first ?? ""

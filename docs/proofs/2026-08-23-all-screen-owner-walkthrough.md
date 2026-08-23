@@ -20,6 +20,8 @@ Do not re-do these by hand; they are automated and green.
 | Match Day draws 22 actors, 11 a side | `testMatchDayExportsDistinctFieldLandmarksAt{Default,AX5}` |
 | Every committing action inside the initial viewport | `testWeeklyCommandContentStaysInsideTheViewportAtDefault` |
 | Match Day on a real retained game in the production navigator | captured 2026-08-23, see the Task 4 report |
+| Personnel destinations 16-20 each render exactly one canonical identity | `testPersonnelFamilyExposesItsCanonicalDestinationsAt{Default,AX5}`, loop over the id range |
+| The Coaching HQ to Roster to Player Profile route, at both content sizes | `testCoachingHQRosterPlayerProfileVerticalSlice{,AtAX5}` |
 
 ## Setup
 
