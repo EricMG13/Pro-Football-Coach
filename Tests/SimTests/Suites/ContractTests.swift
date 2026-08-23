@@ -984,6 +984,7 @@ func runContractTests() {
             let composition = uiFiles.first {
                 $0.path.hasSuffix("/CoachWorldFloodlitComposition.swift")
             }?.text ?? ""
+            let chrome = uiFiles.first { $0.path.hasSuffix("/FloodlitChrome.swift") }?.text ?? ""
             let hq = uiFiles.first { $0.path.hasSuffix("/CoachingHQView.swift") }?.text ?? ""
             let roster = uiFiles.first { $0.path.hasSuffix("/RosterView.swift") }?.text ?? ""
             let depth = uiFiles.first { $0.path.hasSuffix("/DepthChartView.swift") }?.text ?? ""
