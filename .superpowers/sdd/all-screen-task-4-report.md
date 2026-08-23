@@ -1060,3 +1060,86 @@ assistive-technology matrix, and a human review -- are handed off, not skipped:
 `.superpowers/sdd/progress.md` reads `All-screen Task 4: pending`, which is the accurate state until
 those two carry real results.
 
+
+## Task 5 -- Personnel family, canonical destinations 16-20
+
+Five surfaces stamped: Roster 16, Depth Chart 17, Player Profile 18, Development Plan 19, Staff Room
+20. The proof loops `16...20` rather than listing them, so a sixth Personnel surface is covered the
+day it is added; each iteration asserts exactly one `canonical-screen-<id>` element or an honest
+unavailable state, and attaches a capture.
+
+### The defect the proof found, and its root cause
+
+`testPersonnelFamilyExposesItsCanonicalDestinationsAtAX5` failed on **16 and 18 only**, reporting
+that the run was not at an accessibility size when the simulator demonstrably was.
+
+Root cause: an accessibility property applied to a container propagates to its descendants, and the
+**outer** one wins. `RosterView` and `PlayerProfileView` were the only two surfaces applying a bare
+`.accessibilityIdentifier` to the whole `CoachWorldFloodlitStage`, so every descendant identifier
+beneath them was rewritten to `roster-screen` / `player-profile-screen` -- including the
+composition's own `ax-reflow` marker, which is how the size guard sees its own precondition. Screens
+17, 19 and 20 place their stamps inline and never had the problem. The class was exactly two, and
+the failure set was exactly those two.
+
+This is the second time the same mechanism has bitten in this work: `hq-commit-decision` on the HQ
+container had already been found overriding `committing-action` beneath it, which is what made the
+committing-action enumeration read green while enumerating nothing.
+
+Fix: `.accessibilityElement(children: .contain)` ahead of the identifier on both surfaces. That names
+the container and leaves its children their own identifiers. It also explains, retrospectively, why
+the stamps only worked once they were lifted into `.background` -- that put them outside the
+modified subtree rather than fixing the subtree.
+
+Not done, and stated rather than quietly skipped: no by-construction guard was added for "container
+identifier without `.contain`". A source scan cannot tell a container from a leaf --
+`coaching-hq-screen` is a legitimate bare identifier on a `FloodlitLabel3` -- and a scan that cannot
+make that distinction would either miss the defect or fail on correct code. The behavioural proof
+covers 16-20 by loop; a new family needs its own loop. This is an owner note, not a closed item.
+
+### A screenshot that looked like a P0 and was not
+
+The AX5 capture of screen 16 shows an empty panel in a rotated, part-black frame, which reads as a
+blank screen. It is a capture-pipeline artefact: the **default-size** capture of the same screen,
+from the known-good build, has identical geometry and shows full content. What the AX5 frame shows
+is the visible corner of a magnified layout. Roster's AX5 content is evidenced by the passing
+vertical-slice test, which reads its elements -- not by the image.
+
+### A hand-listed pass split, found while verifying
+
+The UI suite runs in two content-size passes, and the split was a hand-listed set of eight
+`-skip-testing` flags naming the AX5 tests. Task 5 added two more AX5 tests, which that list did not
+name -- so they would have run inside pass A, at `large`, where the size guard fails them for the
+right reason and the wrong pass. A hand-listed boundary that a new test does not join is the defect
+`CLAUDE.md` names: the coverage boundary becoming the quality boundary.
+
+The runner now derives the AX5 set from the test source by name (`func test...AtAX5`) and builds both
+passes from it, so a new AX5 test joins the correct pass the day it is written. It found ten where
+the list named eight. The script lives in the session scratchpad, not the repository; promoting it to
+`scripts/` is an owner call, not something this task's scope covers.
+
+### Task 5 closing verification
+
+Re-run against the tree being committed, after every fix above.
+
+| Gate | Result |
+|---|---|
+| `swift build` | PASS |
+| UI suite, pass A at `large` | 16 tests, 0 failures, 611.7s |
+| UI suite, pass B at genuine AX5 | 10 tests, 0 failures, 514.5s |
+| UI coverage | 26 declared, 26 run, passes disjoint and derived from source |
+| `swift run SimTests --design-contracts` | 58 tests / 857 checks |
+| `swift run SimTests --core-contracts` | 238 tests / 3,250 checks |
+| `swift run SimTests --screen-read-models` | 69 tests / 9,704 checks |
+| `swift run SimTests --tactical-management` | 8 tests / 81 checks |
+| `swift run SimTests --depth-chart` | 7 tests / 252 checks |
+| GitNexus `detect_changes` | low risk, 23 symbols, 0 affected processes |
+| `git diff --check` | clean |
+| Content size | restored to `large` and read back |
+
+`rewrite-tournament` was skipped and the reason stated rather than left implied: the change is two
+modifier lines, one added assertion, and comments -- under the skill's own materiality bar, with no
+new branching.
+
+Simulator demonstration remains an owner action. Nothing here was demonstrated on a device; the
+walkthrough in `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md` carries the two Personnel
+rows this task added to its proof ledger.

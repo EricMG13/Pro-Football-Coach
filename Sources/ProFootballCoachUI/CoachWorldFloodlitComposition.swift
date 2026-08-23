@@ -118,7 +118,10 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
             // Rendered only on this branch, so a proof can assert it is genuinely at an
             // accessibility size instead of trusting that the harness set one. A size-sensitive
             // test that cannot see its own precondition reports green at the wrong size.
-            Color.clear.frame(width: .zero, height: .zero)
+            // One point, not zero. A zero-size `Color.clear` is not reliably given an
+            // accessibility element -- it was found on some surfaces and silently absent on
+            // others -- which would make this guard pass or fail by layout accident.
+            Color.clear.frame(width: 1, height: 1)
                 .accessibilityIdentifier("ax-reflow")
             FloodlitIdentityHeader(
                 model: model,

@@ -31,6 +31,11 @@ public struct DevelopmentPlanView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)
+        // Beside the stage, not inside its stack. As a stack child the stamp measured a
+        // point and took the stack's spacing with it, pushing every surface down 10
+        // points in a 390-point window -- a layout cost for a marker that is meant to
+        // have none.
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 19) }
     }
 
     private var scrollContent: some View {

@@ -664,3 +664,34 @@ struct CoachWorldConfidenceTag: View {
             .accessibilityLabel("Confidence: \(text)")
     }
 }
+
+// MARK: - Canonical destination stamp
+
+/// Names the canonical destination a surface is, for proofs that enumerate the registry.
+///
+/// A zero-size marker rather than an identifier on the screen root, because a root can only carry
+/// one identifier and several surfaces already carry a descriptive one (`roster-screen`,
+/// `player-profile-screen`), and because an identifier placed on a header label disappears whenever
+/// that label is conditional -- which is how `coaching-hq-screen` came to vanish from a Coaching HQ
+/// with no decision pending.
+///
+/// The weekly command family still uses the older `weekly-command-screen-<id>` name. Task 10 folds
+/// the two into one, which is what that task is for; introducing a second convention silently would
+/// be the worse outcome, so this one is stated here and in the presentation contract.
+///
+/// **Attach it with `.background(alignment: .topLeading)`, never as a stack child.** As a child of a
+/// spaced `VStack` it measures a point and takes the stack's spacing with it, which pushed three
+/// Personnel surfaces down 10 points in a 390-point window -- a layout cost for a marker whose whole
+/// purpose is to have none.
+struct CanonicalScreenStamp: View {
+    let id: Int
+
+    var body: some View {
+        // One point, not zero: a zero-size `Color.clear` is not reliably given an accessibility
+        // element, so a stamp that measured nothing was discoverable on some surfaces and absent
+        // on others.
+        Color.clear
+            .frame(width: 1, height: 1)
+            .accessibilityIdentifier("canonical-screen-\(id)")
+    }
+}

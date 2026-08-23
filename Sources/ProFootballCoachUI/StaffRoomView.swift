@@ -36,6 +36,11 @@ public struct StaffRoomView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        // Beside the stage, not inside its stack. As a stack child the stamp measured a
+        // point and took the stack's spacing with it, pushing every surface down 10
+        // points in a 390-point window -- a layout cost for a marker that is meant to
+        // have none.
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 20) }
     }
 
     private var scrollContent: some View {
@@ -141,6 +146,8 @@ public struct StaffRoomView: View, CoachWorldChromedSurface {
         model.rows.first { $0.id == openStaffID } ?? model.rows.first
     }
 
+    /// The dominant surface: the selected staff dossier the row list exists to open.
+    ///
     /// The open coach: what they are for, stated as the four ratings the simulation actually holds.
     @ViewBuilder
     private var staffPanel: some View {

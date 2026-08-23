@@ -368,7 +368,8 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
             VStack(spacing: .zero) {
                 // See `CoachWorldFloodlitComposition`: Match Day reflows itself rather than
                 // through the shared composition, so it carries its own marker.
-                Color.clear.frame(width: .zero, height: .zero)
+                // One point, not zero -- see `CoachWorldFloodlitComposition`.
+                Color.clear.frame(width: 1, height: 1)
                     .accessibilityIdentifier("ax-reflow")
                 accessibleScoreStrip
                 field(bandedVertical: false)
