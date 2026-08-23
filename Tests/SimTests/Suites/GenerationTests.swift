@@ -403,6 +403,39 @@ func runGenerationTests() {
             }
         }
 
+        test("every programme carries the strongest rivals it has, strongest first") {
+            // 02 section 11.3 says "8, strongest first". The bound above only says "no more than
+            // eight", which a generator that kept the first eight it happened to meet would satisfy
+            // while carrying the wrong eight in the wrong order. Asserted against the intensities
+            // themselves rather than by re-calling the seeder, which would only prove the seeder
+            // agrees with itself. Swept, because the wiring runs once per programme per seed.
+            for (index, world) in sweptWorlds.prefix(20).enumerated() {
+                for programme in world.programmes {
+                    let intensity = Dictionary(
+                        world.rivalries.filter { $0.involves(programme.id) }.compactMap { rivalry in
+                            rivalry.other(than: programme.id).map { ($0, rivalry.intensity.value) }
+                        },
+                        uniquingKeysWith: max
+                    )
+                    expect(programme.rivalIDs.allSatisfy { intensity[$0] != nil },
+                           "seed \(index): \(programme.name) carries a rival with no rivalry record")
+                    let carried = programme.rivalIDs.compactMap { intensity[$0] }
+                    expectEqual(carried.count,
+                                min(intensity.count, SharedRules.rivalriesPerProgramme),
+                                "seed \(index): \(programme.name) carries \(carried.count) of "
+                                    + "\(intensity.count) available rivals")
+                    expectEqual(carried, carried.sorted(by: >),
+                                "seed \(index): \(programme.name)'s rivals are not strongest first")
+                    let dropped = intensity.filter { !programme.rivalIDs.contains($0.key) }.values
+                    if let weakestCarried = carried.last, let strongestDropped = dropped.max() {
+                        expect(strongestDropped <= weakestCarried,
+                               "seed \(index): \(programme.name) dropped a rival of intensity "
+                                   + "\(strongestDropped) while carrying one of \(weakestCarried)")
+                    }
+                }
+            }
+        }
+
         test("every rivalry is within one tier and is stored once") {
             let programmeIDs = Set(world.programmes.map(\.id))
             let teamIDs = Set(world.proTeams.map(\.id))
