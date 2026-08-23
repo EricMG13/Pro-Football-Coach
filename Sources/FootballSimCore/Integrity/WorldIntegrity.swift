@@ -2119,13 +2119,19 @@ public enum WorldIntegrity {
         case .closed:
             phaseShapeIsValid = market.nextPick == 0
                 && market.draftedProspectIDs.isEmpty
+                && market.passedPickCount == 0
                 && market.observations.isEmpty
         case .freeAgency:
             phaseShapeIsValid = market.nextPick == 0
                 && market.draftedProspectIDs.isEmpty
+                && market.passedPickCount == 0
         case .draft, .rosterBuild:
+            // Every pick spent is either a prospect taken or a pick passed by a club with no active
+            // seat (`02` section 4.2, 2026-08-23). The sum is still exact — a passed pick is
+            // recorded, not merely absent — so this stays as strong as the equality it replaces.
             phaseShapeIsValid = (0...market.draftClass.count).contains(market.nextPick)
-                && market.draftedProspectIDs.count == market.nextPick
+                && market.passedPickCount >= 0
+                && market.draftedProspectIDs.count + market.passedPickCount == market.nextPick
                 && Set(market.draftedProspectIDs).count == market.draftedProspectIDs.count
                 && Set(market.draftedProspectIDs).isSubset(of: draftIDSet)
                 && (market.phase == .rosterBuild
