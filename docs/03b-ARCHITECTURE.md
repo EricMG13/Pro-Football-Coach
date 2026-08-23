@@ -55,12 +55,16 @@ the build:
 | Engine boundary | no `import SwiftUI` / `UIKit` / `AppKit`, no UI type | `FootballSimCore/` |
 | Seeding | no `hashValue` | `FootballSimCore/` |
 | Ambient randomness | no `UUID()` or `Date()` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3.5) | `FootballSimCore/`, less `Model/` |
-| Design tokens | no literal spacing, radius, colour or font size | `ProFootballCoachUI/` |
+| Design tokens | no literal spacing, radius, colour or font size | every file importing SwiftUI/UIKit/AppKit, less `CoachWorldMotion.swift` |
 
-The ambient-randomness root read `Engine/`, `Generation/`, `AI/`, `Abstracted/` until 2026-08-23 —
-four of the engine's twenty-three directories. The scan walks the whole target and exempts `Model/`
-by name, which is the construction `CLAUDE.md`'s coverage-boundary rule requires and the reason a
-hand list was removed from `03` §3.5 too.
+**Two Root cells were corrected on 2026-08-23, both in the same direction: canon named a directory,
+the scan enumerates by construction.** Ambient randomness read `Engine/`, `Generation/`, `AI/`,
+`Abstracted/` — four of the engine's twenty-three directories; the scan walks the whole target and
+exempts `Model/` by name, and the same hand list was removed from `03` §3.5. Design tokens read
+`ProFootballCoachUI/`; the scan enumerates **every file that imports a UI framework**, because the
+rule is about code that draws and the composition layer is a second target that does. Its one
+exemption, `CoachWorldMotion.swift`, is the definition site for `04` §6.7's durations, which
+necessarily holds the literal its consumers must not.
 
 They are the original four and no longer the whole set. `Tests/SimTests/Suites/ContractTests.swift`
 also scans for a UI file owning or reading the authoritative root, a `Set` stored in a model type
