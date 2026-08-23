@@ -87,7 +87,7 @@ at. **There is no archive as of 2026-08-10** — the superseded documents were d
 | `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: eight dimensions, 0–5 each for a total of 40, P0–P3 severities |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
 | `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |
-| `docs/OPEN-DECISIONS.md` | Decision register D1–D14, each with an instrumented falsifier. **D11 closed 2026-08-09** |
+| `docs/OPEN-DECISIONS.md` | Decision register D1–D16, each with an instrumented falsifier. **D11 closed 2026-08-09** |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | Phase-entry prompt. **Owns mission and definition of done** |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | What must be true before a build goes out |
 | `PRODUCT.md` | Positioning, audience, market gap, v1 scope |

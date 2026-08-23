@@ -182,7 +182,7 @@ every document below, which is the opposite of what this manifest is for.
 | `docs/05-IMPLEMENTATION-PLAN.md` | 8 | Phased build with per-phase gates |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | 8 | What must be true before a build goes out. Authored fresh against the v4 scope. A **different** checklist existed on the pre-merge `main` — the Broadcast-critique outstanding-work list — now at `docs/archive/PRE-DEPLOYMENT-CHECKLIST-broadcast.md` |
 | `docs/06-AUDIT-DISPOSITION.md` | 9 | The 25 P0/P1s and the five systemic patterns, converted into named tests |
-| `docs/OPEN-DECISIONS.md` | 10 | The D1–D14 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first. **D11 closed 2026-08-09 — the gates were run** |
+| `docs/OPEN-DECISIONS.md` | 10 | The D1–D16 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first; D15 (device floor) was added 2026-08-12 and D16 (dead money discharge) 2026-08-20. **D11 closed 2026-08-09 — the gates were run** |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | 11 | The phase-entry prompt. **Owns mission and definition of done** |
 | `docs/PORT-LOG.md` | — | Tier C's symmetric justification: what is ported from the prior build and why, what is discarded and why. Added during execution |
 | `docs/plans/2026-08-11-skill-integration.md` | — | Supporting execution authority for development-skill activation, duplication boundaries, the iOS 26/iPhone 15-generation verification matrix, and the phase gates that create project-local skills |

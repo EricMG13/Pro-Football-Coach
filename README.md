@@ -67,7 +67,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | [`docs/plans/2026-08-11-skill-integration.md`](docs/plans/2026-08-11-skill-integration.md) | Skill activation, duplication boundaries, and project-local skill creation gates |
 | [`docs/06-AUDIT-DISPOSITION.md`](docs/06-AUDIT-DISPOSITION.md) | Prior audit's P0/P1s and systemic patterns, converted into tests |
 | [`docs/08-OPUS5-BUILD-PROMPT.md`](docs/08-OPUS5-BUILD-PROMPT.md) | Phase-entry prompt. Owns mission and definition of done |
-| [`docs/OPEN-DECISIONS.md`](docs/OPEN-DECISIONS.md) | Decision register D1–D14, each with an instrumented falsifier |
+| [`docs/OPEN-DECISIONS.md`](docs/OPEN-DECISIONS.md) | Decision register D1–D16, each with an instrumented falsifier |
 | [`docs/PORT-LOG.md`](docs/PORT-LOG.md) | What survives from the previous build, with a logged reason both ways |
 | [`docs/PRE-DEPLOYMENT-CHECKLIST.md`](docs/PRE-DEPLOYMENT-CHECKLIST.md) | What must be true before a build goes out |
 | [`docs/STATUS.md`](docs/STATUS.md) | Honest state of the build: what exists, what is verified, what is not |

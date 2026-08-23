@@ -3,7 +3,7 @@
 The game itself. Canon for gameplay: if a gameplay question is not answered here, it gets answered
 here **before** it gets implemented (the doc-first amendment rule in `CLAUDE.md`).
 
-Inherits `docs/OPEN-DECISIONS.md` D1–D14 and the evidence in `docs/01-RESEARCH.md`. Where this
+Inherits `docs/OPEN-DECISIONS.md` D1–D16 and the evidence in `docs/01-RESEARCH.md`. Where this
 document states a number, the number is a design constant and belongs in a rules module, never
 inline in code.
 
