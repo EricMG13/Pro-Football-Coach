@@ -280,7 +280,7 @@ Verified against the standard and matching:
 
 ## Part B — per surface
 
-**Coverage as of 2026-08-23: 23 of 47 canonical destinations drawn.** Two families complete. The live count is
+**Coverage as of 2026-08-23: 27 of 47 canonical destinations drawn.** Three families complete. The live count is
 `guidelines/coverage.card.html`, which fails on a stale mapping rather than printing it as coverage.
 
 ### B1 · This Week — complete, 9/9, and every one re-sourced
@@ -385,7 +385,32 @@ prospect's evaluation and not a rostered player's row.
 | 19 | Development plan | **REMOVE the editable allocation and the projected trajectory.** There is no action here at all beyond closing — and the surface must **say so in words**, or a player will assume the control is hidden rather than absent. Zero gold. |
 | 20 | Staff profiles | **REMOVE any delegation chip, ranking, hire or fire.** The only surface of the 62 with no reference drawing, so composition is new; every column is a `StaffRow` field. Age was dropped to keep ROLE readable — measured, not guessed. Zero gold. |
 
-### B3 · Not yet drawn — 24 canonical
+### B1c · Recruiting — complete, 7/7
+
+| ID | Surface | Required change |
+|---:|---|---|
+| 24 | Recruiting board | Every row names your position in the race, and none says what to do. |
+| 25 | Prospect profile | **REMOVE the attribute table** — a prospect has no attribute numbers. See B2-C. |
+| 26 | Shortlist | **REMOVE re-ranking, derived priority and any countdown.** `boardRank` prints; the order is the model's and there is no handle to change it. Zero gold. |
+| 27 | Contact & visit planner | **REMOVE any recommendation of which contact to spend**, and therefore **all gold** — see C5. Cost and consequence are the choice's own words; the screen never totals hours or scores one contact against another. Capacity prints as retained. |
+| 28 | Class overview | **REMOVE the class grade, the national ranking and any projected finish.** What is left is the need table. Open needs carry the ink; solved ones stay neutral, or it reads as a scorecard. Zero gold. |
+| 29 | Signing day | **REMOVE drama copy and the ranking** — see B2-C. Add the closed-phase state. |
+| 61 | College offseason | The first committing workbench: `onCommit`, so **one gold**. **NIL prints as committed-of-budget, never as a remainder.** Hosts four aliases (30–33), so the tab carries the caret. Carries the product's **only delegation field** — see D7. |
+
+### C5 · The gold rule generalises
+
+**CHANGE — and it removes a judgement call rather than adding one.** A fork spends zero gold because
+gilding one of two irreversible options would be the interface choosing. The contact planner offers
+*four* allowable actions under the same prohibition — *"no recommendation of which contact to
+spend"* — and spends zero for the same reason, reached from a different direction.
+
+**When a surface offers several equal actions, its gold budget is zero by construction.** Not a
+decision to be re-made per screen: a consequence of the product's oldest content rule.
+
+The corollary matters for the rebuild: **a surface with exactly one committing action is the only
+kind that may gild it.** Check the count before reaching for `actionPrimary`.
+
+### B3 · Not yet drawn — 20 canonical
 
 Undrawn here means no Press Box composition exists yet, **not** that the Swift view is missing —
 all 62 have a view on `main`. These are queued in the order below.
