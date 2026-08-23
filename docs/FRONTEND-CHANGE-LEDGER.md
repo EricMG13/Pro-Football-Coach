@@ -280,7 +280,7 @@ Verified against the standard and matching:
 
 ## Part B — per surface
 
-**Coverage as of 2026-08-23: 36 of 47 canonical destinations drawn.** Five families complete. The live count is
+**Coverage as of 2026-08-23: 47 of 47 canonical destinations drawn. The registry is closed.** The live count is
 `guidelines/coverage.card.html`, which fails on a stale mapping rather than printing it as coverage.
 
 ### B1 · This Week — complete, 9/9, and every one re-sourced
@@ -465,18 +465,44 @@ treatment.
 **Equal in weight is not equal in kind.** Three treatments, not two: gold for the single commit,
 neutral for equal options, semantic red for destruction.
 
-### B3 · Not yet drawn — 11 canonical
+### B1f · League and Entry — complete, 11/11 and 1/1
 
-Undrawn here means no Press Box composition exists yet, **not** that the Swift view is missing —
-all 62 have a view on `main`. These are queued in the order below.
+**One omission list governs all eleven League surfaces**, and it is the strictest in the contract:
+*"derived geography, cross-tier scope, probability, media, unsupported event state."*
 
-| Family | Remaining | Note |
-|---|---|---|
-| **recruiting** 3/7 | 8c Shortlist · 8d Contact & visit planner · 8e Class overview · 8j College offseason | |
-| **career** 4/9 | 11k Opportunities · 11d Record book · 11e Rivalries · 11c Career line · 11f Coaching tree | |
-| **entry** 0/1 | 11i New career & coach identity | **Riskiest omission for its size** — the first thing a player ever sees, never drawn against the register model |
-| **league** 1/11 | 10i Map · 10h Team profile · 10a Standings · 10b Schedule · 10c Rankings · 10d Bracket · 10e Statistics · 10f News · 10j Realignment · 10k World search | Last, deliberately — see C3 |
+| ID | Surface | Required change |
+|---:|---|---|
+| 43 | Standings | **REMOVE all probability.** The last column is the **fixture list** — what is left to play, not what is likely. Your row is anchored and marked in ink. No cross-tier scope. Zero gold. |
+| 45 | Rankings & playoff picture | **The screen named after a probability may not show one.** State position against the field — "two ranked wins short" is arithmetic on results played. Zero gold. |
+| 48 | Statistics & leaders | **REMOVE filter and sort.** Categories are retained, in the model's order. Zero gold. |
+| 44 | Schedule | Timeline. **An unplayed week is empty, not dashed** — a dash is a value, absence is the fact. **Draw the bye**, or week 9 looks adjacent to week 7. No shaded likely-win. |
+| 50 | News | **REMOVE all media** — no outlet, byline, press quote or columnist. Each row is one sentence of fact. **A wire, not a newspaper.** Zero gold. |
+| 41 | League map | **Structural, not geographic.** "Derived geography" is forbidden: the model holds membership and a city name, not coordinates. A pin invites reading travel and rivalry into it; neither is recorded. Zero gold. |
+| 46 | Bracket | **Draw the empty side of a tie.** The shape is retained where the result is not; filling a slot with a likely winner is the forbidden probability. **No seeding maths.** Zero gold. |
+| 42 | Team profile | A Dossier **about somebody else** — floods with *their* colour. Only recorded facts: no derived tradition, no programme ranking. One gold on the seam. |
+| 7 | World search | **The kind comes first** — one string matches a programme, a person and a venue. No recent searches, no "did you mean", no relevance ranking. Zero gold. |
+| 51 | Realignment | **One moment, not a lifecycle** — "unsupported event state". The model records the change, not the negotiation. The date is stated, never counted down. Zero gold. |
+| 2 | New career | **No band** — no club, no record, no week, and not yet a coach. **Show the seed**: a deterministic product that hides it is keeping a promise nobody can check. No difficulty rating, no recommended job. One gold; `isWorking` drawn with **no progress bar**, because the wait cannot be measured. |
 
+### C8 · League forced no new component — the prediction that failed
+
+**No change required.** For most of this ledger's life, League's standings table was the standing
+example of why a new component would be needed: twelve teams, nine numeric columns, a prose column.
+
+Measured, it is six columns in 737 pt with **211 left for the team name**. `WorkPlate` was built for
+a roster, and a roster is the harder case.
+
+What League *did* force was two redefinitions, both recorded above: the map became structural, and
+the playoff picture lost its odds. **Neither is a component; both are the contract deciding what a
+surface is.**
+
+The two genuinely new shapes came from Career — a timeline and a tree — and there are now four
+across the system (career line, schedule, news; tree, map, bracket). They still are not extracted:
+the timelines disagree on direction (a season runs left-to-right because it ends; a feed runs down
+from now because it does not), which is exactly the joint a premature component would have fixed
+wrongly.
+
+---
 ---
 
 ## Part C — components that must be built
