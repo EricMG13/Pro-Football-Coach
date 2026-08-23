@@ -785,7 +785,7 @@ the constant.
 
 ## Review package
 
-`.superpowers/sdd/review-6ed8433..723af3f.diff` -- 3,846 lines, 23 files, Task 4 base `6ed8433` to
+`git diff 6ed8433..HEAD` (a snapshot sits at `.superpowers/sdd/review-6ed8433..dd3424d.diff`, but that directory is gitignored, so regenerate rather than trust the file) -- 3,846 lines, 23 files, Task 4 base `6ed8433` to
 HEAD, covering all nine commits. Generated for the fresh reviewer the process requires; a review by
 the author of the change is not the independent review the gate asks for, and this session does not
 claim to have performed one.
@@ -811,7 +811,7 @@ to close:
 
 1. the manual device and assistive-technology matrix, which `CLAUDE.md` makes an owner action --
    script handed off at `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md`;
-2. a fresh independent review -- package at `.superpowers/sdd/review-6ed8433..723af3f.diff`. A review
+2. a fresh independent review -- package at `git diff 6ed8433..HEAD` (a snapshot sits at `.superpowers/sdd/review-6ed8433..dd3424d.diff`, but that directory is gitignored, so regenerate rather than trust the file). A review
    by the author of the change is not the independent review the gate asks for.
 
 `.superpowers/sdd/progress.md` stays `All-screen Task 4: pending`. Marking it complete before those
@@ -1032,4 +1032,31 @@ Two further corrections from that work:
   genuine AX5 the accessible layout lists all five. The dump proved the launch argument was not
   working; it proved nothing about AX5, and reading it as if it had would have manufactured a defect
   out of the very size confusion the new guard exists to stop.
+
+## Closing verification at HEAD `dd3424d` (2026-08-23)
+
+Re-run against the committed tree, not carried over from earlier runs.
+
+| Gate | Result |
+|---|---|
+| `swift build` | PASS |
+| UI suite, pass A at `large` | 15 tests, 0 failures, 395.0s |
+| UI suite, pass B at genuine AX5 | 8 tests, 0 failures, 386.0s |
+| UI coverage | 23 declared, 23 run, passes disjoint |
+| `swift run SimTests --design-contracts` | 58 tests / 857 checks |
+| `swift run SimTests --core-contracts` | 238 tests / 3,250 checks |
+| `swift run SimTests --screen-read-models` | 69 tests / 9,704 checks |
+| `swift run SimTests --tactical-management` | 8 tests / 81 checks |
+| `git diff --check` | clean |
+| Content size | restored to `large` and read back |
+
+Every automatable gate is green. The two that are not automatable -- the device and
+assistive-technology matrix, and a human review -- are handed off, not skipped:
+
+- `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md`, with one row already automated away, two
+  pre-answered, and the four canon questions this work refused to decide;
+- the review package, regenerable with `git diff 6ed8433..HEAD` (19 commits, 23 files, 4,431 lines).
+
+`.superpowers/sdd/progress.md` reads `All-screen Task 4: pending`, which is the accurate state until
+those two carry real results.
 
