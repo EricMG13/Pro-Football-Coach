@@ -11,6 +11,14 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
 
     public let model: CompetitionOverviewReadModel
     public let focus: CoachWorldScreenID
+    /// The canonical destination this rendering *is*, stated rather than derived from `focus`.
+    ///
+    /// Here `focus` happens to agree -- both callers are canonical, Rankings 45 and Bracket 46 --
+    /// but `ProOffseasonView` proves the two questions come apart: its aliases pass their own
+    /// screen as the focus while carrying no identity of their own. Identity is stated at every
+    /// call site in this codebase so the rule can be checked by eye, and no default here, because
+    /// there is no destination this view *is* when nobody says.
+    public let canonicalID: Int
     public let statusMessage: String?
     public let onClose: () -> Void
     public let onContinue: () -> Void
@@ -21,6 +29,7 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
     public init(
         model: CompetitionOverviewReadModel,
         focus: CoachWorldScreenID,
+        canonicalID: Int,
         statusMessage: String? = nil,
         onClose: @escaping () -> Void,
         onContinue: @escaping () -> Void,
@@ -28,6 +37,7 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
     ) {
         self.model = model
         self.focus = focus
+        self.canonicalID = canonicalID
         self.statusMessage = statusMessage
         self.onClose = onClose
         self.onContinue = onContinue
@@ -43,6 +53,7 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: canonicalID) }
     }
 
     private var scrollContent: some View {

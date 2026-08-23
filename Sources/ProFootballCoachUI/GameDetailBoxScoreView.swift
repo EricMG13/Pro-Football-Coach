@@ -30,6 +30,7 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 47) }
     }
 
     private var scrollContent: some View {

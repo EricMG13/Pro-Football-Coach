@@ -74,6 +74,7 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
                 selectedPlaceID = visiblePlaces.first?.stableID ?? ""
             }
         }
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 41) }
     }
 
     // MARK: - Data

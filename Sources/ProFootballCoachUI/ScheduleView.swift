@@ -38,6 +38,7 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 44) }
     }
 
     private var scrollContent: some View {

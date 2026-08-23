@@ -34,7 +34,7 @@ public struct BracketPostseasonView: View, CoachWorldChromedSurface {
     }
 
     private var content: some View {
-        CompetitionOverviewView(model: model, focus: .bracketPostseason,
+        CompetitionOverviewView(model: model, focus: .bracketPostseason, canonicalID: 46,
                                 statusMessage: statusMessage, onClose: onClose,
                                 onContinue: onContinue, onSelectTeam: onSelectTeam)
             .floodlitChrome(chrome, onNavigate: onNavigateChrome)

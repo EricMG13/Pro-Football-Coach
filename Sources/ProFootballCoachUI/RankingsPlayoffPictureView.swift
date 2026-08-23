@@ -34,7 +34,7 @@ public struct RankingsPlayoffPictureView: View, CoachWorldChromedSurface {
     }
 
     private var content: some View {
-        CompetitionOverviewView(model: model, focus: .rankingsPlayoffPicture,
+        CompetitionOverviewView(model: model, focus: .rankingsPlayoffPicture, canonicalID: 45,
                                 statusMessage: statusMessage, onClose: onClose,
                                 onContinue: onContinue, onSelectTeam: onSelectTeam)
             .floodlitChrome(chrome, onNavigate: onNavigateChrome)

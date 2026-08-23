@@ -206,6 +206,25 @@ final class ProFootballCoachUITests: XCTestCase {
         assertCanonicalFamily("Pro management", ids: [34, 35, 36, 39, 62], usesAX5: usesAX5)
     }
 
+    func testLeagueFamilyExposesItsCanonicalDestinationsAtDefault() {
+        assertLeagueFamily(usesAX5: false)
+    }
+
+    func testLeagueFamilyExposesItsCanonicalDestinationsAtAX5() {
+        assertLeagueFamily(usesAX5: true)
+    }
+
+    /// Canonical destinations 7 and 41 to 51 -- World Search, League Map, Team Profile, Standings,
+    /// Schedule, Rankings, Bracket, Game Detail, Statistics, Awards, News, Realignment.
+    ///
+    /// 47 also carries the older `weekly-command-screen-47` identifier, which is a different
+    /// prefix and a different question -- Task 10 folds the two naming conventions into one. Both
+    /// coexisting is deliberate for now and stated in the presentation contract rather than left
+    /// for a reader to discover.
+    private func assertLeagueFamily(usesAX5: Bool) {
+        assertCanonicalFamily("League", ids: [7] + Array(41...51), usesAX5: usesAX5)
+    }
+
     /// One canonical destination family, enumerated by id rather than listed by hand.
     ///
     /// Exactly one stamp per screen, and exactly the expected one: counting only the expected id

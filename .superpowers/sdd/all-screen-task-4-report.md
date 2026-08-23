@@ -1243,3 +1243,29 @@ Two ways to close it, both owner calls rather than something a UI migration shou
 
 Until one exists, the correct statement is: **the pro family's canonical identity is unverified**.
 It is not "verified" and it is not "green"; the tests that pass are testing the unavailable path.
+
+## Task 8 -- League family, canonical destinations 7 and 41 to 51
+
+Twelve surfaces stamped: World Search 7, League Map 41, Team Profile 42, Standings 43, Schedule 44,
+Rankings 45, Bracket 46, Game Detail 47, Statistics 48, Awards 49, News 50, Realignment 51.
+
+`CompetitionOverviewView` serves 45 and 46 through two canonical wrappers -- neither is an alias.
+Its `focus` would in fact have produced the right numbers here, and it was still not used: after
+`ProOffseasonView` proved that focus and identity come apart, deriving identity in the views where
+it happens to work and stating it in the views where it does not would leave a rule no reader can
+check by eye. `canonicalID` is stated at every call site. It takes no default on this view, because
+there is no destination `CompetitionOverviewView` *is* when nobody says.
+
+Eleven of twelve stamped at both content sizes. 47 reports `unavailable` at both, which agrees with
+the evidence the weekly command proof already carries: at week 1 with no played game there is no box
+score, and the screen says so rather than rendering an empty one.
+
+47 now carries both `canonical-screen-47` and the older `weekly-command-screen-47`. Different
+prefixes, different questions, and Task 10 folds the two conventions -- stated here and in the
+contract rather than left for a reader to trip over.
+
+Evidence and omission rows completed for 7, 41-46 and 48-51 against the fields that actually back
+them: the map's own grid coordinates, market size, prestige and reach radius; fixtures with optional
+scores; standings rows with points for and against; the bracket's retained stages; award values;
+news weights; and realignment swaps naming both programmes with their from and to conferences. 47
+was already completed in Task 4.

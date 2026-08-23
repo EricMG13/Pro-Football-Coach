@@ -29,6 +29,7 @@ public struct NewsView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 50) }
     }
 
     private var scrollContent: some View {

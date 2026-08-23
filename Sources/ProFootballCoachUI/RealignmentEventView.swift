@@ -53,6 +53,7 @@ public struct RealignmentEventView: View, CoachWorldChromedSurface {
         }
         .frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 51) }
     }
 
     private func swapCard(_ swap: RealignmentReadModel.Swap) -> some View {
