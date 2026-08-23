@@ -670,13 +670,28 @@ func runCareerPortalDecisionTests() {
                     optionID: release.id
                 ))
             }
+            // Author the week before advancing. This test is about a released portal record
+            // surviving a save round trip; the advance is only how it gets there. A controlled
+            // programme with an unplayed game and no authored preparation refuses to advance --
+            // deliberately, as "Weekly preparation authority" below proves -- so without this the
+            // test throws `missingWeeklyPreparation` and never reaches its own assertions.
+            _ = try await session.resolve(.prepareWeek)
             _ = try await session.resolve(.advanceWeek)
             let saved = try await session.saveData()
             let restored = try SaveEnvelope.decode(GameState.self, from: saved)
+            // Keyed on the season the snapshot targeted, not on the restored calendar's season.
+            // The record is written for the former, and the advance above can roll the latter --
+            // at which point the lookup silently finds nothing and the test reports a missing
+            // record rather than the season mismatch that actually caused it.
+            let targetSeason = snapshot.targetSeason
             let record = restored.people.playerCareers[retainedIntent.playerID]?.portalWindows.first {
-                $0.targetSeason == restored.calendar.season && $0.window == .spring
+                $0.targetSeason == targetSeason && $0.window == .spring
             }
-            expect(record != nil)
+            expect(
+                record != nil,
+                "no spring portal record for target season \(targetSeason); "
+                    + "restored calendar season is \(restored.calendar.season)"
+            )
             expect(record?.outcome != .retainedBySource)
         }
     }

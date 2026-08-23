@@ -69,6 +69,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                 }
             }
         }
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 24) }
     }
 
     private var worldStrip: some View {

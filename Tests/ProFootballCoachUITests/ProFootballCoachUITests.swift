@@ -158,50 +158,92 @@ final class ProFootballCoachUITests: XCTestCase {
     }
 
     /// Canonical destinations 16 to 20 -- Roster, Depth Chart, Player Profile, Development, Staff
-    /// Room -- each stamped with `canonical-screen-<id>` by `CanonicalScreenStamp`.
-    ///
-    /// Exactly one stamp per screen, so a surface cannot claim two identities and an alias cannot
-    /// quietly render a second copy of its destination. A destination with no retained career
-    /// evidence must say so rather than render an empty shell, which is the same rule the weekly
-    /// command family's proof applies to IDs 15 and 47.
+    /// Room.
     private func assertPersonnelFamily(usesAX5: Bool) {
-        for screenID in 16...20 {
+        assertCanonicalFamily("Personnel", ids: Array(16...20), usesAX5: usesAX5)
+    }
+
+    func testRecruitingFamilyExposesItsCanonicalDestinationsAtDefault() {
+        assertRecruitingFamily(usesAX5: false)
+    }
+
+    func testRecruitingFamilyExposesItsCanonicalDestinationsAtAX5() {
+        assertRecruitingFamily(usesAX5: true)
+    }
+
+    /// Canonical destinations 24 to 29 and 61 -- Recruiting Board, Prospect Profile, Shortlist,
+    /// Contact & Visit Planner, Class Overview, Signing Day, College Offseason.
+    ///
+    /// 61 is in the list and 30 to 33 are not, deliberately. Portal Hub, Retention Decisions,
+    /// Portal Market and NIL Allocation are aliases: the contract gives an alias no identity of
+    /// its own, so each renders College Offseason's stamp rather than a fifth and sixth one. The
+    /// alias routes are proved by `testUnavailableRouteOffersReturnPath` and the registry, not
+    /// here. Signing Day is the opposite case -- canonical in its own right while delegating its
+    /// open phase to College Offseason -- so it passes its own id down and this proof would catch
+    /// it carrying both.
+    private func assertRecruitingFamily(usesAX5: Bool) {
+        assertCanonicalFamily("Recruiting", ids: Array(24...29) + [61], usesAX5: usesAX5)
+    }
+
+    /// One canonical destination family, enumerated by id rather than listed by hand.
+    ///
+    /// Exactly one stamp per screen, and exactly the expected one: counting only the expected id
+    /// proves a surface renders its destination but not that it is *only* that destination, which
+    /// is what an alias rendering a second copy, or a delegating screen keeping its delegate's
+    /// stamp, would break. A destination with no retained career evidence must say so rather than
+    /// render an empty shell.
+    private func assertCanonicalFamily(
+        _ family: String,
+        ids: [Int],
+        usesAX5: Bool,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for screenID in ids {
             let app = XCUIApplication()
             app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
             app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(screenID)"
-            launch(app, ax5: usesAX5)
+            launch(app, ax5: usesAX5, file: file, line: line)
 
             let stamps = app.descendants(matching: .any)
                 .matching(identifier: "canonical-screen-\(screenID)")
-            // Every canonical stamp on the surface, not only the expected one. Counting just the
-            // expected id proves a surface renders its destination; it does not prove the surface
-            // is only that destination, which is the claim above.
             let anyStamp = app.descendants(matching: .any)
                 .matching(NSPredicate(format: "identifier BEGINSWITH %@", "canonical-screen-"))
             let unavailable = app.staticTexts
                 .matching(NSPredicate(format: "label CONTAINS %@", "unavailable."))
                 .firstMatch
 
+            // Recorded, not just asserted. Both branches are legitimate, so a green run says
+            // nothing about which one each screen took -- and a family that quietly went all
+            // "unavailable" would pass while proving nothing about the stamps. The branch is in
+            // the attachment name so one run is readable evidence.
+            let branch: String
             if stamps.firstMatch.waitForExistence(timeout: 30) {
+                branch = "stamped"
                 XCTAssertEqual(
                     stamps.count, 1,
-                    "screen \(screenID) stamped \(stamps.count) times"
+                    "screen \(screenID) stamped \(stamps.count) times",
+                    file: file, line: line
                 )
                 XCTAssertEqual(
                     anyStamp.count, 1,
                     "screen \(screenID) also carries \(max(anyStamp.count - 1, 0)) other "
-                        + "canonical destination stamps"
+                        + "canonical destination stamps",
+                    file: file, line: line
                 )
             } else {
+                branch = "unavailable"
                 XCTAssertTrue(
                     unavailable.exists,
                     "screen \(screenID) rendered neither its canonical stamp nor an honest "
-                        + "unavailable state"
+                        + "unavailable state",
+                    file: file, line: line
                 )
             }
 
             let attachment = XCTAttachment(screenshot: app.screenshot())
-            attachment.name = "Personnel \(screenID) — \(usesAX5 ? "AX5" : "default")"
+            attachment.name =
+                "\(family) \(screenID) — \(usesAX5 ? "AX5" : "default") — \(branch)"
             attachment.lifetime = .keepAlways
             add(attachment)
             app.terminate()
