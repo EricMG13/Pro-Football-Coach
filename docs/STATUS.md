@@ -151,6 +151,17 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > against 9 tests / 17,882 checks with 52 failed before; `--legal-only` **30 tests / 193 checks**;
 > `--screen-read-models` **74 tests / 10,000 checks**; all six `--team-logo-assets` families green.
 >
+> **The default lane still cannot see any of this, and that is a separate finding.** A release
+> no-flag `SimTests` run on this branch ends with **SIGTRAP (exit 133) after 103 of the 143 suites**
+> and prints no TestKit summary, dying on entry to `runPortalContractTests()` — `main.swift:227`.
+> Every logo gate is registered *after* that call, at `main.swift:232`, so the full lane has never
+> once executed them. `3da4904` fixes the crash, but it sits on `claude/frosty-northcutt-d4a058`
+> and **is not an ancestor of `main`**; until it is merged, suites 104–143 are unrun in the default
+> lane whatever they would report. The numbers above therefore come from the targeted release
+> lanes, not from a completed no-flag run. Of the 103 suites that did run, one failed:
+> `Lifecycle distributions hold their bands`, which is the pre-existing finding recorded at the top
+> of this file.
+>
 > **Not verified.** No PNG was re-rendered and none can be here — what each packaged mark actually
 > depicts is still an owner judgement, recorded per record in `reviewNotes`, not something any test
 > in this repo asserts.
