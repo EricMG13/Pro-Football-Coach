@@ -13,6 +13,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
     public let statusMessage: String?
     public let onClose: () -> Void
     public let focus: CoachWorldScreenID
+    public let canonicalID: Int
     /// Route switching between the four career entries. The shared chrome's sibling row now
     /// offers this, so the surface draws no menu of its own -- the closure stays wired because the
     /// call sites pass it and a bare-stage caller still needs somewhere to send the intent.
@@ -32,6 +33,12 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         statusMessage: String? = nil,
         onClose: @escaping () -> Void,
         focus: CoachWorldScreenID = .careerHub,
+        /// The canonical destination this rendering *is*, stated rather than taken from `focus`.
+        ///
+        /// Eight callers, three identities. Stakeholders is 54 and Promotion Decision is 55, each
+        /// with its own contract row; Job Board, Offer, Appointment, Job Security and Coaching
+        /// Carousel are aliases and inherit 52 by passing nothing.
+        canonicalID: Int = 52,
         onNavigate: @escaping (CoachWorldScreenID) -> Void = { _ in },
         onAcceptOpportunity: @escaping (String) -> Void = { _ in },
         onResign: @escaping () -> Void = {},
@@ -41,6 +48,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         self.statusMessage = statusMessage
         self.onClose = onClose
         self.focus = focus
+        self.canonicalID = canonicalID
         self.onNavigate = onNavigate
         self.onAcceptOpportunity = onAcceptOpportunity
         self.onResign = onResign
@@ -86,6 +94,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
             if message != nil { receiptIsFocused = true }
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: canonicalID) }
     }
 
     private var scrollContent: some View {

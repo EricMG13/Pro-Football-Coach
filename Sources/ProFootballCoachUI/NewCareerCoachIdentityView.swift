@@ -26,11 +26,15 @@ public struct NewCareerCoachIdentityView: View {
     }
 
     public var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            content.accessibilitySortPriority(100)
-        } else {
-            content.accessibilitySortPriority(100)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                content.accessibilitySortPriority(100)
+            } else {
+                content.accessibilitySortPriority(100)
+            }
         }
+        // See `NewCareerSetupView`: the first of destination 2's two steps.
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 2) }
     }
 
     private var content: some View {

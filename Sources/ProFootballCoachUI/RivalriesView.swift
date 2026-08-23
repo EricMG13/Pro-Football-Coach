@@ -19,7 +19,7 @@ public struct RivalriesView: View, CoachWorldChromedSurface {
     }
 
     public var body: some View {
-        LegacyHistoryView(model: model, focus: .rivalries, statusMessage: statusMessage,
+        LegacyHistoryView(model: model, focus: .rivalries, canonicalID: 58, statusMessage: statusMessage,
                           onClose: onClose, onNavigate: onNavigate)
             .floodlitChrome(chrome, onNavigate: onNavigateChrome)
             .frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)

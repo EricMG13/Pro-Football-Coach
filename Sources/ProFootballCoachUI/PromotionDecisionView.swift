@@ -41,6 +41,7 @@ public struct PromotionDecisionView: View, CoachWorldChromedSurface {
             statusMessage: statusMessage,
             onClose: onClose,
             focus: .promotionDecision,
+            canonicalID: 55,
             onNavigate: onNavigate,
             onAcceptOpportunity: onAcceptOpportunity,
             onResign: onResign,

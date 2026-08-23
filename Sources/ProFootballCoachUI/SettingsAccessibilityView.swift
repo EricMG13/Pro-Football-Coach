@@ -47,5 +47,6 @@ public struct SettingsAccessibilityView: View, CoachWorldChromedSurface {
             }
         }
         .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 6) }
     }
 }

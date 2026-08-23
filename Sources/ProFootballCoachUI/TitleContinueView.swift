@@ -41,6 +41,7 @@ public struct TitleContinueView: View, CoachWorldChromedSurface {
             content
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 1) }
     }
 
     private var content: some View {

@@ -9,16 +9,22 @@ public struct LegacyHistoryView: View, CoachWorldChromedSurface {
 
     public let model: LegacyHistoryReadModel
     public let focus: CoachWorldScreenID
+    /// The canonical destination this rendering *is*. No default: four canonical wrappers --
+    /// Record Book 57, Rivalries 58, Career Line 59, Coaching Tree 60 -- and none of them is what
+    /// this view is when nobody says.
+    public let canonicalID: Int
     public let statusMessage: String?
     public let onClose: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
 
 
     public init(model: LegacyHistoryReadModel, focus: CoachWorldScreenID,
+                canonicalID: Int,
                 statusMessage: String? = nil, onClose: @escaping () -> Void,
                 onNavigate: @escaping (CoachWorldScreenID) -> Void) {
         self.model = model
         self.focus = focus
+        self.canonicalID = canonicalID
         self.statusMessage = statusMessage
         self.onClose = onClose
         self.onNavigate = onNavigate
@@ -45,6 +51,7 @@ public struct LegacyHistoryView: View, CoachWorldChromedSurface {
                 }
             }
         }
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: canonicalID) }
     }
 
     private var topBar: some View {

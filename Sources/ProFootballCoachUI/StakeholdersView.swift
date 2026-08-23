@@ -41,6 +41,7 @@ public struct StakeholdersView: View, CoachWorldChromedSurface {
             statusMessage: statusMessage,
             onClose: onClose,
             focus: .stakeholders,
+            canonicalID: 54,
             onNavigate: onNavigate,
             onAcceptOpportunity: onAcceptOpportunity,
             onResign: onResign,

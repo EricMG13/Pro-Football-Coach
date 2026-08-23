@@ -19,7 +19,7 @@ public struct RecordBookView: View, CoachWorldChromedSurface {
     }
 
     public var body: some View {
-        LegacyHistoryView(model: model, focus: .recordBook, statusMessage: statusMessage,
+        LegacyHistoryView(model: model, focus: .recordBook, canonicalID: 57, statusMessage: statusMessage,
                           onClose: onClose, onNavigate: onNavigate)
             .floodlitChrome(chrome, onNavigate: onNavigateChrome)
             .frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)

@@ -225,6 +225,26 @@ final class ProFootballCoachUITests: XCTestCase {
         assertCanonicalFamily("League", ids: [7] + Array(41...51), usesAX5: usesAX5)
     }
 
+    func testCareerFamilyExposesItsCanonicalDestinationsAtDefault() {
+        assertCareerFamily(usesAX5: false)
+    }
+
+    func testCareerFamilyExposesItsCanonicalDestinationsAtAX5() {
+        assertCareerFamily(usesAX5: true)
+    }
+
+    /// Canonical destinations 52, 54, 55 and 57 to 60 -- Career Hub, Stakeholders, Promotion
+    /// Decision, Record Book, Rivalries, Career Line, Coaching Tree.
+    ///
+    /// 3, 4, 5, 53 and 56 are absent because they are aliases inheriting 52. The entry screens 1,
+    /// 2 and 6 are absent for a different reason and it is not that they are unimportant: this
+    /// harness reaches a screen by starting a career and overriding the route, so it can never be
+    /// standing at Title, New Career or pre-career Settings. They are stamped and compiled, and
+    /// their identity is unverified here -- see the task report.
+    private func assertCareerFamily(usesAX5: Bool) {
+        assertCanonicalFamily("Career", ids: [52, 54, 55] + Array(57...60), usesAX5: usesAX5)
+    }
+
     /// One canonical destination family, enumerated by id rather than listed by hand.
     ///
     /// Exactly one stamp per screen, and exactly the expected one: counting only the expected id

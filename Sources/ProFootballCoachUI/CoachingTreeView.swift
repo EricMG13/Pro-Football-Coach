@@ -19,7 +19,7 @@ public struct CoachingTreeView: View, CoachWorldChromedSurface {
     }
 
     public var body: some View {
-        LegacyHistoryView(model: model, focus: .coachingTree, statusMessage: statusMessage,
+        LegacyHistoryView(model: model, focus: .coachingTree, canonicalID: 60, statusMessage: statusMessage,
                           onClose: onClose, onNavigate: onNavigate)
             .floodlitChrome(chrome, onNavigate: onNavigateChrome)
             .frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)

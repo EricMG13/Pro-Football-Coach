@@ -48,6 +48,10 @@ public struct NewCareerSetupView: View {
                 standardLayout
             }
         }
+        // Destination 2 is one canonical screen reached in two steps -- coach identity, then this
+        // setup. Both carry 2 and neither is ever on screen with the other, so exactly one stamp
+        // is present at any moment.
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 2) }
     }
 
     private var palette: CoachWorldTokens.Palette {
