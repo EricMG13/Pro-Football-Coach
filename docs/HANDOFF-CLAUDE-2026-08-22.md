@@ -6,87 +6,53 @@ Active worktree: `/Users/ericguei/Documents/Pro-Football-Coach/.worktrees/mock-r
 Branch: `codex/mock-reconciliation-vertical-slice`  
 Committed HEAD when written: `83452c15cfa6698cc3f5ab888f96820c958e8eb4`
 
-## Status update — 2026-08-22, later
+## Status update — 2026-08-23
 
-Six commits have landed since this document was written. Read this section before acting on the
-resume sequence below, most of which is now done.
+Nineteen commits have landed since this document was written. Read this before acting on the resume
+sequence below, which is done.
 
-| Commit | What |
-|---|---|
-| `83cf76f` | Task 4 review fix: weekly plan dominants read the selected commit, not the stored plan |
-| `fe712f2` | Every committing action inside the initial viewport (`04` section 7) |
-| `db82647` | All 22 Match Day actors, and Match Day reconciled to reference 1a |
-| `0f8c552` | Match Day's three top-right cards folded into 1a's single plate |
-| `4b6c73d` | Logo proof fallback row named so it can be queried |
-| `62c8b59` | Logo proof asserts the names rather than the container marking |
+Everything an agent can close is closed and evidenced. Two gates remain, and **neither can be closed
+by an agent**; they are the only outstanding work.
 
-Done since: the three Task 4 review findings and their contracts; the AX5 focused route (the
-`isHittable` false positive described under "Exact interruption point" -- XCUITest reports it true
-for a row inside the scroll content but below the viewport, so the tap was synthesized off-screen);
-two pre-existing red UI tests that were failing at `83452c1`; two more logo reds; the Match Day 1a
-reconciliation including the 22-actor defect and the single top-right plate; **the real
-retained-game Match Day capture inside the production navigator**, which found and fixed a receipt
-drawn across the scorebug; and a self-introduced VoiceOver label defect found by confidence review.
+### The two remaining gates
 
-## What is left, and who can do it
+1. **Manual device and assistive-technology matrix.** `CLAUDE.md`: *"Simulator demonstration is an
+   owner action -- hand off a written walkthrough script, never claim it happened."* Script:
+   `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md`. One row is automated away (the 44-point
+   touch floor, which found three defects), and two rows are pre-answered so the device pass
+   confirms rather than discovers. `xcrun simctl ui` exposes only appearance, content size and
+   increase_contrast, so VoiceOver speech, Voice Control, Switch Control, Reduce Motion, Reduce
+   Transparency, haptics and thumb reach are unreachable from software.
+2. **A fresh independent review by a person.** An independent *agent* review was run and returned
+   BLOCK; its confirmed findings are fixed in `e4ef671` and recorded in the Task 4 report with the
+   three findings that were overturned. That is a cold read by something that did not write the
+   code, but it is not the human sign-off the process asks for.
 
-Neither remaining item is the agent's to close.
+Until both carry real results, `.superpowers/sdd/progress.md` stays `All-screen Task 4: pending`.
+Tasks 5 to 12 of the plan have not been started.
 
-1. **The manual device and assistive-technology matrix.** `CLAUDE.md` makes simulator and device
-   demonstration an owner action -- "hand off a written walkthrough script, never claim it
-   happened". The script is written and handed off:
-   `docs/proofs/2026-08-23-all-screen-owner-walkthrough.md`. It also carries the two inset questions
-   this work deliberately left open, which need a real 17-class device.
-2. **A fresh independent review.** Package ready at
-   `.superpowers/sdd/review-6ed8433..723af3f.diff` -- 3,846 lines, 23 files, all nine commits from
-   the Task 4 base. A review by the author of a change is not the independent review the gate asks
-   for, so this session has not performed one.
+### What landed
 
-`.superpowers/sdd/progress.md` stays `All-screen Task 4: pending` until the walkthrough carries real
-results and a fresh reviewer approves. Tasks 5 to 12 of the plan have not been started.
+Task 4 review fixes; every committing action inside the initial viewport; Match Day reconciled to
+reference 1a including all 22 actors, the single top-right plate and the yard-number contrast
+repair; the real retained-game Match Day capture inside the production navigator, which found a
+receipt drawn across the scorebug; the logo proof reds; the 44-point touch floor as a gate; four
+unasserted read-model validators; the possession-derivation contract; and the independent review's
+confirmed findings.
 
-The **full UI suite is green**: all 21 tests, 0 failures. It runs as two passes because content
-size is external to the tests -- 14 at `large`, the 7 `AtAX5` tests at genuine
-`accessibility-extra-extra-extra-large` -- and the two sets were checked to be disjoint and to cover
-every declared test exactly once. Content size restored to `large` afterwards.
+Defects found and fixed along the way that no existing gate would have caught: two controls at
+27x14 and 17 points against a 44-point floor, a 60 Hz per-frame actor scan and per-frame label
+interpolation, a VoiceOver label rewriting itself sixty times a second, and an AX5 test family that
+could report green at the wrong size.
 
-Still outstanding for Task 4: the manual device and assistive-technology matrix, a real
-retained-game Match Day capture inside the production navigator rather than the `PROOF_SCREEN=match`
-fixture, and a fresh independent review. `.superpowers/sdd/progress.md` still reads
-`All-screen Task 4: pending`, which is correct.
+Known, measured, and deliberately left for the owner because each needs a canon decision rather
+than a patch: Increase Contrast is unimplemented (`colorSchemeContrast` is read nowhere); HQ's
+committing action measures maxY 407.7 in a 390-point window when a decision panel is open; HQ
+carries two committing actions against `04` section 6.5; and the bottom and trailing safe-area
+insets where reference 1a and the device disagree.
 
-The durable record of all of the above, including the deliberate deviations from 1a and their
-reasons, is `.superpowers/sdd/all-screen-task-4-report.md`.
-
-## Resume objective
-
-Finish the approved 12-task all-screen UI migration in
-`docs/superpowers/plans/2026-08-22-all-screen-shell-and-hierarchy.md`.
-
-The approved direction is:
-
-- no left or bottom rail; the one-band top chrome is the navigator;
-- use the supplied reference package as a visual shell/hierarchy prompt only;
-- use current read models, callbacks, routes, state, persistence, and simulation as authority;
-- preserve production team/opponent logos exactly once when supplied by current models;
-- use the reference typography/material system and team-coloured primary actions;
-- keep unsupported mock features in the omission ledger instead of inventing data or behavior.
-
-### Latest user override — Match Day is required
-
-**Include Match Day / ID 14.** The owner explicitly reversed the earlier skip instruction.
-
-For Match Day, `/Users/ericguei/Downloads/UI surfaces refinement/Match Day.dc.html` is the exact
-visual and layout target. Reproduce that reference composition exactly, including its hierarchy,
-spacing, field/broadcast furniture, control placement, depth, and typography. Match Day is the
-exception when the general management shell conflicts with the reference.
-
-Current code remains authoritative for facts and behavior: use the immutable `MatchDayReadModel`,
-all 22 retained actors, score/situation, field direction, line of scrimmage, first-down line,
-recorded commentary/playback, five existing controls, interruption paths, and existing callbacks.
-The mocks omit logos, but production does not: preserve the current real team/opponent logos exactly
-once. Do not invent a second engine, new controls, facts, outcomes, or callback behavior to achieve
-the visual copy.
+Full detail, including what the independent review got wrong, is in
+`.superpowers/sdd/all-screen-task-4-report.md`.
 
 ## Mandatory repository workflow
 
