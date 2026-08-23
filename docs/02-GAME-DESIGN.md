@@ -405,6 +405,31 @@ not built" note — asserting a gap that did not exist. The wrong finding had al
 of `CollegeState.swift` caught it; all three carry a same-day correction rather than a silent edit,
 since a mistake that already shipped a claim is not the same as one caught before it did.
 
+### 4.3a Portal scouting fidelity — added 2026-08-23
+
+Portal scouting estimates **every attribute the match engine rates for that position**, and no
+others. The estimate is fogged — each attribute is offset by a draw whose radius narrows with
+confidence, exactly as section 4.3's fog works for high-school recruits — but the *set* of
+attributes shown is complete. Fog is the information asymmetry; a missing column is not.
+
+This is written down because it was silently false. Commit `3bba7c9` gave receivers and tight ends
+`vision` and `elusiveness`, because a receiver with the ball is a carrier and `03` section 1.2's
+carrier-versus-pursuit row names both. The portal's frozen estimate table was not updated, so
+portal scouting read receivers on 12 of the 14 attributes the engine rates them on. The blind spot
+was uniform: a 99-recruiting staff got it identically to a 40, and the two hidden attributes are
+precisely what separate a possession receiver from an explosive one. That is a missing column, not
+fog.
+
+**The estimate set is versioned, and a stored estimate keeps the set it was taken with.** A
+snapshot persisted before this change keeps its 12 attributes and stays readable; a snapshot taken
+after it carries all 14. The two sets are distinguishable from the snapshot itself, so nothing has
+to be written into the save to tell them apart, and no save is invalidated. A re-scout replaces an
+old-set estimate with a current-set one.
+
+The set is **not** derived live from `Position.ratedAttributes` at validation time. Deriving it
+live is what broke: a stored record's validity would change whenever a balance pass touched the
+rating model, and a save written last month would stop decoding this month.
+
 ---
 
 ## 5. Ratings, progression, development
