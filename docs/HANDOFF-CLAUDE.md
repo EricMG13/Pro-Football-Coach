@@ -86,6 +86,36 @@ is that gap, and season 10's recovery is the first drafted cohorts ageing into i
 already tried to damp this with `ordinal % 2`; one year of spread against a five-to-twelve-year gap
 is not damping, and it was already in place when every figure above was measured.
 
+**Measured 2026-08-24 — the band's cause is the draft reserve, and it is arithmetic.**
+`--pro-movement-probe` reports `expired=257 returned=2` in season 2 and `expired=200 returned=2` in
+season 3. **Two players a season return to a professional roster, league-wide**; every other vacated
+seat is filled by a 22-year-old draftee (`drafted=223`, `218`) or by a move between clubs
+(`relocated=68`, `37`). That is the whole of "the model does not retain enough post-decline
+professionals", and the arithmetic behind it is exact:
+
+* `signFreeAgents` computes `signingLimit = ProRules.activeRosterLimit - remainingPicks`, which at
+  the start of an offseason is `53 - 7 = 46`;
+* the probe measures clubs `shortBy min=6 max=10` after expiry, so rosters sit at 43…47;
+* a club therefore signs only while `roster < 46` — only if it is **eight or more short**. Most are
+  six or seven short and can sign nobody at all;
+* league-wide the reserve is `32 * 7 = 224` seats against 200…257 vacancies, so the reserve alone
+  exceeds the whole free-agent opportunity before a single signing is attempted.
+
+The league is refreshed roughly ninety per cent by rookies every year, which is why the past-decline
+share must collapse until the drafted cohorts age in.
+
+This refines rather than contradicts the throughput entry above: that one measured **seat counts**,
+and the league genuinely is fully seated mid-season. On **who fills the seats**, throughput is two
+a season.
+
+**The fix has a canon dependency, so it is not made here.** The reserve exists because
+`makeDraftPicks` once treated a full roster as fatal — one full club ended the round for the other
+thirty-one. `a86de6e` changed an unseatable pick to pass instead. The two mechanisms are now
+redundant, and together they starve free agency; shrinking the reserve is the change. But `02`
+section 4.2 is cited at that line, and the doc-first rule says canon answers a gameplay question
+before code does. **What canon has to decide is how many seats a club reserves for picks it has not
+yet made, now that a pick it cannot seat is passed rather than fatal.**
+
 **The obvious fix is the wrong one, and that is the owner's decision.** Season 0 draws ages from
 `min(34, max(22, gaussian(mean: 27, sd: 3)))` — a different distribution from the one the process
 sustains, which is what 0.228 at season 0 against 0.162 at season 10 says. Re-seeding season 0 from
