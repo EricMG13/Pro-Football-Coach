@@ -226,6 +226,31 @@ shipped controls no read model supports.
 | 54 | Stakeholders | `SeasonExpectationsDemo` — **partial**: draws the board's demands, not the wider cast |
 | 1 | Title / Continue | `ContinuityDemo` — **partial**: draws the save list, not the entry ceremony |
 
+### B2-C · Corrections to surfaces already drawn
+
+**Found 2026-08-23 by reading the contract rows for the Personnel and Recruiting families.** Two
+drawn surfaces carried figures no read model supplies. A drawn surface with fabricated data is worse
+than an undrawn one, because it looks finished.
+
+| Surface | Was drawn | Correction |
+|---|---|---|
+| **16 Roster** | a **CEILING** column, drawn as a narrowing confidence range (68–89 → 87–90) | **DONE.** `PlayerRow` holds *overall, **development and its delta**, scheme fit, condition, availability* — no ceiling, no potential. The column is now development and its delta: not where he might get to, but how far he has moved and which way. |
+| **16 Roster** | a sort caret on the NOW column | **DONE.** The contract omits *"no sort key the model does not already order by"*. Rows arrive in the model's order; a caret claims a control that does not exist. |
+| **25 Prospect profile** | attribute rows with numeric confidence bands | **TODO.** Uncertainty is the model's **stated text** plus **cited outliers**, never a derived band. See D1. |
+
+### C1-C · `ConfidenceRange` — retire or re-aim
+
+**CHANGE.** The component draws a numeric band whose width is a confidence the product does not
+compute. Two options, and this is a design call rather than an engineering one:
+
+- **Retire it.** Replace every use with the model's `uncertainty` text and its `citedOutliers`. This
+  is what the contract describes and what "what is unknown is said to be unknown" asks for.
+- **Re-aim it** at the one place a range *is* retained — if any read model turns out to carry a
+  genuine interval. None found so far.
+
+`Unseen` is unaffected and stays: a value the model does not hold is still drawn as not held, and
+`Versus` still refuses to mark a lead against it.
+
 ### B3 · Not yet drawn — 28 canonical
 
 Undrawn here means no Press Box composition exists yet, **not** that the Swift view is missing —
@@ -289,24 +314,30 @@ its rows as data now.
 
 **Nothing in this section may be worked around by inventing data.**
 
-### D1 · No scouting-confidence model exists
+### D1 · ~~No scouting-confidence model exists~~ — WITHDRAWN, and the design was wrong
 
-**ASK.** Ratings are point values. The range and its `Unseen` state ship anyway, because drawing them
-is what makes the gap visible — but `Versus` needs it to decide which comparisons a screen may
-*call*.
+**Withdrawn 2026-08-23, same day.** This asked the engine to supply a numeric confidence band —
+`low`/`high` whose width is the confidence — so `ConfidenceRange` could draw it.
 
-For every rated attribute the engine must supply:
+**The product has deliberately chosen the opposite and already built it.** The contract for both
+Recruiting Board and Prospect Profile says so twice:
 
-1. **`low` and `high`** in the same 40–99 space. Their **width is the confidence** and is the only
-   thing the range draws; a point value is the degenerate case where `low == high`.
-2. **An observation count**, so `Unseen` is a fact rather than a guess. Zero observations must render
-   `Unseen` and **must never render a number — including a midpoint**, which is the tempting and
-   wrong answer.
-3. **Monotonic narrowing.** Watching a player may move the midpoint but must never widen the band,
-   or the interface shows a coach un-learning something they watched.
+> "Uncertainty is the model's stated `uncertainty` text, never a derived confidence."
+>
+> "No projection, no comparison to another prospect, no derived grade, no probability of commitment
+> … **What is unknown is said to be unknown.**"
 
-Note `OpponentFilmReadModel` already carries a `confidence` field — the concept exists in one place
-and needs generalising, not inventing.
+`Evaluation` carries a **verdict**, a **scheme fit**, a **stated uncertainty in words**, and **cited
+outliers**. That is a better answer than a numeric band, not a poorer one: a bar implies a precision
+the scouting does not have, and "we have seen him twice, both in the rain" is a truer statement of
+doubt than `68–89`.
+
+**So the ask is withdrawn and a change replaces it — see B2-C1.** `ConfidenceRange` as drawn is
+unbacked, and the premise it was built on — *an unearned rating is a range whose width is the
+confidence* — is a model this product does not have and does not want.
+
+What survives: **`Unseen` is still correct** where the model holds no value at all, and `Versus`
+still must decline to mark a lead against it. What goes is the numeric band.
 
 ### D2 · Screen transitions are unspecified
 
@@ -342,10 +373,34 @@ designed.
 | Surface | Why it exists |
 |---|---|
 | **Compare** | Two players, attribute against attribute. A core verb of the genre that no registry screen performs. |
-| **Responsibilities** | Where delegation is *configured*, as against exercised. Without it every ownership line in the product is unbacked — the game says an assistant handled something, you never said he could, and you cannot take it back. |
-| **While You Were Away** | Automation halts on a threshold and hands control back; nothing renders the gap. Invisible delegation is indistinguishable from a bug. |
+| **Responsibilities** | Where delegation is *configured*, as against exercised. **Stronger than a missing registry entry — see D7: there is no delegation state at all.** |
+| **While You Were Away** | Automation halts on a threshold and hands control back; nothing renders the gap. Invisible delegation is indistinguishable from a bug. **Also blocked by D7.** |
 | **Season Review** | A *season* has no ending. Aftermath is per-match. In a game whose arc is college to pro, that is the arc's missing last page. |
 | **Championship Result** | The fifth sanctioned ceremony. Bracket / postseason is a table, not a verdict. |
+
+### D7 · There is no delegation state anywhere
+
+**ASK — and it is larger than it looks.** The contract for Staff Room (20) states it flatly:
+
+> "**No delegation chip — nothing records what is delegated to whom** — no hire, fire or negotiation
+> action absent from the callbacks, no derived staff ranking, and no invented staff copy."
+
+`StaffRoomReadModel`'s `StaffRow` carries name, role, age, reputation, development, recruiting, game
+planning, scheme affinity, and seasons with the programme. **There is no ownership field.**
+
+This is not "Responsibilities lacks a registry entry". It is that the thing Responsibilities would
+configure **does not exist in the simulation**. Two drawn surfaces depend on it and neither can ship
+until it does:
+
+- **Responsibilities** — eleven ownership areas, each resolving to a named person, each printing
+  what it yields and the threshold that ends a cruise. Every field is invented today.
+- **While You Were Away** — renders what an assistant did while you were away. With no record of who
+  owns what, there is nothing to render.
+
+It also decides whether a whole product direction is real. The design system has been arguing that
+*"invisible delegation is indistinguishable from a bug"* — that argument only pays off if delegation
+is a thing the simulation models. **Owner decision:** build the delegation model, or drop both
+surfaces and the argument with them. Do not draw around it.
 
 ### D6 · Canon has not been amended
 
