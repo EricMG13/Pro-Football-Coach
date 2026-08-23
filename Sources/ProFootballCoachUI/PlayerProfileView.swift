@@ -73,7 +73,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
             }
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             Button(action: onClose) {
-                Text("Back to personnel")
+                Text("Back to the roster")
                     .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
