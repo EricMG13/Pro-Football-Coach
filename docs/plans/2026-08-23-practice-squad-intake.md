@@ -163,6 +163,35 @@ Baseline SHA: **`9d77d68`**, release build.
 - [ ] Positional coverage still reads the active roster only, and the active roster must still reach
       53 — a club that hides players on the practice squad to dodge coverage is a defect.
 
+### Task 4 — Cap headroom — **answered, and it is not the constraint**
+
+- [x] Measured at the season-1 boundary: clubs carry **53 active + 7 squad** with committed cap at
+      **201-217M of 272M** and `isWithinCap` true. Sixty contracts fit comfortably.
+
+### Task 8a — **BLOCKER: the scheduler refuses at season 1 week 21**
+
+`--pro-movement-probe` gets one season in and then:
+
+```text
+PROBE: advanceWeek failed at CalendarState(season: 1, week: 21):
+       professionalMarketFailed(ProMarketError.invalidRoot)
+PROBE: issues going in: []
+PROBE: team active=53 squad=7 cap=217267836/272850000 within=true
+```
+
+The root going *into* the week is clean and the league is fully seated, so the invalid state is
+created during week 21 by one of its three professional transactions — `expireContracts`, `close`,
+or `openOffseason`. The probe now instruments all three; the run that would name the culprit was
+stopped before it reported.
+
+**A false lead is recorded here so it is not chased twice.** `maximumFreeAgentIDs` was raised 512 to
+1,024 on the theory that the extra 224 contracts pushed one offseason's expiries past the pool bound,
+and a short run appeared to confirm it. It did not: that run was killed by a command timeout *before*
+it reached the failing week, and at 1,024 the failure is identical. The change was reverted.
+
+- [ ] Name which of the three calls refuses, and why.
+- [ ] Only then re-run the measurements below.
+
 ### Task 8 — Measure, and be willing to report failure
 
 - [ ] Re-run `--pro-movement-probe` and `--people-lifecycle`. The acceptance criterion is the

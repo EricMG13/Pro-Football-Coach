@@ -51,6 +51,33 @@ func runProMovementProbe() {
                 transition = try WorldScheduler.advanceWeek(state)
             } catch {
                 print("PROBE: advanceWeek failed at \(state.calendar): \(error)")
+                let issues = WorldIntegrity.check(state).issues
+                print("PROBE: issues going in: \(issues.prefix(4))")
+                // Which of week 21's professional transactions refuses. The scheduler wraps them
+                // all as `professionalMarketFailed`, so the error alone cannot say.
+                do {
+                    let expired = try ProMarketSystem.expireContracts(at: state.calendar, in: state)
+                    print("PROBE: expireContracts ok, \(expired.expiredPlayerIDs.count) expired, "
+                        + "pool=\(expired.state.proMarket.freeAgentIDs.count)/"
+                        + "\(ProMarketState.maximumFreeAgentIDs) "
+                        + "issues=\(WorldIntegrity.check(expired.state).issues.prefix(3))")
+                    do {
+                        let closed = try ProMarketSystem.close(in: expired.state)
+                        print("PROBE: close ok, issues=\(WorldIntegrity.check(closed).issues.prefix(3))")
+                        do {
+                            let opened = try ProMarketSystem.openOffseason(in: closed)
+                            print("PROBE: openOffseason ok, pool=\(opened.proMarket.freeAgentIDs.count) "
+                                + "issues=\(WorldIntegrity.check(opened).issues.prefix(3))")
+                        } catch { print("PROBE: openOffseason threw \(error)") }
+                    } catch { print("PROBE: close threw \(error)") }
+                } catch { print("PROBE: expireContracts threw \(error)") }
+                for teamID in state.proTeams.ids.sorted(by: { $0.uuidString < $1.uuidString }).prefix(3) {
+                    guard let team = state.proTeams[teamID] else { continue }
+                    let cap = try? ProManagementSystem.capSnapshot(teamID: teamID, in: state)
+                    print("PROBE: team active=\(team.rosterIDs.count) squad=\(team.practiceSquadIDs.count) "
+                        + "cap=\(cap?.committedCap ?? -1)/\(cap?.capLimit ?? -1) "
+                        + "within=\(cap?.isWithinCap ?? false)")
+                }
                 return
             }
             let before = state
