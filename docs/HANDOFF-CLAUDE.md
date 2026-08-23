@@ -56,8 +56,8 @@ reopening. An earlier revision of this file said otherwise; with the draft stuck
 
 **The band is not a sampling artefact — tested 2026-08-23, do not retry this.** The league is fully
 seated mid-season (1,696) and short only at the boundary the band samples (1,411…1,496), so the
-age-curve sample was moved in-season and measured. It came back 0.228, 0.228, 0.149, **0.056**
-against 0.228, 0.196, 0.134, 0.067 at the boundary — season 6 *worse*, because a full roster carries
+age-curve sample was moved in-season and measured. It came back 0.228, 0.228, 0.149, **0.056**,
+0.147 against 0.228, 0.196, 0.134, 0.067, 0.161 at the boundary — season 6 *worse*, because a full roster carries
 the 223 rookies the draft has just seated. Reverted. The model does not retain enough post-decline
 professionals on any sample point.
 
