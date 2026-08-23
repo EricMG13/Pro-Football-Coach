@@ -549,22 +549,38 @@ public enum ProMarketSystem {
         var resigning: [UUID] = []
         for team in state.proTeams.values.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
             let owned = team.rosterIDs + team.practiceSquadIDs
+            // Counted over the **active roster only**, because that is the population
+            // `WorldIntegrity.checkPositionalCoverage` reads. Counting the practice squad here as
+            // well — which this did until 2026-08-23, when the squad was always empty and the two
+            // were the same set — let a club release its last active kicker on the strength of a
+            // kicker sitting on the squad, and coverage then read zero. Expiry introduced an issue
+            // the root did not have, so the `introduced` check below refused the whole transaction
+            // and the season boundary could not be crossed.
+            //
+            // The same defect shape as `minimumPlayableRosterByPosition` against
+            // `DepthChart.offensiveTemplate`: two places counting the same thing differently.
             var remainingByPosition: [Position: Int] = [:]
-            for playerID in owned {
+            for playerID in team.rosterIDs {
                 guard let position = state.players[playerID]?.position else { continue }
                 remainingByPosition[position, default: 0] += 1
             }
+            let activeIDs = Set(team.rosterIDs)
             for playerID in owned {
                 guard let player = state.players[playerID],
                       let contract = player.contract,
                       let signedSeason = contract.signedSeason,
                       nextSeason >= signedSeason + contract.years else { continue }
-                let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
-                guard remainingByPosition[player.position, default: 0] > minimum else {
-                    resigning.append(playerID)
-                    continue
+                // A practice-squad deal running out costs the club no active cover, so the last-body
+                // rule does not apply to it. `02` section 4.2's re-signing rule is about the player
+                // who would leave the field empty.
+                if activeIDs.contains(playerID) {
+                    let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
+                    guard remainingByPosition[player.position, default: 0] > minimum else {
+                        resigning.append(playerID)
+                        continue
+                    }
+                    remainingByPosition[player.position, default: 0] -= 1
                 }
-                remainingByPosition[player.position, default: 0] -= 1
                 expiring.append((team.id, playerID))
             }
         }
