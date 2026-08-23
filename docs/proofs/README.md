@@ -11,13 +11,30 @@ screenshots are evidence of what the build renders today, not a design authority
 a sheet disagree, the sheet governs, and where a sheet and `04` disagree, `04` governs.
 
 Older proof variants were captured at the 844×390 landscape viewport; the supported window is now
-844 × 390 (install floor) through 956 × 440 (ceiling) per `04` §7 and D15. Light/default renders at
-2× and dark/AX5 at 3×. AX5 is an accessibility reflow proof, not a density reference.
+844 × 390 (install floor) through 956 × 440 (ceiling) per `04` §7 and D15. AX5 is an accessibility
+reflow proof, not a density reference.
+
+**Light renders below are historical, not an authority (2026-08-22).** Floodlit is dark-only per
+`04` §6.1a and §6.1d, so a light capture proves nothing about the shipping register and its absence
+from a new proof set is not a gap. The images stay because deleting evidence of what a build once
+rendered is worse than labelling it; no new light proof is owed, requested or accepted.
+
+**What a complete proof set now is**, per `04b` §6: all **47 canonical** destinations at 844 × 390
+in default and AX5, enumerated by registry id rather than by a hand-written list; one representative
+family width at 852 × 393 and 956 × 440; Increase Contrast, Reduce Transparency, Reduce Motion and
+Differentiate Without Colour; alias routes reaching their canonical shell; and logo uniqueness. Each
+screen's proof records **which branch it took** -- a stamped destination or an honest unavailable
+state -- because both are legitimate and a proof that does not say which one it saw has evidenced
+neither.
+
+Device checks a simulator cannot make -- VoiceOver spoken clarity and order, Voice Control, Switch
+Control, sound and haptics -- stay `manual-required` until a person records device, OS, tester and
+result. An agent may never mark these done.
 The canonical component rules are `04-UX-AND-DESIGN-SYSTEM.md` §6.4: 10–12 pt micro-type, tabular
 numbers, zero-inset 24–28 pt rows, adaptive data tiles, heatmap badges and context-preserving
 popovers or detented sheets.
 
-| Proof | Light / standard | Dark / AX5 |
+| Proof | Light / standard (historical) | Dark / AX5 |
 |---|---|---|
 | Coaching HQ | `coaching-hq-light-standard.png` | `coaching-hq-dark-ax5.png` |
 | Recruiting Board | `recruiting-board-light-standard.png` | `recruiting-board-dark-ax5.png` |

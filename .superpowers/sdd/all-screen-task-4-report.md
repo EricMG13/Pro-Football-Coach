@@ -1269,3 +1269,72 @@ them: the map's own grid coordinates, market size, prestige and reach radius; fi
 scores; standings rows with points for and against; the bracket's retained stages; award values;
 news weights; and realignment swaps naming both programmes with their from and to conferences. 47
 was already completed in Task 4.
+
+## Task 9 -- Career and Entry families
+
+Stamped: Title 1, New Career 2, Settings 6, Career Hub 52, Stakeholders 54, Promotion Decision 55,
+Record Book 57, Rivalries 58, Career Line 59, Coaching Tree 60. Aliases 3, 4, 5, 53 and 56 inherit
+52 and carry no identity of their own.
+
+`CareerHubView` has eight callers and three identities -- 52, 54 and 55 -- so it takes `canonicalID`
+defaulting to 52 and the five aliases pass nothing. `LegacyHistoryView` has four, all canonical, so
+its `canonicalID` takes no default: there is no destination that view *is* when nobody says.
+
+Destination 2 is one canonical screen reached in two steps, coach identity then setup. Both carry
+stamp 2, and they are never on screen together, so exactly one stamp is present at any moment --
+which is what the assertion actually checks.
+
+### Entry screens 1, 2 and 6 are stamped and unverified, for a structural reason
+
+The seven career destinations stamp at both content sizes. The three entry screens are not in the
+proof and cannot be: the harness reaches a screen by starting a career and then overriding the
+route, so it is never standing at Title, at New Career, or at pre-career Settings. That is the same
+class of gap as the pro family's, and it is stated rather than papered over -- the alternative was a
+proof listing ten ids where three silently take the unavailable branch, which is the failure Task 6
+already fixed once.
+
+Closing it needs a harness that can hold the app *before* a career exists. That is an owner call and
+sits alongside the pro-tier seam; one debug entry point that can place the app in a chosen tier or
+pre-career state would close both.
+
+## Task 10 -- The correction as canon
+
+`04` gains section 6.1d, which supersedes 6.1c's stage geometry and its icon rail while explicitly
+retaining 6.1a: Floodlit is dark-only and the system appearance does not change the register. It
+states the one-band geometry (x63, y12, 761 x 34), content top 54, the removal of the rail, the
+family registry opener with horizontal siblings, the nine type roles and the two floors, the team
+action and logo uniqueness rules, the task archetype, and the 47-canonical / 15-alias boundary.
+
+### The canon sync test pins the doc to the code, not to a string
+
+A doc test that greps for "header height 34" passes forever once somebody types it. This one reads
+`CoachWorldTokens.Stage.headerHeight` and fails if the token and canon disagree, and it computes the
+canonical and alias counts from `CoachWorldScreenID` rather than trusting prose. Written before the
+documentation edit and run in both states: twelve failures beforehand, `62 tests / 878 checks all
+passed` afterwards, up from 58 / 857.
+
+Worth noting what did **not** fail in the red run: the registry assertions. 47 canonical and 15
+aliases were already true of the enum; only the prose was missing.
+
+`.impeccable.md` had the stale instruction in two places, not one. Replacing only the sentence the
+plan named would have left "both appearances" standing three paragraphs later, contradicting the
+sentence that replaced it. Both are fixed.
+
+`04b` section 6 and `docs/proofs/README.md` now require all 47 canonical destinations at both content
+sizes enumerated by registry id, representative family widths, Increase Contrast, Reduce
+Transparency, Reduce Motion, Differentiate Without Colour, alias-route semantics and logo
+uniqueness; and they require each proof to record which branch it took, because a stamp and an
+honest unavailable state are both legitimate and a proof that does not say which it saw has
+evidenced neither. Device-only checks stay `manual-required`, with an explicit line that an agent
+may never mark them done.
+
+Historical light renders are labelled rather than deleted: deleting evidence of what a build once
+rendered is worse than labelling it, and no new light proof is owed or accepted.
+
+### One defect found in this task's own build output
+
+`MatchDayView.actorMark` still bound `let offense` from possession and never used it -- left behind
+when Task 4 hoisted the label out of the 60 Hz closure. It was invisible in test results and visible
+in a compiler warning. Removed; `--core-contracts` stays green at 242 / 3,271, and the possession
+contract still holds because the binding it actually guards is the one in the accessible sentence
+builder, which is used.

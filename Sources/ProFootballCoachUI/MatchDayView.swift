@@ -744,7 +744,6 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
 
     private func actorMark(_ actor: MatchDayReadModel.Actor, size: CGSize, banded: Bool) -> some View {
         let foreground = model.foregroundActorIDs.contains(actor.stableID)
-        let offense = actor.side == model.situation.possession
         // The same mark the animated path uses, so the pre-snap field and the animated one cannot
         // drift apart in how they read. The accessible sentence is unchanged either way: the mark's
         // printed label getting shorter must not shorten what VoiceOver says about it, which is why

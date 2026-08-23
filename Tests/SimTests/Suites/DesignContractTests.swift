@@ -774,4 +774,68 @@ func runDesignContractTests() {
             expectEqual(action.bottomTrailing, 22); expectEqual(action.bottomLeading, 5)
         }
     }
+
+    // The all-screen correction, as canon rather than as a plan (Task 10).
+    //
+    // Each assertion pins `04` to the value the code actually holds, not merely to the presence of
+    // a string. A doc test that only greps for "header height 34" passes forever once someone types
+    // it; this one fails the day `Stage.headerHeight` moves and canon does not, which is the only
+    // failure worth catching. The registry counts are computed from `CoachWorldScreenID`, so
+    // 47/15 cannot drift into prose while the enum says otherwise.
+    suite("Canon sync: the all-screen correction (Task 10)") {
+        test("04 states the stage geometry the tokens hold") {
+            let canon = canonText()
+            let pairs: [(String, CGFloat)] = [
+                ("content leading 63", CoachWorldTokens.Stage.contentLeading),
+                ("header height 34", CoachWorldTokens.Stage.headerHeight),
+                ("content top 54", CoachWorldTokens.Stage.contentTop),
+            ]
+            for (phrase, value) in pairs {
+                let stated = CGFloat(Int(phrase.split(separator: " ").last!)!)
+                expectEqual(
+                    value, stated,
+                    "04 says \"\(phrase)\" but the token holds \(value); canon and the tokens "
+                        + "must move together"
+                )
+                expect(
+                    canon.contains(phrase),
+                    "04 does not state \"\(phrase)\""
+                )
+            }
+        }
+
+        test("04 names the nine type roles") {
+            let canon = canonText()
+            let roles = [
+                "display", "title", "headline", "body", "callout",
+                "caption", "microLabel", "authoredFloor", "workingProse",
+            ]
+            for role in roles {
+                expect(
+                    canon.contains("`TypeRole.\(role)`"),
+                    "04 does not name type role `TypeRole.\(role)`"
+                )
+            }
+        }
+
+        test("04 states the implementation boundary the registry actually has") {
+            let canon = canonText()
+            let canonical = CoachWorldScreenID.allCases.filter(\.isCanonicalTask).count
+            let aliases = CoachWorldScreenID.allCases.count - canonical
+            expectEqual(canonical, 47, "the registry no longer holds 47 canonical destinations")
+            expectEqual(aliases, 15, "the registry no longer holds 15 aliases")
+            expect(canon.contains("47 canonical"), "04 does not state \"47 canonical\"")
+            expect(canon.contains("15 aliases"), "04 does not state \"15 aliases\"")
+        }
+
+        test("04 keeps Floodlit dark-only and names the identity type") {
+            let canon = canonText()
+            expect(canon.contains("dark-only"), "04 no longer states dark-only")
+            expect(
+                canon.contains("CoachWorldTeamIdentity"),
+                "04 does not name CoachWorldTeamIdentity"
+            )
+        }
+    }
+
 }

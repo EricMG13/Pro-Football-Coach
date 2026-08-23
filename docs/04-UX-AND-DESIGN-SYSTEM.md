@@ -850,6 +850,52 @@ and it is the only file permitted the raw vocabulary (`Animation.timingCurve`, `
 `.coachWorldAnimation(_:value:)` or `.coachWorldPulse()`, never directly, so an off-token duration or
 an un-reduced animation is unrepresentable outside this one file rather than merely catchable in it.
 
+### 6.1d The all-screen correction (2026-08-22 amendment)
+
+Supersedes §6.1c's stage geometry and its icon rail. Everything else in §6.1c stands, and **§6.1a
+remains in force unchanged: Floodlit is dark-only, and the system appearance does not change the
+register.** There is no light Floodlit palette to build, prove or audit.
+
+**The stage, corrected.** One band, no rail. Values here are the values
+`CoachWorldTokens.Stage` and `CoachWorldTokens.Frame` hold; `DesignContractTests` fails if this
+table and those tokens disagree, so neither may move alone.
+
+| Element | Geometry |
+|---|---|
+| Install floor | 844 x 390 |
+| Identity header | one band at x63, y12, 761 x 34 -- **header height 34** |
+| Content column | **content leading 63**, **content top 54** (y12 + 34 + 8), trailing gutter 20 |
+| Icon rail | **removed.** There is no rail. A surface that draws one is a defect |
+
+The header carries the family registry opener on the left and the horizontal sibling buttons beside
+it. Siblings are horizontal, never a vertical stack, and never a second navigation drawn beneath the
+first -- a surface that renders both the shared chrome and its own strip is stacking two navigations
+and must render only the chrome's.
+
+**Type roles.** Nine, and only nine. `TypeRole.display`, `TypeRole.title`, `TypeRole.headline`,
+`TypeRole.body`, `TypeRole.callout`, `TypeRole.caption`, `TypeRole.microLabel`, plus the two floors
+`TypeRole.authoredFloor` (12) and `TypeRole.workingProse` (13). Authored text never renders below
+`authoredFloor`: a `minimumScaleFactor` that would take 13-point row type to 9 points is a defect,
+not a fit. Truncate instead and let the accessibility label carry the whole string.
+
+**Team action rules.** The controlled club's colour marks commitment and selection, drawn through
+`CoachWorldTeamIdentity` so a generated pair that fails contrast against the surface behind it is
+spoken by a boundary rather than by hue alone. League and opponent colours stay contextual. Semantic
+red is destructive only.
+
+**Logo uniqueness.** One mark per team per surface. A surface that draws the same mark twice for one
+organisation is a defect, and a fallback mark is still a mark.
+
+**Task archetypes.** Every canonical surface answers one question and presents one dominant object,
+with its supporting regions ordered beneath it and its committing action inside the initial viewport
+at non-accessibility sizes. Scrolling to reach a commit is permitted only at accessibility sizes.
+
+**The implementation boundary.** The registry holds 62 numbered families: **47 canonical**
+destinations and **15 aliases**. An alias is a verified route, not a layout -- it resolves to its
+canonical destination before presentation and holds no independent evidence ledger, action surface
+or identity. Each canonical destination names itself with a `canonical-screen-<id>` stamp so a proof
+can enumerate the registry by id rather than by a hand-written list.
+
 ## 7. Device and accessibility contract
 
 *Window rewritten 2026-08-12 under D15 (option b) from verified sizes — Apple HIG Layout via

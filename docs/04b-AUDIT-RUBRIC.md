@@ -131,15 +131,27 @@ Borderline findings classify upward.
 Each production-grade screen family supplies:
 
 - 844 × 390 (install floor), 852 × 393 (promise floor) and 956 × 440 (ceiling) native frames, per `04` §7 and D15;
-- dark and light appearances;
-- default and AX5 type;
+- the single dark register -- Floodlit is dark-only per `04` sections 6.1a and 6.1d, so a
+  light render is not evidence and its absence is not a gap;
+- default and AX5 type, for **all 47 canonical destinations**, enumerated by registry id
+  rather than by a hand-written list;
+- one representative family width per family at 852 x 393 and 956 x 440;
+- Increase Contrast, Reduce Transparency, Reduce Motion and Differentiate Without Colour;
+- real-route semantics: every alias reaches its canonical destination's shell, and a route
+  with no retained evidence says so rather than rendering an empty surface;
+- logo uniqueness: one mark per organisation per surface, fallback marks included;
 - sensor-left and sensor-right safe-area ownership;
 - normal plus every applicable loading, empty, error, success, disabled, delegated, interrupted and resume state;
 - one continuous-save context shared with adjacent screens;
 - exact read-model mapping for every visible fact;
 - keyboard/focus and VoiceOver order;
 - Reduce Motion, sound-off and haptic equivalents;
-- screenshot and automated interaction evidence;
+- screenshot and automated interaction evidence, with each screen's proof recording which
+  branch it took -- a stamped destination and an honest unavailable state are both
+  legitimate, so a proof that does not say which one it saw has evidenced neither;
+- device checks a simulator cannot make -- VoiceOver spoken clarity and order, Voice
+  Control, Switch Control, sound and haptics -- marked `manual-required` until a person
+  records device, OS, tester and result. An agent may never mark these done.
 - an independent visual review at original pixels.
 
 Reference fixtures are labelled in gallery chrome **outside** the native frame. A production screen
