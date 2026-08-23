@@ -948,3 +948,88 @@ Differentiate Without Colour is the softer case: nothing reads the setting eithe
 carries a position label and the weekly surfaces do not encode meaning in hue alone, so the app may
 satisfy the intent by always-on redundancy. That is a judgement for the owner, not a grep.
 
+## Independent review, and what it overturned (2026-08-23)
+
+An independent reviewer -- a cold read by something that did not write the code -- was run over
+`6ed8433..HEAD` and returned **BLOCK**. Its findings were verified rather than accepted; three were
+wrong or mis-attributed, and the rest were real. This section records both, because a review whose
+misses go unrecorded is as misleading as one whose hits do.
+
+### Upheld and fixed
+
+**The `AtAX5` tests never set a content size — and the obvious remedy does not work.** They depended on the *harness* having run
+`xcrun simctl ui ... content_size` first. Every run in this report did set it, so the recorded
+evidence stands -- but nothing in the test established its own precondition, so running the suite
+from Xcode, from CI, or in any order that skipped that step produced a green `...AtAX5` and a
+screenshot labelled AX5, both taken at default size. A test that cannot establish its precondition
+cannot evidence it.
+
+The first fix passed `-UIPreferredContentSizeCategoryName
+UICTContentSizeCategoryAccessibilityExtraExtraExtraLarge` at launch -- the idiom
+`testTeamLogoProofAtAccessibilityType` already used -- and **it does not work**. Verified by dumping
+the element tree for `testMatchDayExportsDistinctFieldLandmarksAtAX5`: the app rendered the absolute
+standard composition, not the reflowed one, with the argument set. A first reading of a screenshot
+suggested otherwise; the tree is decisive and the screenshot was not. So that idiom never
+established the size either -- it simply never checked, which is the same defect one level down.
+
+The fix asserts the precondition rather than setting it. A zero-size `ax-reflow` marker is rendered
+only by the accessibility branch of `CoachWorldFloodlitComposition` and of `MatchDayView`, and
+`launch(_:ax5:)` fails on it. **Proven both directions**: with the simulator at `large` the AX5 test
+now fails with "not at an accessibility size: set content_size ..."; at genuine AX5 it passes. The
+suite still needs two passes, but a run at the wrong size can no longer report green.
+
+**The committing-action enumeration did not cover what it claimed.** `CoachingHQView` applied
+`.accessibilityIdentifier("hq-commit-decision")` *outside* `FloodlitCommittingAction`, and an outer
+identifier replaces the inner one -- so HQ's commit was invisible to the very proof that claimed
+"all fifteen screens that carry one are covered". The outer identifier is gone; the HQ test names
+its target by label instead.
+
+**22 accessibility strings were interpolated per frame.** `c4b624d` hoisted the track *index* out of
+the 60 Hz closure but left the label interpolation inside it, for all 22 actors -- roughly 1,320
+string allocations a second, the same class of cost that commit claimed to remove. The sentence is
+now built by a static `sentence(for:possession:)` shared with the static field.
+
+**`MatchMetric.topRightPlateWidth` was dead**, carrying a doc comment asserting a containment the
+live `Plate.width` provides. Removed.
+
+**The 0.7 scale floor** -- see the correction above.
+
+### Overturned
+
+- *"`coaching-hq-screen` was moved onto conditional text on this branch."* `git log -S` finds no
+  change to that identifier in `6ed8433..HEAD`; it and the test that reads it both predate the
+  range. The underlying fragility is real and recorded below, but it was not introduced here.
+- *"Two Security findings."* Both were checked and withdrawn during the earlier adversarial pass:
+  `RootView` and every `PROOF_` env var are inside `#if DEBUG`.
+- *"`.ignore` would be caught by the `staticTexts.count` assertion."* It was tested directly during
+  the logo work: swapping `.contain` for `.ignore` left that assertion green. Deleting the labels is
+  what turns it red, which is what the comment now says.
+
+### Found by widening the gate, and left for the owner
+
+Adding screen 8 to the viewport fixture surfaced two things this proof cannot settle:
+
+1. **HQ's committing action measures maxY 407.7 in a 390-point window** whenever a decision panel is
+   on screen, which is the normal week-start state. Confirmed pre-existing: the measurement comes
+   from a fresh launch with no status message. Fixing it means deciding what compresses on HQ when a
+   decision panel and full stakeholders coexist, which is an `04` question, not a patch.
+2. **HQ carries two committing actions** -- the decision's and "Advance" -- against `04` section
+   6.5's one per screen.
+
+Screen 8 is therefore left out of that fixture with the reasons stated in the test, rather than
+silently included and green.
+
+Two further corrections from that work:
+
+- `testTeamLogoProofAtAccessibilityType` is named for accessibility type but cannot establish it:
+  `TeamLogoProofView` does not reflow, so there is no branch to assert, and the launch argument is
+  now known not to drive `dynamicTypeSize`. Annotated in place as a fallback-rendering proof, not
+  accessibility-size evidence.
+- A finding raised and then **withdrawn**, recorded because the mistake is instructive. The
+  element-tree dump appeared to show Match Day exposing none of the five canonical controls, which
+  read as a serious AX5 defect. It was taken at the *default* size -- the standard layout hides
+  `bottomRightCluster` while a staff interruption is open, which is deliberate and commented. At
+  genuine AX5 the accessible layout lists all five. The dump proved the launch argument was not
+  working; it proved nothing about AX5, and reading it as if it had would have manufactured a defect
+  out of the very size confusion the new guard exists to stop.
+

@@ -115,6 +115,11 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
     /// the inner one swallows the drag and the header above it becomes unreachable.
     private var accessibleLayout: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
+            // Rendered only on this branch, so a proof can assert it is genuinely at an
+            // accessibility size instead of trusting that the harness set one. A size-sensitive
+            // test that cannot see its own precondition reports green at the wrong size.
+            Color.clear.frame(width: .zero, height: .zero)
+                .accessibilityIdentifier("ax-reflow")
             FloodlitIdentityHeader(
                 model: model,
                 palette: palette,

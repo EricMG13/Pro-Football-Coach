@@ -179,8 +179,10 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
                         CoachWorldTokens.DisplaySize.row, weight: .bold
                     )
                 )
+                // No scale floor. `DisplaySize.row` is 13 and `TypeRole.authoredFloor` is 12, so
+                // 0.7 rendered these option titles at about 9 points. They truncate instead; the
+                // accessibility label carries the whole title either way.
                 .lineLimit(1)
-                .minimumScaleFactor(GamePlanMetric.optionScaleFloor)
         }
         .accessibilityLabel("\(option.title). \(option.consequence)")
     }
@@ -229,5 +231,4 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
 
 private enum GamePlanMetric {
     static let dialScaleFloor: CGFloat = 0.6
-    static let optionScaleFloor: CGFloat = 0.7
 }

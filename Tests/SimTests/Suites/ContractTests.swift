@@ -1132,9 +1132,15 @@ func runContractTests() {
                 .filter { $0.contains("let offense") }
             expect(!offenseBindings.isEmpty,
                    "Match Day must derive offense somewhere")
-            expect(offenseBindings.allSatisfy { $0.contains("situation.possession") },
-                   "Match Day must derive offense only from situation.possession, never from "
-                       + "field direction or team colour")
+            // Possession, however it is threaded -- `model.situation.possession` at the call site or
+            // a `possession` parameter on the shared sentence builder. What must never appear is a
+            // binding taken from direction or from which side is "ours".
+            expect(offenseBindings.allSatisfy { $0.contains("possession") },
+                   "Match Day must derive offense from possession")
+            expect(offenseBindings.allSatisfy {
+                       !$0.contains("offenseDirection") && !$0.contains("perspective")
+                   },
+                   "Match Day must never derive offense from field direction or team colour")
             expect(matchProvider.contains("roleLabel(actor.role)")
                        && matchProvider.contains("staffRoleLabel(staff.role)")
                        && !matchProvider.contains("role: actor.role.rawValue"),

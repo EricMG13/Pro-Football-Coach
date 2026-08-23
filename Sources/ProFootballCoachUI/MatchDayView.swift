@@ -366,6 +366,10 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
     private var accessibleLayout: some View {
         ScrollView {
             VStack(spacing: .zero) {
+                // See `CoachWorldFloodlitComposition`: Match Day reflows itself rather than
+                // through the shared composition, so it carries its own marker.
+                Color.clear.frame(width: .zero, height: .zero)
+                    .accessibilityIdentifier("ax-reflow")
                 accessibleScoreStrip
                 field(bandedVertical: false)
                     .aspectRatio(MatchMetric.fieldAspect, contentMode: .fit)
@@ -616,13 +620,11 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
             y: screenY(spot.y, height: size.height, banded: banded)
         )
         .accessibilityElement()
-        // The recorded yard, not the animated one. `spot.x` moves every frame for a tracked actor,
-        // and a label that rewrites itself sixty times a second is not a label -- the skill asks
-        // for deterministic actor labels, and this is the same sentence the static field speaks.
-        .accessibilityLabel(
-            "\(offense ? "Offense" : "Defense"), \(actor.position) "
-                + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
-        )
+        // Built once by `Self.sentence(for:possession:)`, not interpolated here: this runs for all
+        // 22 actors on every one of the timeline's sixty ticks a second, and the string does not
+        // depend on the frame. The recorded yard, not the animated one -- a label that rewrites
+        // itself sixty times a second is not a label, and the skill asks for deterministic ones.
+        .accessibilityLabel(Self.sentence(for: actor, possession: model.situation.possession))
     }
 
     /// Where a dot is at a point of the playback.
@@ -731,6 +733,14 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
             .accessibilityLabel(label)
     }
 
+    /// One actor's spoken sentence. Deterministic for a given actor, so it can be built outside a
+    /// per-frame path and shared by the static and playback fields.
+    static func sentence(for actor: MatchDayReadModel.Actor, possession: MatchSide) -> String {
+        let offense = actor.side == possession
+        return "\(offense ? "Offense" : "Defense"), \(actor.position) "
+            + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
+    }
+
     private func actorMark(_ actor: MatchDayReadModel.Actor, size: CGSize, banded: Bool) -> some View {
         let foreground = model.foregroundActorIDs.contains(actor.stableID)
         let offense = actor.side == model.situation.possession
@@ -750,10 +760,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
             // actors, whose mark is built from a `Text`, and silently detach for the other
             // nineteen — the mark getting smaller must never make the actor quieter.
             .accessibilityElement()
-            .accessibilityLabel(
-                "\(offense ? "Offense" : "Defense"), \(actor.position) "
-                    + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
-            )
+            .accessibilityLabel(Self.sentence(for: actor, possession: model.situation.possession))
     }
 
     // MARK: - Staff call-in
@@ -1062,10 +1069,6 @@ private enum MatchMetric {
     /// frame", which is what this was built to; the drawn value is what the reference looks like,
     /// and 306 made the lower third a quarter wider than the plate it balances.
     static let lowerThirdWidth: CGFloat = 244
-    /// 1a's top-right plate is 172 wide. The reference folds the budget bug, the depth selector
-    /// and the plan-edit action into one plate with internal seams; this column adopts its width
-    /// and containment while those remain three cards.
-    static let topRightPlateWidth: CGFloat = 172
     /// 1a's banner slot: `left: 63, top: 54, width: 578`, below the scorebug and narrow enough to
     /// clear the top-right plate. This was centred across the frame, so on a real route -- where
     /// `statusMessage` is actually set, unlike the proof fixture -- the receipt was drawn straight

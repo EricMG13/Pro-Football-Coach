@@ -360,7 +360,10 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         onCommit(selected.intentID)
                     }
                 )
-                .accessibilityIdentifier("hq-commit-decision")
+                // Deliberately not re-identified. `FloodlitCommittingAction` already carries
+                // `committing-action`, and an outer identifier *replaces* it -- which hid HQ's
+                // commit from the proof that enumerates committing actions by that name, while the
+                // proof claimed to cover every screen carrying one.
                 if let selected {
                     Text(selected.consequence)
                         .font(CoachWorldTokens.TypeRole.caption)
