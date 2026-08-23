@@ -4,6 +4,24 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-23, later still — reconciling this branch with `main` found a fourth stale scan-root
+> cell, on `main`'s side, that neither pass below had checked.** `main` had separately merged a
+> `03b` §1 table with an **Authoritative-root** row whose `Root` cell named `ProFootballCoachUI/`,
+> `CoachWorldApp/` — the same hand-list-instead-of-by-construction mistake the entry below
+> catalogues for the other two rows, and a fresh occurrence of it: this row did not exist on this
+> branch before the merge. `Tests/SimTests/Suites/ContractTests.swift`'s own comment on that scan
+> explains why a directory list is wrong: it read `Sources/ProFootballCoachUI` until 2026-08-13,
+> which would have missed `Sources/CoachWorldApp` — the composition-layer target G-01 added — "on
+> the day it was created." Corrected to "every file importing SwiftUI/UIKit/AppKit," verified
+> against `swiftFilesImportingUIFramework()` at the call site. Fixed in the merge commit that
+> reconciled `docs/pass-2026-08-23` with `main`, alongside the eight-hunk conflict `git merge
+> origin/main` produced across `README.md`, `03b` and `05` — every disputed cell checked against
+> the tree individually rather than resolved by picking one side.
+>
+> Verification: `./scripts/verify.sh --lane core` (Swift 6.3.3, arm64-apple-macosx26.0), run after
+> the merge commit. Build 287.31s, ended at TestKit's summary line: `235 tests, 3448 checks`, all
+> passed. No other lane was run; no claim is made about any of them.
+
 > **2026-08-23, third pass addendum — two findings the entry below does not cover.** Two agents
 > were committing to this branch at the same time; these two come from the concurrent sweep and are
 > recorded here rather than folded into that entry.
