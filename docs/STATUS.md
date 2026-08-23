@@ -75,14 +75,22 @@ The honest picture: what exists, what is verified, what is not.
 > further. It rules the draft out as the cause of the band and points at the two open items below,
 > which are the ones that decide whether a veteran comes back onto a roster at all.
 >
-> **What is still open, and it is what keeps the league short.** Free agency signs at most one
-> player per club per week and stops for a club once it reaches `activeRosterLimit - draftRounds`,
-> which is 46; across a season that is about two signings a club against seven to eleven expiries,
-> so 1,696 is never regained. And **`poolLeft` reaches 512 by season 3, which is
-> `ProMarketState.maximumFreeAgentIDs` exactly** — the pool is saturated, and the bound then refuses
-> every further release, which is where the probe's growing `unaccounted` count comes from. Both sit
-> inside the professional turnover FSC-013 defers and both would move roster composition
-> league-wide, so neither was pulled here.
+> **Free agency's throughput is not a defect, and the league is not chronically short — measured
+> 2026-08-23.** With the draft finishing, the boundary count is exactly `1,696 - expiries` in every
+> season (1,439 against 257, 1,496 against 200, 1,526 against 170, 1,341 against 355), and a
+> mid-season sample at week 12 reads **1,696 in every season**. The league is fully seated for the
+> whole year and short only in the instant between expiry and the market reopening. An earlier
+> revision of this entry said free agency's two-signings-a-season throughput kept it short; with the
+> draft stuck that was true, and with the draft fixed it is not.
+>
+> **The free-agent pool was choosing its members by coin toss — fixed 2026-08-23.**
+> `ProMarketSystem.openOffseason` rebuilds the pool each offseason from every unattached
+> professional, and `maximumFreeAgentIDs` caps it at 512, which the unattached population passes
+> within a few seasons. It took that 512 by `sorted { $0.uuidString < $1.uuidString }.prefix(512)` —
+> an arbitrary slice, and because a UUID never changes, **the same arbitrary slice every season**.
+> Everyone outside it was unsignable for the rest of the save, whatever they could still do, and
+> free agency's "best available" was the best of a coin toss rather than the best there was. The cut
+> is now by rating, ties on identifier, with the same bound.
 
 > **2026-08-20 — Calibration continuation:** the fresh isolated
 > `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**
