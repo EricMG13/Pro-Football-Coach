@@ -236,20 +236,23 @@ than an undrawn one, because it looks finished.
 |---|---|---|
 | **16 Roster** | a **CEILING** column, drawn as a narrowing confidence range (68–89 → 87–90) | **DONE.** `PlayerRow` holds *overall, **development and its delta**, scheme fit, condition, availability* — no ceiling, no potential. The column is now development and its delta: not where he might get to, but how far he has moved and which way. |
 | **16 Roster** | a sort caret on the NOW column | **DONE.** The contract omits *"no sort key the model does not already order by"*. Rows arrive in the model's order; a caret claims a control that does not exist. |
-| **25 Prospect profile** | attribute rows with numeric confidence bands | **TODO.** Uncertainty is the model's **stated text** plus **cited outliers**, never a derived band. See D1. |
+| **25 Prospect profile** | four attributes as narrowing confidence ranges | **DONE.** A prospect has **no attribute numbers** in this model. What is retained is an `Evaluation` — verdict, scheme fit, **stated uncertainty in words**, cited outliers — plus board rank, interest, status and relationship history. |
+| **29 Signing day** | *"Best class at Union in nine years · ranked 22nd"* | **DONE.** **Drama copy and a national ranking, both omitted by name** — and a club that is not the one in the save. Now the retained counts: scholarships against the limit, NIL committed against budget, contact points left. |
+| **29 Signing day** | no off-phase state | **DONE.** *"Outside the signing phase it says signing day is closed rather than rendering an empty board."* An empty ceremony is the worst of both — the scale of an occasion with none of the content — and it is what a surface gets by default when nobody draws the off state. |
 
-### C1-C · `ConfidenceRange` — retire or re-aim
+### C1-C · `ConfidenceRange` — retired from use
 
-**CHANGE.** The component draws a numeric band whose width is a confidence the product does not
-compute. Two options, and this is a design call rather than an engineering one:
+**DONE, and do not port it.** The component draws a numeric band whose width is a confidence the
+product does not compute. All four consumers are corrected — Roster, Prospect profile, Compare and
+the chrome demo's background roster — and it now has none.
 
-- **Retire it.** Replace every use with the model's `uncertainty` text and its `citedOutliers`. This
-  is what the contract describes and what "what is unknown is said to be unknown" asks for.
-- **Re-aim it** at the one place a range *is* retained — if any read model turns out to carry a
-  genuine interval. None found so far.
+The file is kept only so the reasoning survives with it. **Do not build a Swift equivalent.**
 
-`Unseen` is unaffected and stays: a value the model does not hold is still drawn as not held, and
-`Versus` still refuses to mark a lead against it.
+`Unseen` is unaffected and stays: a value the model does not hold is still drawn as not held. One
+claim made alongside it *was* wrong, though, and is corrected — "you cannot lead against Unseen" is
+a sound rule whose example was not. Both subjects of a roster comparison have every field, so
+nothing there is unobserved; `Unseen` belongs where a value is genuinely absent, which is a
+prospect's evaluation and not a rostered player's row.
 
 ### B1b · Personnel — complete, 5/5
 
@@ -396,6 +399,11 @@ designed.
 
 `StaffRoomReadModel`'s `StaffRow` carries name, role, age, reputation, development, recruiting, game
 planning, scheme affinity, and seasons with the programme. **There is no ownership field.**
+
+**One qualification, and it is the useful one.** `CollegeOffseasonReadModel` carries a **delegated
+decision count** — so the *concept* is not foreign to the engine; it is modelled as a tally on one
+surface, with no record of which area went to which person. That is a smaller build than starting
+from nothing: what is missing is the ownership mapping, not the idea.
 
 This is not "Responsibilities lacks a registry entry". It is that the thing Responsibilities would
 configure **does not exist in the simulation**. Two drawn surfaces depend on it and neither can ship
