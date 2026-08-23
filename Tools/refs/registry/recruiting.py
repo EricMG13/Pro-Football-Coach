@@ -6,6 +6,14 @@ Retention Decisions, Portal Market and NIL Allocation all route there, and
 
 from __future__ import annotations
 
+def INTEREST(level: float, label: str):
+    """Interest is a proportion of a committed prospect, so it draws. Distance, stars and
+    rival count are a length, a rank and a count -- geometry.css refuses arcs for those."""
+    from primitives import ShareBar
+
+    return ShareBar(level, "Interest", label, inline=True)
+
+
 SHORTLIST_MARK = "TeamLogo_00EBE0C02B2B4988A450BB870D6D3881"
 
 from ._shared import (
@@ -19,16 +27,16 @@ recruiting_board = desk(
     status=Status.BUILT,
     body=Panel("Board", Table(
         (Col("Prospect", 18, "left", False), Col("Pos", 4, "left", False),
-         Col("Stars", 6, "right"), Col("Interest", 9, "right"),
+         Col("Stars", 6, "right"), Col("Interest", 13, "right"),
          Col("Distance", 9, "right"), Col("Rivals", 6, "right"),
          Col("Status", 10, "left", False)),
-        (("Kalen Ruthers", "QB", "4", "High", "90 mi", "3", "Visiting"),
-         ("Ovie Adeyemi", "WR", "4", "Medium", "410 mi", "5", "Contacted"),
-         ("Bram Teasdale", "OT", "3", "High", "35 mi", "1", "Committed"),
-         ("Sanjay Rooke", "DT", "4", "Low", "620 mi", "6", "Cold"),
-         ("Emory Salk", "CB", "3", "Medium", "150 mi", "2", "Contacted"),
-         ("Wren Kovalik", "LB", "3", "High", "70 mi", "2", "Visiting"),
-         ("Isolde Grange", "K", "2", "High", "20 mi", "0", "Committed")),
+        (("Kalen Ruthers", "QB", "4", INTEREST(0.86, "High"), "90 mi", "3", "Visiting"),
+         ("Ovie Adeyemi", "WR", "4", INTEREST(0.54, "Medium"), "410 mi", "5", "Contacted"),
+         ("Bram Teasdale", "OT", "3", INTEREST(0.94, "High"), "35 mi", "1", "Committed"),
+         ("Sanjay Rooke", "DT", "4", INTEREST(0.21, "Low"), "620 mi", "6", "Cold"),
+         ("Emory Salk", "CB", "3", INTEREST(0.48, "Medium"), "150 mi", "2", "Contacted"),
+         ("Wren Kovalik", "LB", "3", INTEREST(0.79, "High"), "70 mi", "2", "Visiting"),
+         ("Isolde Grange", "K", "2", INTEREST(0.91, "High"), "20 mi", "0", "Committed")),
     )),
     gaps=(
         gap("DATA", "Interest is a three-band label; the engine holds a continuous value nothing surfaces."),

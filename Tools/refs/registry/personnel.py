@@ -8,6 +8,16 @@ from __future__ import annotations
 
 STAFF_MARK = "TeamLogo_00EBE0C02B2B4988A450BB870D6D3881"
 
+#: 448 offensive snaps have been played this season, so a player's count is a share of
+#: that -- which is what makes it drawable as a track rather than only printable.
+SEASON_SNAPS = 448
+
+
+def SNAPS(count: int):
+    from primitives import ShareBar
+
+    return ShareBar(count / SEASON_SNAPS, "Snap share", str(count), inline=True)
+
 from ._shared import (
     AttributeDial, BandLegend, Chip, Chips, Col, Heat, Hero, NOTHING_MISSING, Panel,
     PlayerCard, Row, Rows, ShareBar, Split, Stack, Status, Table, blocker, desk,
@@ -18,17 +28,17 @@ roster = desk(
     id="roster", number=16, name="Roster", family="personnel", status=Status.BUILT,
     body=Stack((Table(
         (Col("Player", 18, "left", False), Col("Pos", 4, "left", False), Col("Yr", 3, "left", False),
-         Col("Ovr", 4, "right"), Col("Pot", 4, "right"), Col("Snaps", 6, "right"),
+         Col("Ovr", 4, "right"), Col("Pot", 4, "right"), Col("Snaps", 11, "right"),
          Col("Form", 5, "right"), Col("Status", 9, "left", False)),
-        (("Reed Vance", "QB", "Jr", Heat(84, "412 snaps"), "89", "412", "+3", "Fit"),
-         ("Amos Kerr", "WR", "Sr", Heat(81, "388 snaps"), "82", "388", "+1", "Doubtful"),
-         ("Milo Prasad", "RB", "So", Heat(77, "301 snaps"), "86", "301", "-2", "Fit"),
-         ("Teo Marchetti", "OT", "Sr", Heat(79, "419 snaps"), "80", "419", "0", "Limited"),
-         ("Ruben Sallow", "LB", "Jr", Heat(78, "no snaps this season"), "84", "0", "0", "Out"),
-         ("Dara Whitlock", "CB", "So", Heat(75, "356 snaps"), "87", "356", "+4", "Fit"),
-         ("Nico Barrow", "S", "Sr", Heat(80, "402 snaps"), "81", "402", "-1", "Fit"),
-         ("Ilya Fenner", "DT", "Jr", Heat(76, "288 snaps"), "83", "288", "+2", "Fit"),
-         ("Sable Ruiz", "TE", "Fr", Heat(68, "94 snaps"), "88", "94", "+5", "Fit")),
+        (("Reed Vance", "QB", "Jr", Heat(84, "412 snaps"), "89", SNAPS(412), "+3", "Fit"),
+         ("Amos Kerr", "WR", "Sr", Heat(81, "388 snaps"), "82", SNAPS(388), "+1", "Doubtful"),
+         ("Milo Prasad", "RB", "So", Heat(77, "301 snaps"), "86", SNAPS(301), "-2", "Fit"),
+         ("Teo Marchetti", "OT", "Sr", Heat(79, "419 snaps"), "80", SNAPS(419), "0", "Limited"),
+         ("Ruben Sallow", "LB", "Jr", Heat(78, "no snaps this season"), "84", SNAPS(0), "0", "Out"),
+         ("Dara Whitlock", "CB", "So", Heat(75, "356 snaps"), "87", SNAPS(356), "+4", "Fit"),
+         ("Nico Barrow", "S", "Sr", Heat(80, "402 snaps"), "81", SNAPS(402), "-1", "Fit"),
+         ("Ilya Fenner", "DT", "Jr", Heat(76, "288 snaps"), "83", SNAPS(288), "+2", "Fit"),
+         ("Sable Ruiz", "TE", "Fr", Heat(68, "94 snaps"), "88", SNAPS(94), "+5", "Fit")),
     ), BandLegend())),
     gaps=(
         gap("INTERACTION", "Sorting and filtering are drawn as column heads but no sort state is modelled."),
@@ -115,10 +125,12 @@ development_plan = desk(
     id="developmentPlan", number=19, name="Development Plan", family="personnel",
     status=Status.BUILT, commit="Commit the plan",
     body=Stack((
-        Panel("Focus", Rows((
-            Row("Separation", ("+6 projected",), "Two blocks a week through the bye"),
-            Row("Blocking", ("+3 projected",), "Costs a recovery block"),
-        ), kind="tappable")),
+        Panel("Focus", Stack((
+            ShareBar((78 - 40) / 59, "Separation now", "78"),
+            ShareBar((84 - 40) / 59, "Separation projected", "+6 to 84", "--state-positive"),
+            ShareBar((61 - 40) / 59, "Blocking now", "61"),
+            ShareBar((64 - 40) / 59, "Blocking projected", "+3 to 64", "--state-positive"),
+        ))),
         Rows((
             Row("Fatigue", ("+4",), "On a squad already amber; no contact work"),
         ), kind="readout"),

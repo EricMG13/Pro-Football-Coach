@@ -441,6 +441,9 @@
 }
 .fl-share__track i { display: block; height: 100%; }
 .fl-share > b { font-size: var(--size-action-small); color: var(--content-primary); flex: none; }
+/* In a table cell the column head is the label, so the bar carries only itself. */
+.fl-share--inline { gap: var(--gap-xs); }
+.fl-share--inline > b { min-width: 30px; text-align: right; }
 
 .fl-meter, .fl-opposed { display: flex; align-items: center; gap: var(--gap-sm-plus); }
 .fl-meter > .fl-label3, .fl-opposed > .fl-label3 { flex: none; min-width: 92px; }

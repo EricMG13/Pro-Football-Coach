@@ -11,6 +11,22 @@ from ._shared import (
     StatCompare, Status, Table, blocker, broadcast, desk, dossier, gap,
 )
 
+#: Five conference games played, so a record is a proportion of a stated whole.
+CONFERENCE_GAMES = 5
+
+
+def WINS(won: int, played: int, label: str):
+    from primitives import ShareBar
+
+    return ShareBar(won / played, "Conference record", label, inline=True)
+
+
+def LEAD(share: float, figure: str):
+    from primitives import ShareBar
+
+    return ShareBar(share, "Share of the category leader", figure, inline=True)
+
+
 MARK_GAP = "Wants a competition mark at 24 px beside the title; none exists on any branch."
 
 world_search = desk(
@@ -66,14 +82,15 @@ team_profile = dossier(
 standings = desk(
     id="standings", number=43, name="Standings", family="league", status=Status.BUILT,
     body=Panel("Conference", Table(
-        (Col("Programme", 23, "left", False), Col("Conf", 6, "right"), Col("All", 6, "right"),
-         Col("PF", 5, "right"), Col("PA", 5, "right"), Col("Diff", 6, "right"), Col("Strk", 5, "right")),
-        (("Union Maritime Meridian", "5-0", "7-0", "231", "129", "+102", "W7"),
-         ("Zumbrota Central Marsh", "4-1", "6-1", "220", "132", "+88", "W2"),
-         ("Pecos Bramble", "3-2", "4-3", "178", "171", "+7", "L1"),
-         ("Edgartown Cedar", "2-3", "3-4", "159", "188", "-29", "W1"),
-         ("Ephraim Maritime River", "1-4", "2-5", "141", "209", "-68", "L3"),
-         ("Kirksville State Cedar", "0-5", "1-6", "118", "218", "-100", "L6")),
+        (Col("Programme", 23, "left", False), Col("Conf", 11, "right"),
+         Col("All", 6, "right"), Col("PF", 5, "right"), Col("PA", 5, "right"),
+         Col("Diff", 6, "right"), Col("Strk", 5, "right")),
+        (("Union Maritime Meridian", WINS(5, 5, "5-0"), "7-0", "231", "129", "+102", "W7"),
+         ("Zumbrota Central Marsh", WINS(4, 5, "4-1"), "6-1", "220", "132", "+88", "W2"),
+         ("Pecos Bramble", WINS(3, 5, "3-2"), "4-3", "178", "171", "+7", "L1"),
+         ("Edgartown Cedar", WINS(2, 5, "2-3"), "3-4", "159", "188", "-29", "W1"),
+         ("Ephraim Maritime River", WINS(1, 5, "1-4"), "2-5", "141", "209", "-68", "L3"),
+         ("Kirksville State Cedar", WINS(0, 5, "0-5"), "1-6", "118", "218", "-100", "L6")),
     )),
     gaps=(
         gap("ART", MARK_GAP),
@@ -144,12 +161,12 @@ statistics = desk(
     status=Status.BUILT,
     body=Panel("Conference leaders", Table(
         (Col("Player", 18, "left", False), Col("Programme", 20, "left", False),
-         Col("Category", 12, "left", False), Col("Value", 7, "right")),
-        (("Reed Vance", "Union Maritime", "Pass yards", "2,104"),
-         ("Ovie Adeyemi", "Zumbrota Central", "Rec yards", "884"),
-         ("Milo Prasad", "Union Maritime", "Rush yards", "701"),
-         ("Nico Barrow", "Union Maritime", "Tackles", "62"),
-         ("Sanjay Rooke", "Pecos Bramble", "Sacks", "9.5")),
+         Col("Category", 12, "left", False), Col("Share of best", 13, "right")),
+        (("Reed Vance", "Union Maritime", "Pass yards", LEAD(1.00, "2,104")),
+         ("Ovie Adeyemi", "Zumbrota Central", "Rec yards", LEAD(0.91, "884")),
+         ("Milo Prasad", "Union Maritime", "Rush yards", LEAD(0.78, "701")),
+         ("Nico Barrow", "Union Maritime", "Tackles", LEAD(0.86, "62")),
+         ("Sanjay Rooke", "Pecos Bramble", "Sacks", LEAD(1.00, "9.5"))),
     )),
     gaps=(
         gap("INTERACTION", "Category is a column, not a control; the player cannot change what is ranked."),

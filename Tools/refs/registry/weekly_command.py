@@ -15,10 +15,11 @@ coaching_hq = desk(
     status=Status.BUILT,
     commit="Advance to Saturday",
     body=Stack((
-        Panel("This week", Rows((
-            Row("Week 7 at Zumbrota Central", ("Sat 15:30",), "Away, conference"),
-            Row("Practice plan", ("Set",), "Emphasis: red zone"),
-        ), kind="tappable"), meta="Game plan still a draft"),
+        Panel("Week 7 at Zumbrota Central", Stack((
+            ShareBar(1.00, "Practice plan", "Set", "--state-positive"),
+            ShareBar(0.45, "Game plan", "Draft", "--state-warning"),
+            ShareBar(0.88, "Squad available", "51 of 58", "--state-positive"),
+        )), meta="Away · Sat 15:30"),
     )),
     gaps=(
         gap("INTERACTION", "No move between HQ and any surface is designed; the mock cuts instantly."),
@@ -71,10 +72,11 @@ game_plan = desk(
         Rows((
             Row("First down", ("Run lean",), "Sets up the play action they punish"),
         ), kind="tappable"),
-        Panel("Personnel groups", Table(
-            (Col("Group", 14, "left", False), Col("Snaps", 6, "right"), Col("Yds/play", 9, "right")),
-            (("11 personnel", "62%", "5.8"), ("12 personnel", "24%", "4.4")),
-        )),
+        Panel("Personnel groups", Stack((
+            ShareBar(0.62, "11 personnel", "62% · 5.8 yds"),
+            ShareBar(0.24, "12 personnel", "24% · 4.4 yds"),
+            ShareBar(0.14, "21 personnel", "14% · 3.9 yds"),
+        ))),
     )),
     gaps=(
         gap("RULE", "Nothing states which read models a locked plan invalidates."),

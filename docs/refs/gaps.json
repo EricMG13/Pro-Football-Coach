@@ -15,7 +15,7 @@
       "family": "weeklyCommand",
       "lean": "DESK",
       "status": "BUILT",
-      "cells": 4,
+      "cells": 3,
       "commit": "Advance to Saturday",
       "evidence": null,
       "gaps": [
@@ -84,7 +84,7 @@
       "family": "weeklyCommand",
       "lean": "DESK",
       "status": "BUILT",
-      "cells": 8,
+      "cells": 5,
       "commit": "Lock game plan",
       "evidence": null,
       "gaps": [

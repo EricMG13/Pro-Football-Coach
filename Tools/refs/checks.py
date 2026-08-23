@@ -86,6 +86,18 @@ GOLD = "--action-primary"
 MIN_HUE_SEPARATION = 24.0
 
 
+def cell_text_length(value) -> int:
+    """What a table cell PRINTS, which is not always what it is.
+
+    A Heat prints its rating, a ShareBar prints its figure beside a track, and anything
+    else prints itself. Measuring `str(value)` instead reads a dataclass repr and calls a
+    two-digit snap count 113 characters wide."""
+    for attribute in ("rating", "figure"):
+        if hasattr(value, attribute):
+            return len(str(getattr(value, attribute)))
+    return len(str(value))
+
+
 def tier(s) -> str:
     """The density tier a surface is composed against.
 
@@ -600,11 +612,7 @@ def check_overflow() -> list[str]:
                 continue
             for index, col in enumerate(node.columns):
                 longest = max(
-                    (
-                        len(str(getattr(row[index], "rating", row[index])))
-                        for row in node.rows
-                        if index < len(row)
-                    ),
+                    (cell_text_length(row[index]) for row in node.rows if index < len(row)),
                     default=0,
                 )
                 if longest > col.chars:

@@ -360,6 +360,8 @@ class ShareBar:
     label: str
     figure: str
     tint: str = "--action-secondary"
+    #: A bar in a table cell carries no label of its own -- the column head is the label.
+    inline: bool = False
 
     def __post_init__(self) -> None:
         _proportion(self.proportion, f"ShareBar {self.label!r}")
@@ -389,6 +391,12 @@ class ShareBar:
             f'<span class="fl-share__track"><i style="width: {self.proportion * 100:g}%;'
             f' background: var({self.tint})"></i></span>'
             f'<b class="fl-figure">{escape(self.figure)}</b></span>'
+        ) if not self.inline else (
+            '<span class="fl-share fl-share--inline">'
+            f'<span class="fl-share__track"><i style="width: {self.proportion * 100:g}%;'
+            f' background: var({self.tint})"></i></span>'
+            f'<b class="fl-figure">{escape(self.figure)}</b>'
+            f'<span class="fl-sr">{escape(self.label)}</span></span>'
         )
 
 
@@ -735,7 +743,7 @@ class Table:
                     f'<div class="col-{c.align}{" fl-figure" if c.figure else ""}">'
                     + (
                         v.render()
-                        if isinstance(v, Heat)
+                        if isinstance(v, (Heat, ShareBar))
                         else _ink(
                             v,
                             "--content-primary" if i == 0 else "--content-secondary",
@@ -1267,7 +1275,7 @@ def walk(node: Node):
     if isinstance(node, Table):
         for row in node.rows:
             for value in row:
-                if isinstance(value, Heat):
+                if isinstance(value, (Heat, ShareBar)):
                     yield value
     for name in ("child", "top", "bottom"):
         kid = getattr(node, name, None)
