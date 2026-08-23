@@ -817,3 +817,48 @@ to close:
 `.superpowers/sdd/progress.md` stays `All-screen Task 4: pending`. Marking it complete before those
 two land would be the exact failure the process exists to prevent: a claimed gate nobody ran.
 
+## Adversarial review of this session's work (2026-08-23)
+
+Run against `6ed8433..HEAD` with the three personas the repo's process prescribes. **This is a
+self-review** -- the author reviewing the author -- and therefore is *not* the fresh independent
+review the gate asks for. It is recorded as what it is.
+
+### Saboteur -- WARNING, confirmed and fixed
+
+`playbackMark` was looked up with `playback.actors.first { $0.stableID == actor.stableID }` **inside
+a 60 Hz `TimelineView`**. Twenty-two actors each scanning up to twenty-two tracks is on the order of
+550 string comparisons a frame, about 33,000 a second, against D4's 16.7 ms frame ceiling -- for a
+mapping that cannot change during a snap. The code it replaced iterated the tracks once and had no
+lookup at all, so this was introduced by the 22-actor fix.
+
+The tracks are now indexed into a dictionary once per body pass, outside the timeline closure, with
+`uniquingKeysWith` rather than `uniqueKeysWithValues` because `Playback` does not validate track-ID
+uniqueness the way the model validates `duplicateActorID` for actors.
+
+### New Hire -- NOTE, accepted
+
+`MatchDayScoreBug.swift` now carries four file-scope constant bags (`Bug`, `Budget`, `Plate`,
+`LowerThird`) and a reader has to guess which governs which surface. `MatchMetric.bannerDrop = 42`
+is documented as 1a's `top: 54` minus the scorebug's 12, but it is really "scorebug height 34 plus
+an 8-point gap" and would read better said that way. Neither is worth churn now; both are recorded
+so the next reader is not the one who discovers them.
+
+### Security Auditor -- no finding stands
+
+Two candidate findings were checked against the code and **both were withdrawn**:
+
+- proof fixtures reaching a release build: `RootView`, which hosts every `PROOF_SCREEN` fixture, is
+  wholly inside `#if DEBUG`;
+- the seeded-career env var reaching a release build: `PROOF_NEW_CAREER` and `PROOF_SCREEN_NUMBER`
+  are read inside `#if DEBUG` in `CoachWorldAppRootView` too.
+
+The closest security-relevant assumption that remains is the legal guardrail rather than a
+conventional one: this app has no network, no accounts and no auth, so its real exposure is
+generated identity, and nothing in this session touched name generation or trade dress.
+
+### Verdict
+
+CONCERNS at the time of review, on the one Saboteur warning; that is fixed, so the diff now stands
+at NOTE-only from these three personas. A fresh reviewer is still required, and the package is
+ready.
+

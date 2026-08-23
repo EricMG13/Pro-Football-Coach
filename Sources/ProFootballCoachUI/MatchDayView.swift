@@ -471,6 +471,14 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 .accessibilityIdentifier("weekly-command-screen-14")
 
                 if let playback = model.playback, !reduceMotion {
+                    // Indexed once per body pass, not per frame. Looking each actor's track up with
+                    // `first(where:)` inside the timeline meant 22 actors scanning up to 22 tracks
+                    // sixty times a second -- some 33,000 string comparisons per second against
+                    // D4's 16.7 ms frame ceiling, for a lookup that never changes during a snap.
+                    let tracks = Dictionary(
+                        playback.actors.map { ($0.stableID, $0) },
+                        uniquingKeysWith: { first, _ in first }
+                    )
                     TimelineView(
                         .animation(minimumInterval: MatchMetric.playbackTick,
                                    paused: playbackComplete || playback.isPaused)
@@ -485,7 +493,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                             ForEach(model.actors, id: \.stableID) { actor in
                                 playbackMark(
                                     actor,
-                                    track: playback.actors.first { $0.stableID == actor.stableID },
+                                    track: tracks[actor.stableID],
                                     at: t,
                                     isForeground: playback.foregroundIDs.contains(actor.stableID),
                                     size: size,
