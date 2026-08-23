@@ -185,6 +185,27 @@ final class ProFootballCoachUITests: XCTestCase {
         assertCanonicalFamily("Recruiting", ids: Array(24...29) + [61], usesAX5: usesAX5)
     }
 
+    func testProManagementFamilyExposesItsCanonicalDestinationsAtDefault() {
+        assertProManagementFamily(usesAX5: false)
+    }
+
+    func testProManagementFamilyExposesItsCanonicalDestinationsAtAX5() {
+        assertProManagementFamily(usesAX5: true)
+    }
+
+    /// Canonical destinations 34, 35, 36, 39 and 62 -- Cap & Contracts, Contract Negotiation,
+    /// Roster Cuts & Transactions, Draft Room, Pro Offseason.
+    ///
+    /// 37, 38 and 40 are absent for the same reason 30 to 33 are absent from the recruiting list:
+    /// Pro Scouting Board, Draft Board and Free Agency are aliases and inherit 62. Two shapes this
+    /// family exercises that Personnel did not -- one view serving two canonical destinations (34
+    /// and 36 are both `ProManagementView`), and a canonical screen delegating to another
+    /// canonical screen (Draft Room to Pro Offseason) -- are exactly the cases the single-identity
+    /// assertion exists for.
+    private func assertProManagementFamily(usesAX5: Bool) {
+        assertCanonicalFamily("Pro management", ids: [34, 35, 36, 39, 62], usesAX5: usesAX5)
+    }
+
     /// One canonical destination family, enumerated by id rather than listed by hand.
     ///
     /// Exactly one stamp per screen, and exactly the expected one: counting only the expected id

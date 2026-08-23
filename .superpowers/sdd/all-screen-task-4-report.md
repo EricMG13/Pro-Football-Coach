@@ -1198,3 +1198,48 @@ the wrong place to answer it. Escalated, not patched.
 `PlayerCareerRecord.append(_:)` is worth the owner's attention alongside it: it is
 `@discardableResult` and returns `false` silently on four separate guards, so a refused record leaves
 no trace at the call site.
+
+## Task 7 -- Pro Management family, canonical destinations 34, 35, 36, 39 and 62
+
+Five surfaces stamped: Cap & Contracts 34, Contract Negotiation 35, Roster Cuts & Transactions 36,
+Draft Room 39, Pro Offseason 62. Aliases 37, 38 and 40 -- Pro Scouting Board, Draft Board, Free
+Agency -- inherit 62 and hold no identity of their own.
+
+This family has two shapes Personnel did not, and both are cases the single-identity assertion
+exists for:
+
+- **One view serving two canonical destinations.** 34 and 36 are both `ProManagementView`, told
+  apart only by a title, and neither is an alias of the other -- the contract gives each its own
+  row. `ProManagementView` takes a `canonicalID` (default 34) and each wrapper passes its own.
+- **A canonical screen delegating to another canonical screen.** Draft Room delegates its draft
+  phase to Pro Offseason, so it passes 39 down rather than inheriting 62. Its closed branch carries
+  39 too.
+
+`ProOffseasonView` already had a `focus: CoachWorldScreenID`, and it would have been tempting to
+derive the stamp from `focus.number`. That is wrong: the three aliases pass *their own* screen as
+the focus, so identity-from-focus would have stamped 37, 38 and 40 on surfaces the contract says
+carry no identity. `focus` selects a board section; `canonicalID` states what the screen is. They
+are different questions and now have different parameters.
+
+### These five stamps are written and compiled, and are NOT proved
+
+`testProManagementFamilyExposesItsCanonicalDestinationsAt{Default,AX5}` passes, and every screen
+reports `unavailable`. That result is honest and worth having -- under a college career these
+destinations genuinely are unavailable, and each says so rather than rendering an empty shell -- but
+it does not exercise a single stamp. Without the branch recording added in Task 6 this would have
+read as a clean green.
+
+The cause is the harness, not the code. `beginProofCareer` starts on `startingJobs.first`, and
+starting jobs come from `GameState.bootstrap`, which offers college jobs only -- by design, since
+the career begins in college and is promoted. There are no `ProManagementReadModel` or
+`ProOffseasonReadModel` sample fixtures for the `PROOF_SCREEN` root either.
+
+Two ways to close it, both owner calls rather than something a UI migration should decide:
+
+1. A debug seam that starts or restores a career already in the pro tier, which is the smaller
+   change and also unblocks Tasks 8 to 12 for every pro surface.
+2. Pro sample fixtures for the `PROOF_SCREEN` root, which is more code and invents pro cap,
+   contract, draft and waiver values that would then sit in the repository looking authoritative.
+
+Until one exists, the correct statement is: **the pro family's canonical identity is unverified**.
+It is not "verified" and it is not "green"; the tests that pass are testing the unavailable path.

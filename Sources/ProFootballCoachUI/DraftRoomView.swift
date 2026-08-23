@@ -39,6 +39,9 @@ public struct DraftRoomView: View, CoachWorldChromedSurface {
                     model: model,
                     title: "DRAFT ROOM",
                     focus: .draftRoom,
+                    // 39, not the delegate's default 62. Draft Room is a canonical destination
+                    // that delegates its draft phase, not an alias of Pro Offseason.
+                    canonicalID: 39,
                     statusMessage: statusMessage,
                     onAction: onAction,
                     onClose: onClose
@@ -56,6 +59,9 @@ public struct DraftRoomView: View, CoachWorldChromedSurface {
                         palette: palette
                     )
                 }
+                // Stamped on the closed branch too: a destination that says it is closed is still
+                // that destination, and this is the phase its honest empty state exists for.
+                .background(alignment: .topLeading) { CanonicalScreenStamp(id: 39) }
             }
         }
         .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)
