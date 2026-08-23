@@ -44,6 +44,7 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
         .frame(maxWidth: .infinity,
                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 11) }
     }
 
     private var scrollContent: some View {
@@ -70,7 +71,6 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
                 model.opponent.map { "\(title) \u{00B7} \($0.name)" } ?? title,
                 palette: palette
             )
-            .accessibilityIdentifier("weekly-command-screen-11")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
         }

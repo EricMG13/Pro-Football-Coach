@@ -122,7 +122,12 @@ final class ProFootballCoachUITests: XCTestCase {
                 continue
             }
 
-            let rootIdentifier = "weekly-command-screen-\(screenID)"
+            // One naming convention across all 47 canonical destinations (Task 10 fold). The
+            // older `canonical-screen-<id>` name is gone: identity lived on a header
+            // label, so a conditional that removed the label removed the screen's identity
+            // with it -- which is how `coaching-hq-screen` once vanished from a Coaching HQ
+            // with no decision pending.
+            let rootIdentifier = "canonical-screen-\(screenID)"
             let roots = app.descendants(matching: .any)
                 .matching(identifier: rootIdentifier)
             guard roots.firstMatch.waitForExistence(timeout: 20) else {
@@ -217,10 +222,11 @@ final class ProFootballCoachUITests: XCTestCase {
     /// Canonical destinations 7 and 41 to 51 -- World Search, League Map, Team Profile, Standings,
     /// Schedule, Rankings, Bracket, Game Detail, Statistics, Awards, News, Realignment.
     ///
-    /// 47 also carries the older `weekly-command-screen-47` identifier, which is a different
-    /// prefix and a different question -- Task 10 folds the two naming conventions into one. Both
-    /// coexisting is deliberate for now and stated in the presentation contract rather than left
-    /// for a reader to discover.
+    /// 47 once carried a second, older identifier as well. Task 10 folded the two conventions:
+    /// there is one name for a canonical destination now, and it is a stamp rather than an
+    /// identifier on a header label -- a label a conditional can remove takes the screen's identity
+    /// with it, which is how `coaching-hq-screen` once vanished from a Coaching HQ with no decision
+    /// pending.
     private func assertLeagueFamily(usesAX5: Bool) {
         assertCanonicalFamily("League", ids: [7] + Array(41...51), usesAX5: usesAX5)
     }
@@ -243,6 +249,67 @@ final class ProFootballCoachUITests: XCTestCase {
     /// their identity is unverified here -- see the task report.
     private func assertCareerFamily(usesAX5: Bool) {
         assertCanonicalFamily("Career", ids: [52, 54, 55] + Array(57...60), usesAX5: usesAX5)
+    }
+
+    /// Every alias, and the canonical destination it must resolve to.
+    ///
+    /// Mirrors `CoachWorldScreenID.routeDisposition`. A UI test is black-box and cannot read the
+    /// enum, so the table is restated here; `--core-contracts` already proves each exact alias
+    /// destination against the enum itself, and this proves the launch path reaches that
+    /// destination's shell rather than a divergent wrapper.
+    private static let aliasDestinations: [(alias: Int, canonical: Int)] = [
+        (3, 52), (4, 52), (5, 52),      // Job Board, Offer, Appointment
+        (21, 20),                        // Staff Market & Profile
+        (22, 11),                        // Scheme Book
+        (23, 17),                        // Personnel Packages
+        (30, 61), (31, 61), (32, 61), (33, 61),   // Portal Hub, Retention, Portal Market, NIL
+        (37, 62), (38, 62), (40, 62),   // Pro Scouting Board, Draft Board, Free Agency
+        (53, 52), (56, 52),             // Job Security, Coaching Carousel
+    ]
+
+    /// An alias renders its canonical destination's identity, and never one of its own.
+    ///
+    /// This is the contract's actual claim -- "an alias resolves to its canonical destination
+    /// before presentation; it receives no independent layout, evidence ledger, or action
+    /// surface". Asserting a navigator button would prove the alias reached *some* chrome;
+    /// asserting the stamp proves it reached *that destination*, and asserting the absence of a
+    /// `canonical-screen-<alias>` stamp proves it did not quietly mint an identity of its own.
+    func testCompatibilityAliasesResolveToTheirCanonicalDestination() {
+        for entry in Self.aliasDestinations {
+            let app = XCUIApplication()
+            app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+            app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(entry.alias)"
+            app.launch()
+
+            let canonical = app.descendants(matching: .any)
+                .matching(identifier: "canonical-screen-\(entry.canonical)")
+            let ownIdentity = app.descendants(matching: .any)
+                .matching(identifier: "canonical-screen-\(entry.alias)")
+            let unavailable = app.staticTexts
+                .matching(NSPredicate(format: "label CONTAINS %@", "unavailable."))
+                .firstMatch
+
+            if canonical.firstMatch.waitForExistence(timeout: 30) {
+                XCTAssertEqual(
+                    canonical.count, 1,
+                    "alias \(entry.alias) rendered destination \(entry.canonical) "
+                        + "\(canonical.count) times"
+                )
+            } else {
+                XCTAssertTrue(
+                    unavailable.exists,
+                    "alias \(entry.alias) reached neither destination \(entry.canonical) nor an "
+                        + "honest unavailable state"
+                )
+            }
+            // Checked on both branches. An alias that mints its own identity is a defect whether
+            // or not its destination happens to have retained evidence today.
+            XCTAssertEqual(
+                ownIdentity.count, 0,
+                "alias \(entry.alias) minted a canonical identity of its own"
+            )
+            app.terminate()
+        }
     }
 
     /// One canonical destination family, enumerated by id rather than listed by hand.
@@ -341,7 +408,7 @@ final class ProFootballCoachUITests: XCTestCase {
         commit.tap()
         XCTAssertEqual(
             app.descendants(matching: .any)
-                .matching(identifier: "weekly-command-screen-8").count,
+                .matching(identifier: "canonical-screen-8").count,
             1
         )
         XCTAssertEqual(
@@ -391,7 +458,7 @@ final class ProFootballCoachUITests: XCTestCase {
             app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(screenID)"
             launch(app, ax5: usesAX5)
             XCTAssertTrue(
-                app.descendants(matching: .any)["weekly-command-screen-\(screenID)"]
+                app.descendants(matching: .any)["canonical-screen-\(screenID)"]
                     .waitForExistence(timeout: 30)
             )
             for control in app.buttons.allElementsBoundByIndex where control.exists {
@@ -446,7 +513,7 @@ final class ProFootballCoachUITests: XCTestCase {
     private func assertWeeklyCommandContentStaysInsideTheViewport(usesAX5: Bool) {
         let fixtures: [(screenID: Int, labels: [String], choicePrefixes: [String])] = [
             // Screen 8 is deliberately absent. Adding it surfaced two things that are not this
-            // proof's to settle: its `weekly-command-screen-8` identifier sits on a nested label,
+            // proof's to settle: its `canonical-screen-8` identifier sits on a nested label,
             // so the 63-point column assertion below does not describe it, and its committing
             // action measures maxY 407.7 in a 390-point window whenever a decision panel is on
             // screen. Both are recorded in the Task 4 report as owner questions.
@@ -470,7 +537,7 @@ final class ProFootballCoachUITests: XCTestCase {
             let viewport = app.windows.firstMatch
             XCTAssertTrue(viewport.waitForExistence(timeout: 20))
             let root = app.descendants(matching: .any)[
-                "weekly-command-screen-\(fixture.screenID)"
+                "canonical-screen-\(fixture.screenID)"
             ]
             XCTAssertTrue(root.waitForExistence(timeout: 20))
             if usesAX5 {
@@ -787,7 +854,7 @@ final class ProFootballCoachUITests: XCTestCase {
         app.launchEnvironment["PROOF_SCREEN"] = "match"
         launch(app, ax5: usesAX5)
 
-            let root = app.descendants(matching: .any)["weekly-command-screen-14"]
+            let root = app.descendants(matching: .any)["canonical-screen-14"]
             let dominant = app.descendants(matching: .any)["weekly-command-dominant"]
             XCTAssertTrue(root.waitForExistence(timeout: 20))
             XCTAssertTrue(dominant.exists)
@@ -802,7 +869,7 @@ final class ProFootballCoachUITests: XCTestCase {
                 ).count,
                 2
             )
-            XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-screen-14").count, 0)
+            XCTAssertEqual(app.buttons.matching(identifier: "canonical-screen-14").count, 0)
             XCTAssertEqual(app.buttons.matching(identifier: "weekly-command-dominant").count, 0)
 
             // All 22 actors, 11 a side, whatever the field is doing. A recorded snap only carries

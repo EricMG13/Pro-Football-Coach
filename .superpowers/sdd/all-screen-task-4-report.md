@@ -1338,3 +1338,87 @@ when Task 4 hoisted the label out of the 60 Hz closure. It was invisible in test
 in a compiler warning. Removed; `--core-contracts` stays green at 242 / 3,271, and the possession
 contract still holds because the binding it actually guards is the one in the accessible sentence
 builder, which is used.
+
+## The m7-gate soak, and two numbers it does not assert
+
+`swift run --scratch-path <dir> -c release -Xswiftc -enable-testing SimTests --m7-gate`
+-- **1 test, 65 checks, all passed.**
+
+```
+M7 history gate: seasons=30 weeks=630 weekMeanMs=5540.03 archivedSeasons=30
+archivedEvents=2058391 hotEvents=4096 notableBodies=960
+save: s1=5673996B/3.286s s5=8105363B/3.772s s20=20635999B/12.804s s30=28808899B/15.846s
+```
+
+Two mistakes of mine on the way to that line, both worth recording because the second is a trap the
+plan documents lay for the next agent:
+
+1. I ran it in release without `-Xswiftc -enable-testing` and it failed to build with
+   `#ModuleNotTestable`. `scripts/verify.sh` already documents that flag and why release needs it;
+   the plan's bare `swift run SimTests --m7-gate` does not.
+2. I read an empty tail of its log, concluded the run had died, and relaunched it -- while the
+   original was still soaking with its output buffered. Two release soaks ran concurrently until I
+   stopped the duplicate by explicit pid. A long soak that prints nothing is not a dead soak.
+
+**The gate passes, and the saves are far over the ceiling.** D7's falsifier is 8 MB:
+
+| Season | Save | Against the 8 MB ceiling |
+|---|---|---|
+| 1 | 5.4 MB | 0.68x |
+| 5 | 7.7 MB | 0.97x |
+| 20 | 19.7 MB | **2.46x** |
+| 30 | 27.5 MB | **3.43x** |
+
+This is not new and this work did not cause it -- no engine or persistence file is touched by any of
+Tasks 5 to 11 -- but it is worth restating with fresh numbers, because `--m7-gate` reports these
+figures and then passes: the gate asserts history correctness, not save size, so a green m7 is not
+evidence that D7 holds. It does not.
+
+`weekMeanMs=5540.03` is likewise reported and unasserted. It is not comparable to the 1.34 s
+week-advance figure recorded after the 2026-08-20 latency work -- this is a release soak advancing
+weeks against a 30-season archive of 2,058,391 events, not the same measurement -- so it is recorded
+here as an observation to compare against its own benchmark, not claimed as a regression.
+
+## Task 11 -- The proof matrix, and the fold it forced
+
+### The alias proof found the second naming convention
+
+The plan's alias test asserts a navigator button exists. Asserting the **stamp** instead proves what
+the contract actually claims -- that an alias resolves to its canonical destination and holds no
+identity of its own -- so the test checks for `canonical-screen-<destination>` and for the *absence*
+of `canonical-screen-<alias>`, on both branches.
+
+It failed immediately, on alias 22: "reached neither destination 11 nor an honest unavailable
+state". Destination 11 is Game Plan, which still used the older `weekly-command-screen-11`. Two
+naming conventions meant no single enumerator could cover all 47 canonical destinations -- which is
+exactly what `04b` and `docs/proofs/README.md` had just been amended to require. The requirement and
+the code disagreed, and the test is what said so.
+
+All eight weekly-command identifiers, plus 47's, are folded into `canonical-screen-<id>`. That also
+moved identity off a header label: the old identifiers sat on `FloodlitLabel3` views, and a label a
+conditional can remove takes the screen's identity with it -- which is precisely how
+`coaching-hq-screen` once vanished from a Coaching HQ with no decision pending. A stamp attached as
+a background cannot be removed by a content condition.
+
+Both proofs pass after the fold: all 15 aliases resolve to their canonical destination and none
+mints an identity of its own, and the weekly command family proof runs on the unified name.
+
+### The accessibility inventory
+
+`python3 .agents/skills/verify-ios-accessibility-matrix/scripts/build_matrix.py` reports
+**62 screens, 128 cases per screen, 7,936 total cases**, read from `04` and `ScreenRegistry.swift`
+with no registry/name mismatch -- the numbers the plan predicts.
+
+### A defect in the plan's own residue check
+
+Task 12 step 1 specifies:
+
+```
+test -z "$(rg -l 'FloodlitIconRail|RailEntry|showsIconRail' Sources Tests)"
+```
+
+That can never pass. `DesignContractTests.swift` names all three strings in the scan that *forbids*
+them, so the check fails on its own guard. Scanning `Sources` alone is clean, which is the real
+question. Recorded rather than quietly rewritten, because the next agent will hit it too.
+
+`Sources/ProFootballCoachUI` also holds no `CoachWorldTokens.light` and no `Environment(\.colorScheme)`.

@@ -301,7 +301,7 @@ func runDesignContractTests() {
                 )
                 expect(source.contains("depth: .glass"), "\(file) needs glass support surfaces")
                 expect(
-                    source.contains("weekly-command-screen-")
+                    source.contains("CanonicalScreenStamp(id:")
                         && source.contains("weekly-command-dominant"),
                     "\(file) must retain root and dominant proof hooks"
                 )

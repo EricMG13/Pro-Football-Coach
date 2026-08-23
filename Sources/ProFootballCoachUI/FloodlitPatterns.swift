@@ -675,9 +675,10 @@ struct CoachWorldConfidenceTag: View {
 /// that label is conditional -- which is how `coaching-hq-screen` came to vanish from a Coaching HQ
 /// with no decision pending.
 ///
-/// The weekly command family still uses the older `weekly-command-screen-<id>` name. Task 10 folds
-/// the two into one, which is what that task is for; introducing a second convention silently would
-/// be the worse outcome, so this one is stated here and in the presentation contract.
+/// This is the only convention. Task 10 folded the older `weekly-command-screen-<id>` name into it,
+/// which also moved identity off a header label: a label a conditional can remove takes the
+/// screen's identity with it, and that is exactly how `coaching-hq-screen` once vanished from a
+/// Coaching HQ with no decision pending.
 ///
 /// **Attach it with `.background(alignment: .topLeading)`, never as a stack child.** As a child of a
 /// spaced `VStack` it measures a point and takes the stack's spacing with it, which pushed three

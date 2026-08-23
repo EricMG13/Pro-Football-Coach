@@ -68,7 +68,6 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
                     "Final \u{00B7} \(model.venue.name) \u{00B7} \(model.resultLabel)",
                     palette: palette
                 )
-                .accessibilityIdentifier("weekly-command-screen-47")
                 scoreLine(model.away)
                     .accessibilityIdentifier("weekly-command-dominant")
                 scoreLine(model.home)

@@ -38,6 +38,7 @@ public struct AftermathView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 15) }
     }
 
     private var scrollContent: some View {
@@ -84,7 +85,6 @@ public struct AftermathView: View, CoachWorldChromedSurface {
                     "Final \u{00B7} \(model.venue.name) \u{00B7} \(model.resultLabel)",
                     palette: palette
                 )
-                .accessibilityIdentifier("weekly-command-screen-15")
                 ForEach(Array(sides.enumerated()), id: \.offset) { index, side in
                     if index == 0 {
                         scoreLine(side, isLead: true)

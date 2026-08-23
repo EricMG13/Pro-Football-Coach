@@ -34,6 +34,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 13) }
     }
 
     private var scrollContent: some View {
@@ -77,7 +78,6 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
                 "Team health \u{00B7} \(model.weekLabel)",
                 palette: palette
             )
-            .accessibilityIdentifier("weekly-command-screen-13")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitLabel3(
                 "Condition \(model.averageCondition)%",

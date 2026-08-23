@@ -85,6 +85,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 }
             }
         }
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 8) }
     }
 
     private var worldStrip: some View {
@@ -329,7 +330,6 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                             ?? decision.deadline,
                         palette: palette
                     )
-                    .accessibilityIdentifier("weekly-command-screen-8")
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
                         .accessibilityIdentifier("coaching-hq-screen")

@@ -41,6 +41,7 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
         .frame(maxWidth: .infinity,
                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 12) }
     }
 
     private var scrollContent: some View {
@@ -48,7 +49,6 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
                 HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
                     FloodlitLabel3("Practice plan \u{00B7} \(model.weekLabel)", palette: palette)
-                        .accessibilityIdentifier("weekly-command-screen-12")
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
                 }

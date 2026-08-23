@@ -34,6 +34,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 10) }
     }
 
     private var scrollContent: some View {
@@ -72,7 +73,6 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
             FloodlitLabel3(headline, palette: palette)
-                .accessibilityIdentifier("weekly-command-screen-10")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if !model.isCurrent {
                 FloodlitLabel3("Stale", palette: palette, tint: palette.stateWarning.color)

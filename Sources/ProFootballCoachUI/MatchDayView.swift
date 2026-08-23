@@ -136,6 +136,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
             }
         }
         .sheet(isPresented: $showsEvidence) { evidenceSheet }
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 14) }
     }
 
     // MARK: - Standard layout
@@ -471,7 +472,6 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                     glow: true,
                     label: "First-down line"
                 )
-                .accessibilityIdentifier("weekly-command-screen-14")
 
                 if let playback = model.playback, !reduceMotion {
                     // Indexed once per body pass, not per frame. Looking each actor's track up with

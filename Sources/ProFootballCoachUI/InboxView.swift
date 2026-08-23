@@ -41,6 +41,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
             scrollContent
         }
         .accessibilitySortPriority(100)
+        .background(alignment: .topLeading) { CanonicalScreenStamp(id: 9) }
     }
 
     /// The messages scroll; the committing action does not.
@@ -114,7 +115,6 @@ public struct InboxView: View, CoachWorldChromedSurface {
                 .buttonStyle(.plain)
             }
             FloodlitLabel3("Inbox \u{00B7} \(model.weekLabel)", palette: palette)
-                .accessibilityIdentifier("weekly-command-screen-9")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if unreadCount > 0 {
                 FloodlitLabel3(

@@ -883,8 +883,16 @@ not a fit. Truncate instead and let the accessibility label carry the whole stri
 spoken by a boundary rather than by hue alone. League and opponent colours stay contextual. Semantic
 red is destructive only.
 
-**Logo uniqueness.** One mark per team per surface. A surface that draws the same mark twice for one
-organisation is a defect, and a fallback mark is still a mark.
+**Logo uniqueness.** No *redundant* mark, which is not the same as never twice.
+
+The chrome header carries the controlled club's mark once, and that mark belongs to the frame rather
+than to the surface inside it -- which is why a surface converted to the shared chrome must stop
+drawing its own world strip, as Roster and the recruiting board already do (`if chrome == nil`).
+Within a surface's own content, a mark that **identifies a row among peers** is doing work and may
+legitimately repeat the club already named in the header: a standings table or a schedule that hid
+the controlled club's mark would be harder to read, not more correct. What is a defect is the same
+organisation's mark drawn twice for the same purpose in one region -- a header that repeats the row
+it heads, or a strip that repeats the chrome. A fallback mark is still a mark and counts either way.
 
 **Task archetypes.** Every canonical surface answers one question and presents one dominant object,
 with its supporting regions ordered beneath it and its committing action inside the initial viewport
