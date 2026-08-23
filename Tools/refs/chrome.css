@@ -483,3 +483,43 @@
   color: var(--content-quiet);
   letter-spacing: var(--track-micro);
 }
+
+/* ---- Two-sided comparison ------------------------------------------------------
+   The label sits between the values so the eye reads the gap. A leading side gets a
+   marker, never colour alone. */
+
+.fl-vs { display: flex; flex-direction: column; }
+.fl-vs__head,
+.fl-vs__row {
+  display: grid;
+  grid-template-columns: 1fr minmax(120px, auto) 1fr;
+  align-items: center;
+  column-gap: var(--gap-lg);
+}
+.fl-vs__head { padding-bottom: var(--gap-xxs); }
+.fl-vs__head span:first-child { text-align: left; }
+.fl-vs__head span:last-child { text-align: right; }
+.fl-vs__row { min-height: 26px; border-top: var(--hairline) solid var(--rule-row); }
+.fl-vs__away { text-align: left; font-size: var(--size-row); }
+.fl-vs__home { text-align: right; font-size: var(--size-row); }
+.fl-vs__label {
+  text-align: center;
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+}
+/* The leading side is marked by a wedge, not by colour, so the reading survives the
+   accessibility contract's colour-is-never-the-only-meaning rule. */
+.fl-vs--lead { position: relative; font-weight: 700; }
+.fl-vs__away.fl-vs--lead::after,
+.fl-vs__home.fl-vs--lead::before {
+  content: "";
+  display: inline-block;
+  width: 0; height: 0;
+  margin: 0 var(--gap-xs);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+.fl-vs__away.fl-vs--lead::after { border-left: 5px solid var(--state-positive); }
+.fl-vs__home.fl-vs--lead::before { border-right: 5px solid var(--state-positive); }

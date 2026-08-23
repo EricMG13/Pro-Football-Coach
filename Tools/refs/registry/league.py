@@ -7,8 +7,8 @@ branch. Those gaps are the placement spec Stream A's Phase 2 builds against."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, Status, Table,
-    blocker, broadcast, desk, dossier, gap,
+    Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, StatCompare, Status,
+    Table, blocker, broadcast, desk, dossier, gap,
 )
 
 MARK_GAP = "Wants a competition mark at 24 px beside the title; none exists on any branch."
@@ -52,13 +52,11 @@ team_profile = dossier(
                  headline="Zumbrota Central Marsh", numeral="6-1",
                  points=("Zumbrota, second in conference",),
                  scale="dossier", side="opponent"),
-        bottom=Table(
-            (Col("Measure", 18, "left", False), Col("Value", 8, "right"),
-             Col("Rank", 6, "right"), Col("Against us", 20, "left", False)),
-            (("Points per game", "31.4", "3", "Last five: 3-2"),
-             ("Points allowed", "18.9", "7", "We won the last two"),
-             ("Yards per play", "6.1", "2", "Week 7, 24-21")),
-        ),
+        bottom=StatCompare("UNI", "ZUM", (
+            ("Points per game", "28.7", "31.4", True),
+            ("Points allowed", "16.4", "18.9", False),
+            ("Yards per play", "5.9", "6.1", True),
+        )),
     ),
     gaps=(
         gap("ART", MARK_GAP),

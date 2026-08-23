@@ -526,6 +526,71 @@ class FormLine:
 
 
 @dataclass(frozen=True)
+class StatCompare:
+    """Two teams around a centre column of stat names, with the leading side marked.
+
+    The shape every football broadcast and every Madden box score uses, and the shape a
+    four-column table is not: a comparison wants the two values on opposite sides of the
+    label so the eye reads the gap, not two numbers it has to subtract. `04` 6.4's rule
+    still applies -- the figure is printed and the fill is the second reading."""
+
+    home_abbr: str
+    away_abbr: str
+    #: (label, home, away, higher_is_better)
+    rows: tuple[tuple[str, str, str, bool], ...]
+
+    def cells(self) -> int:
+        return len(self.rows) * 2
+
+    def readout_rows(self) -> int:
+        return len(self.rows)
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 3
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 22.0 + len(self.rows) * 26.0
+
+    @staticmethod
+    def _numeric(value: str) -> float | None:
+        cleaned = value.replace(",", "").replace("%", "").replace(":", ".")
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+
+    def render(self) -> str:
+        rows = []
+        for label, home, away, higher in self.rows:
+            h, a = self._numeric(home), self._numeric(away)
+            lead = ""
+            if h is not None and a is not None and h != a:
+                lead = "home" if (h > a) == higher else "away"
+            rows.append(
+                f'<div class="fl-vs__row">'
+                f'<span class="fl-vs__away fl-figure{" fl-vs--lead" if lead == "away" else ""}">'
+                f'{_ink(away, "--content-primary", "--surface-panel")}</span>'
+                f'<span class="fl-vs__label">{escape(label)}</span>'
+                f'<span class="fl-vs__home fl-figure{" fl-vs--lead" if lead == "home" else ""}">'
+                f'{_ink(home, "--content-primary", "--surface-panel")}</span></div>'
+            )
+        return (
+            '<div class="fl-vs">'
+            f'<div class="fl-vs__head"><span class="fl-label3">{escape(self.away_abbr)}</span>'
+            f'<span></span>'
+            f'<span class="fl-label3">{escape(self.home_abbr)}</span></div>'
+            + "".join(rows)
+            + "</div>"
+        )
+
+
+@dataclass(frozen=True)
 class Chip:
     text: str
     tone: str = "quiet"  # quiet | live | positive | warning | negative | gold

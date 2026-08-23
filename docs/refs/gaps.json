@@ -61,7 +61,7 @@
       "family": "weeklyCommand",
       "lean": "DESK",
       "status": "WRAPPER",
-      "cells": 20,
+      "cells": 16,
       "commit": null,
       "evidence": "Sources/ProFootballCoachUI/OpponentFilmView.swift",
       "gaps": [
@@ -194,7 +194,7 @@
       "family": "weeklyCommand",
       "lean": "DESK",
       "status": "BUILT",
-      "cells": 18,
+      "cells": 12,
       "commit": null,
       "evidence": null,
       "gaps": [
@@ -695,7 +695,7 @@
       "family": "league",
       "lean": "DOSSIER",
       "status": "BUILT",
-      "cells": 14,
+      "cells": 8,
       "commit": null,
       "evidence": null,
       "gaps": [

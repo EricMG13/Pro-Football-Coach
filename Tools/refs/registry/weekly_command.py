@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from ._shared import (
     Chip, Chips, Col, Field, Hero, NOTHING_MISSING, OpposedBar, Panel, Lean, Row,
-    Rows, ScoreBug, ShareBar, Split, Stack, Status, Surface, Table, blocker,
-    broadcast, desk, gap,
+    Rows, ScoreBug, ShareBar, Split, Stack, StatCompare, Status, Surface, Table,
+    blocker, broadcast, desk, gap,
 )
 
 coaching_hq = desk(
@@ -50,14 +50,13 @@ film_room = desk(
             (Col("Tendency", 26, "left", False), Col("Down", 6, "right"),
              Col("Rate", 6, "right"), Col("Yds", 5, "right")),
             (("Play action, first down", "1st", "38%", "8.4"),
-             ("Outside zone, own half", "1st", "44%", "4.9"),
              ("Empty backfield", "3rd", "61%", "6.1"),
              ("Blitz off the slot", "3rd", "29%", "3.8")),
         )),
-        Stack((
-            OpposedBar("Yards per play", 5.4, 6.8, "Union Maritime", "Zumbrota Central"),
-            OpposedBar("Third down", 43, 63, "Union Maritime", "Zumbrota Central"),
-        )),
+        Panel("Against this opponent", StatCompare("UNI", "ZUM", (
+            ("Yards per play", "5.4", "6.8", True),
+            ("Third down", "43%", "63%", True),
+        ))),
     )),
     gaps=(
         gap("DATA", "Tendencies are static; the engine records no per-opponent play log to derive them from."),
@@ -164,18 +163,14 @@ box_score = desk(
     id="gameDetailBoxScore", number=47, name="Game Detail / Box Score",
     family="weeklyCommand", status=Status.BUILT,
     body=Stack((
-        Panel("Scoring", Table(
-            (Col("Team", 18, "left", False), Col("Q1", 4, "right"), Col("Q2", 4, "right"),
-             Col("Q3", 4, "right"), Col("Q4", 4, "right"), Col("T", 4, "right")),
-            (("Union Maritime", "7", "3", "7", "7", "24"),
-             ("Zumbrota Central", "0", "14", "0", "7", "21")),
-        )),
-        Panel("Leaders", Table(
-            (Col("Player", 18, "left", False), Col("Line", 20, "left", False)),
-            (("Reed Vance", "19/28, 246 yds, 2 TD"),
-             ("Amos Kerr", "6 rec, 94 yds, 1 TD"),
-             ("Milo Prasad", "18 car, 71 yds")),
-        )),
+        Panel("Team stats", StatCompare("UNI", "ZUM", (
+            ("Score", "24", "21", True),
+            ("Total offense", "283", "246", True),
+            ("Rushing yards", "37", "119", True),
+            ("Passing yards", "246", "127", True),
+            ("First downs", "10", "9", True),
+            ("Turnovers", "1", "2", False),
+        ))),
     )),
     gaps=(
         gap("SCREEN", "No drive chart; the engine records drive outcomes but nothing draws them."),
