@@ -25,6 +25,15 @@ The honest picture: what exists, what is verified, what is not.
 > / `RE NT DT LE W M N RC LC FS SS`) instead of `SnapRole` codes, on a new `Actor.shorthand` kept
 > separate from `position` so the printed label getting shorter cannot shorten what VoiceOver says.
 >
+> **SUPERSEDED BY THE MERGE, 2026-08-23.** The paragraph below called four suites pre-existing and
+> proved it on `main` at the time. `main` has since fixed three of them — the entry immediately after
+> this one explains why they were red: PR #69 resolved file by file, taking the tests from one branch
+> and the production code from the other. On the merged tree `M4 tactical state`, `M5 career arc` and
+> the portal scheduler are **green**. What is red on the merged tree is `Design token sync`, whose
+> parser cannot read `04` §6.4's heat-scale sentence; that is `main`'s, reproduced on a clean
+> `origin/main` worktree, and §6.4 is byte-identical between the two. Calibration was re-run after
+> the merge because `main` changed engine rules: unchanged, college 1 of 8 and pro 5 of 17.
+>
 > **Verified:** `--snap-anchors` 34 tests / 2,887 checks, `--engine` 60 / 32,443, `--core-contracts`
 > 232 / 3,356, `--screen-read-models` 74 / 9,997, `--design-contracts` 50 / 914, `--legal-only`
 > 30 / 193, `--reduce-motion` and `--match-reducer` — all green, and the app builds and runs on the
