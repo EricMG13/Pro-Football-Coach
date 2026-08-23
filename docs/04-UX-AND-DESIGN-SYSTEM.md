@@ -67,6 +67,34 @@ come from forcing every screen into one chassis.
 
 No screen may describe itself as “Film Room” unless it belongs to that row.
 
+### 2.1 The presentation lean (2026-08-22 amendment)
+
+The nine registers above say what a screen **is about**. They do not say how much presentation it may
+spend. That is a second, orthogonal axis with three positions, and **every surface carries one of
+each**.
+
+The axis is **whether the player is being told something or working something out.** Frequency does
+not set it; frequency only decides how much spectacle is affordable once the side is picked. A
+frequency-first rule was tested against the §8 inventory and classifies Match Day as a working
+surface because it is seen fifteen times a season, which is plainly wrong.
+
+| Lean | The player is | Ground | Mark | Largest numeral | Data points |
+|---|---|---|---|---|---|
+| **Broadcast** | being told | club or opponent colour, flooded | 200–390 pt | 40–72 pt | ≤ 12 |
+| **Desk** | working | `world.page`; club colour confined to the identity band | 19 pt | 11–14 pt | ≤ 72 |
+| **Dossier** | meeting a subject, then studying it | club colour above the seam, `world.page` below | 180–220 pt above | 40 pt above, 11.5 below | ≤ 8 above, ≤ 40 below |
+
+**Default lean per register.** Broadcast and Ceremony take the Broadcast lean. Coach's Office,
+Acquisition Room, Front Office, League & Media and Career & Legacy take the Desk lean. Personnel Room
+takes Desk for its lists and Dossier for its dossiers — its row above already distinguishes “dense
+comparison where earned” from “identity-led detail”. Film Room takes Desk.
+
+**Match Day is the only surface carrying two leans at once** — a Broadcast ground with a Desk plate on
+it. That is not an exception to be tolerated but the product's central claim; §9 governs it.
+
+**A Dossier surface is marked by exactly one visible seam**, a 2 pt `action.primary` rule, at the
+point the lean changes. A Dossier surface with no seam, or with two, is a finding.
+
 ## 3. World navigation
 
 The former universal five-tab bottom bar is removed.
@@ -158,6 +186,32 @@ budget when a second dominant object appears, the glyph vocabulary grows to acco
 falls below its floor to make something fit, AX5 loses data, or a state change is illegible without
 watching it animate. The registry's per-screen budget statements are audited under `04b`; a surface
 the inventory does not price is a finding, not a licence.
+
+#### 4.5a The measured budget (2026-08-22 amendment)
+
+The currencies and caps above stand. What follows are the measured numbers behind them, which this
+section previously stated only as ratios.
+
+At the install floor the content box is 709 × 319 pt, but the **usable scroll viewport measures
+291 pt**, and **241 pt** once a surface reserves a committing bar outside the scroll. The budgets
+follow from the viewport, not from the box:
+
+| Tier | Row height | Viewport | Rows | Columns | Cells |
+|---|---|---|---|---|---|
+| Dense | 32 pt | 291 | 9 | 8 | **72** |
+| Working | 44 pt | 291 | 6 | 8 | **48** |
+| Committing | 44 pt | 241 | 5 | 8 | **40** |
+| Broadcast | — | 390 | — | — | **12** |
+
+Eight columns is the working figure inside this section's existing six-to-nine range.
+
+**Interactivity is bought with rows.** A row that responds to touch takes the 44 pt control floor, so
+nine readout rows become six; reserving a commit bar takes six to five. A surface carrying a
+committing control therefore has **40 cells, not 72**, and must be composed against that number.
+
+A surface exceeding its tier's cell count is over budget by construction, in the same sense the
+clauses above define over-budget. **The count is of declared data**, not of rendered elements: chrome,
+labels, captions and prose are not cells.
 
 ## 5. Identity system
 
@@ -418,6 +472,37 @@ College identity furniture may take one restrained 9° cut per §5; Pro stays or
 radius stays 0 — square geometry is unchanged by this amendment. **Superseded for Match Day alone
 by §6.1b (2026-08-18).**
 
+#### 6.1a(ii) Role separation (2026-08-22 amendment)
+
+The palette above carries four role collisions, measured in HSL from the shipped
+`DesignTokens.swift`:
+
+| Colliding roles | Values | Separation |
+|---|---|---|
+| `action.primary` / `state.warning` | `#FFC53D` / `#FFB03A` | **6.1°** hue, identical saturation, 0.6% luminance |
+| `state.negative` / `action.destructive` | `#FF3B54` / `#FF3B54` | identical |
+| `state.info` / `pro.identity` | `#6FA8DC` / `#6FA8DC` | identical |
+| `state.live` / `state.positive` | `#37E08A` / `#4FD08C` | **1.1°** hue |
+
+Both contrast tables above remain correct; contrast was never the defect. The defect is that two
+roles which must never be confused are the same colour at a glance.
+
+The first collision is the serious one: at 11 pt under a thumb, a caution and a commit are
+indistinguishable.
+
+**Gold — `action.primary` `#FFC53D` — marks the committing action and the live first-down line, and
+carries no other meaning.** It is never a rating, never a state, never a position chip, never
+decoration. **A surface spends gold at most once**, twice only on Match Day where the second is the
+first-down line.
+
+Consequently `state.warning` leaves the yellow-orange band. Its replacement must sit at least 24°
+from gold's hue of 42.1° and clear 4.5:1 on `world.page`; **`#C9704A` satisfies both**, at 24.1° and
+5.57:1.
+
+The three identical or near-identical pairs stay legal as **aliases** — `action.destructive` may
+alias `state.negative` — but must be declared as aliases in the token layer rather than repeated as
+literals, so a future divergence is a deliberate edit and not an accident.
+
 ### 6.1b Match Day broadcast register (2026-08-18 amendment)
 
 Source: the owner-supplied design handoff `design_handoff_floodlit_surfaces_and_match_day/`
@@ -572,6 +657,25 @@ load-bearing for the header's two-row proportion, so the visible text keeps its 
 link carries a **44 pt hit area** via an expanded content shape instead. Visible size and tappable
 size are allowed to differ; tappable size is not allowed to drop below 44.
 
+### 6.1d The identity band (2026-08-22 amendment)
+
+§6.1c places a 19 pt mark in the identity header beside a separate icon rail. Club identity is
+consequently near-absent from every management surface, which is what makes a football game read as a
+database.
+
+On every management surface the club's colour, mark, name and record are carried in a **single band
+that encloses the whole of the navigation row** — mark, club name, record and rank, the family name,
+the sibling tabs and the context slot all sit inside it. It is not a pill beside the navigation; the
+navigation is inside it.
+
+The band is **34 pt tall**, runs a gradient from the club's primary to `world.page`, and carries a
+hairline of the club's secondary. Its mark is **19 pt** — the Desk lean's size under §2.1 — because
+the band is the *only* place a Desk surface spends club colour.
+
+The band is the sanctioned **seventh** placement for a team mark under §5.2, alongside the standings
+row as the eighth. The team-colour fill rule in §6.1a applies unchanged: the band's gradient is a
+team-colour fill and therefore always carries its hairline boundary.
+
 ### 6.2 Typography
 
 Use the system family in production and a system stack in references. The hierarchy relies on scale,
@@ -671,8 +775,32 @@ desktop-class management density.
 4. **Heatmaps, rating badges and micro gauges**
    - Replace repeated prose bands such as Elite/Average/Poor with fixed-size numeric badges when the
      rating is simulation-owned.
-   - Use red below 70, amber from 70–84 and green from 85 upward as the default visual heat scale;
-     retain the printed number and a spoken band so colour is not the sole meaning.
+   - **Amended 2026-08-22.** The default visual heat scale over the 40–99 range is **five bands,
+     diverging around a neutral centre** — not the three-band red/amber/green it replaces, under
+     which an average starter read as a caution:
+
+     | Band | Range | Role |
+     |---|---|---|
+     | Well below | 40–59 | `state.negative` |
+     | Below | 60–69 | the amended `state.warning` |
+     | **Average** | **70–79** | **`content.secondary` — neutral, never amber** |
+     | Above | 80–84 | `state.positive`, lightened |
+     | Well above | 85–99 | `state.positive` |
+
+     Every band clears 4.5:1 on `world.page` and sits at least 24° from gold, per §6.1a(ii). Retain
+     the printed number and a spoken band so colour is not the sole meaning — unchanged.
+   - **Where a surface bands a rating it prints the band table on that surface.** This answers “is 74
+     good?” without computing a live percentile, and degrades correctly in a save with no league
+     history yet.
+   - **A rating the simulation has not earned is drawn as a range, not a point.** Range width is the
+     confidence: it narrows as observation accumulates, and a rating observed enough to be certain
+     renders as a collapsed range (`83–83`), never as a different kind of number. An attribute with
+     no observation at all prints the word — `Unseen` — never a blank, a dash or a zero. Where a
+     range is drawn, the observation that produced it is drawn with it, so the player can see why the
+     number is vague. This is §4.5's existing prohibition — “a band without a recorded observation …
+     is fabrication under §4.4” — given a drawn form. It carries an engine dependency on a
+     scouting-confidence model that does not yet exist; until that lands, surfaces render point
+     values and **declare the gap** rather than implying a precision the engine cannot support.
    - Thin progress bars or compact gauges may represent stamina, roster fit, development progress,
      portal interest or scouting confidence.
 
