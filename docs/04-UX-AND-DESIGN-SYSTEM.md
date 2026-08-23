@@ -425,7 +425,8 @@ is deleted. Ratios below are the same WCAG 2.2 relative-luminance method as §6.
 | `action.destructive` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
 | `state.live` | `#37E08A` | 11.50 / 11.12 / 9.43 |
 | `state.positive` | `#4FD08C` | 10.13 / 9.79 / 8.30 |
-| `state.warning` | `#FFB03A` | 10.87 / 10.51 / 8.91 |
+| `state.warning` | `#C9704A` | 5.57 / 5.38 / 4.56 |
+| `heat.above` | `#7FCB9E` | 10.32 / 9.98 / 8.46 |
 | `state.negative` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
 | `state.info` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
 | `college.identity` | `#B07BD6` | 6.27 / 6.07 / 5.14 |
@@ -784,7 +785,7 @@ desktop-class management density.
      | Well below | 40–59 | `state.negative` |
      | Below | 60–69 | the amended `state.warning` |
      | **Average** | **70–79** | **`content.secondary` — neutral, never amber** |
-     | Above | 80–84 | `state.positive`, lightened |
+     | Above | 80–84 | `heat.above` `#7FCB9E` — `state.positive` lightened |
      | Well above | 85–99 | `state.positive` |
 
      Every band clears 4.5:1 on `world.page` and sits at least 24° from gold, per §6.1a(ii). Retain
