@@ -247,6 +247,10 @@ public struct InboxView: View, CoachWorldChromedSurface {
                                 .foregroundStyle(palette.actionPrimary.color)
                                 .frame(minHeight: CoachWorldTokens.Shape.minimumTarget,
                                        alignment: .leading)
+                                // Sizing alone does not move the target: without a content shape
+                                // the button's hit and accessibility region stays the glyph bounds,
+                                // which measured 17 points tall against a 44-point floor.
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -282,15 +286,23 @@ public struct InboxView: View, CoachWorldChromedSurface {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             Spacer(minLength: .zero)
             if let item = selected, item.isUnread {
-                Button("File it") { onRead(item.stableID) }
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                // The frame belongs inside the label. Applied to the `Button` it expands the
+                // layout box while the target stays the text, which measured 27 x 14 points.
+                Button {
+                    onRead(item.stableID)
+                } label: {
+                    Text("File it")
+                        .font(
+                            CoachWorldTokens.display(
+                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                            )
                         )
-                    )
-                    .foregroundStyle(palette.contentQuiet.color)
-                    .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                           minHeight: CoachWorldTokens.Shape.minimumTarget)
+                        .foregroundStyle(palette.contentQuiet.color)
+                        .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                               minHeight: CoachWorldTokens.Shape.minimumTarget)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
             FloodlitCommittingAction(
                 "Advance week",

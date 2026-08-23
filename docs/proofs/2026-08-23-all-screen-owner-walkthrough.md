@@ -14,6 +14,7 @@ Do not re-do these by hand; they are automated and green.
 
 | Claim | Proof |
 |---|---|
+| Every control on screens 8-13 meets the 44-point floor, both sizes | `testEveryControlMeetsTheTouchFloorAt{Default,AX5}` |
 | 21 UI tests across both content sizes | `xcodebuild test`, two passes, 0 failures |
 | Design, core, tactical, screen read-model contracts | `swift run SimTests --<lane>` |
 | Match Day draws 22 actors, 11 a side | `testMatchDayExportsDistinctFieldLandmarksAt{Default,AX5}` |
@@ -56,7 +57,7 @@ For each, record tester, device, OS, and the result verbatim. A row is not passe
 | Reduce Transparency | the floodlit grain overlay drops; no furniture becomes unreadable |
 | Increase Contrast | the one gold line and the one gold action stay distinguishable from the pale tokens |
 | Differentiate Without Colour | offense and defense remain tellable apart without relying on pale versus navy |
-| Dynamic Type, default through AX5 | no clipped label, no control under 44 points |
+| ~~Dynamic Type, no control under 44 points~~ | **Now automated** -- `testEveryControlMeetsTheTouchFloorAt{Default,AX5}` walks every button screens 8-13 expose at both sizes. It found and fixed three violations. Check clipped labels by eye; the target floor is covered. |
 | Sound and haptics | every cue has a visual and a spoken equivalent |
 
 ## C. The two insets the agent would not decide

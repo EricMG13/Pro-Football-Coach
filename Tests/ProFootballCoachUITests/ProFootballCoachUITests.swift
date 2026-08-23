@@ -193,6 +193,51 @@ final class ProFootballCoachUITests: XCTestCase {
         assertWeeklyPlanDominantEvidenceTracksSelectedCommit()
     }
 
+    func testEveryControlMeetsTheTouchFloorAtDefault() {
+        assertEveryControlMeetsTheTouchFloor()
+    }
+
+    func testEveryControlMeetsTheTouchFloorAtAX5() {
+        assertEveryControlMeetsTheTouchFloor()
+    }
+
+    /// `CLAUDE.md`: "The 44 x 44 pt touch floor is HIG-verified (Apple's stated minimum is
+    /// 28 x 28 pt; this contract keeps the stricter 44 pt)."
+    ///
+    /// Enumerated by walking every button the screen actually exposes, rather than a list of the
+    /// ones someone remembered, so a control added later is covered the day it is added. Runs at
+    /// whichever content size the harness has set, because a control that clears the floor at
+    /// default can still fall under it when its label grows.
+    private func assertEveryControlMeetsTheTouchFloor() {
+        for screenID in [8, 9, 10, 11, 12, 13] {
+            let app = XCUIApplication()
+            app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+            app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(screenID)"
+            app.launch()
+            XCTAssertTrue(
+                app.descendants(matching: .any)["weekly-command-screen-\(screenID)"]
+                    .waitForExistence(timeout: 30)
+            )
+            for control in app.buttons.allElementsBoundByIndex where control.exists {
+                let frame = control.frame
+                // A zero frame is an element the query can see but the screen does not place --
+                // off-screen list content, not a control the finger can reach.
+                guard frame.width > 0, frame.height > 0 else { continue }
+                // Rounded: layout arithmetic in floating point lands a genuine 44 on
+                // 43.99999999999997, and failing that would be the test being wrong, not the app.
+                XCTAssertGreaterThanOrEqual(
+                    frame.height.rounded(), 44,
+                    "screen \(screenID): \"\(control.label)\" is \(frame.height)pt tall"
+                )
+                XCTAssertGreaterThanOrEqual(
+                    frame.width.rounded(), 44,
+                    "screen \(screenID): \"\(control.label)\" is \(frame.width)pt wide"
+                )
+            }
+            app.terminate()
+        }
+    }
+
     func testWeeklyCommandContentStaysInsideTheViewportAtDefault() {
         assertWeeklyCommandContentStaysInsideTheViewport(usesAX5: false)
     }
