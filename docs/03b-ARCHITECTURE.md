@@ -54,8 +54,13 @@ the build:
 |---|---|---|
 | Engine boundary | no `import SwiftUI` / `UIKit` / `AppKit`, no UI type | `FootballSimCore/` |
 | Seeding | no `hashValue` | `FootballSimCore/` |
-| Ambient randomness | no `UUID()` or `Date()` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3.5) | `Engine/`, `Generation/`, `AI/`, `Abstracted/` |
+| Ambient randomness | no `UUID()` or `Date()` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3.5) | `FootballSimCore/`, less `Model/` |
 | Design tokens | no literal spacing, radius, colour or font size | `ProFootballCoachUI/` |
+
+The ambient-randomness root read `Engine/`, `Generation/`, `AI/`, `Abstracted/` until 2026-08-23 —
+four of the engine's twenty-three directories. The scan walks the whole target and exempts `Model/`
+by name, which is the construction `CLAUDE.md`'s coverage-boundary rule requires and the reason a
+hand list was removed from `03` §3.5 too.
 
 They are the original four and no longer the whole set. `Tests/SimTests/Suites/ContractTests.swift`
 also scans for a UI file owning or reading the authoritative root, a `Set` stored in a model type
