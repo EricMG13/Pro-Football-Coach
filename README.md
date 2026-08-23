@@ -29,7 +29,10 @@ stadium, player and coach is fictional and original.
 > production SwiftUI.
 >
 > [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this
-> paragraph. [`docs/HANDOFF-2026-08-10.md`](docs/HANDOFF-2026-08-10.md) is the cold-start pointer.
+> paragraph, and it is the cold-start pointer together with
+> [`docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md`](docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md).
+> `docs/HANDOFF-2026-08-10.md` was linked here until 2026-08-23; it was deleted on 2026-08-10 and
+> `docs/DOC-MANIFEST.md` §2 names those two as its replacement.
 
 ## Start here
 
@@ -98,7 +101,8 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | The Coach's World language, canonical 62-family screen inventory and proof gate |
 | `docs/reviews/` | The governing brief and the review that produced it |
 | `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG. P0–P4 |
-| `Sources/ProFootballCoachUI/` | The SwiftUI layer. Empty until P11 |
+| `Sources/ProFootballCoachUI/` | The SwiftUI layer: views, read-model shapes and the design system |
+| `Sources/CoachWorldApp/` | The composition layer — the only target allowed to see both the authoritative root and the screen read models |
 | `Tests/SimTests/` | The suite and its hand-rolled harness |
 | `App/` | Thin `@main` iOS shell + `project.yml` for Xcode project generation |
 | `scripts/verify.sh` | Runs both machine gates and prints a pasteable result |
@@ -112,7 +116,9 @@ rebuild. `docs/PORT-LOG.md` records what survived and why, both ways.
 ./scripts/verify.sh
 ```
 
-That is the gate: `swift build`, then the suite. Pass `--build` for the build alone.
+That is the gate: `swift build`, then the suite. Pass `--build` for the build alone, or
+`--lane <name>` for one lane — `accessibility`, `app`, `archive`, `calibration`, `core`,
+`determinism`, `release` or `soaks`.
 
 Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the codebase is
 compile-verified from the command line without full Xcode. Neither XCTest nor swift-testing ships
@@ -121,14 +127,24 @@ harness (`Tests/SimTests/TestKit.swift`); it reports real pass/fail counts and e
 failure. The two commands underneath are:
 
 ```bash
-swift build && swift run -c release SimTests
+swift build -c release -Xswiftc -enable-testing
+swift run -c release -Xswiftc -enable-testing SimTests
 ```
+
+`-Xswiftc -enable-testing` is not optional. `SimTests` is a plain executable target that
+`@testable import`s `ProFootballCoachUI`, and a release build does not enable testability the way
+a debug build happens to, so without it every `@testable` target fails with "module ... was not
+compiled for testing". `scripts/verify.sh` passes it on both the build and the run.
+
+A run counts only if it ends with TestKit's `N tests, M checks` summary. A Swift `precondition`
+is a SIGTRAP that kills the process mid-run and silently skips every later suite, so a lane that
+stops short of that line is truncated, not green; `verify.sh` fails the lane on a missing summary.
 
 To build and run the iOS app you need full Xcode and
 [XcodeGen](https://github.com/yonaskolb/XcodeGen) (a build-time tool, not an app dependency):
 
 ```bash
-xcodegen generate --spec App/project.yml && open ProFootballCoach.xcodeproj
+xcodegen generate --spec App/project.yml && open App/ProFootballCoach.xcodeproj
 ```
 
 If `xcodebuild` reports no simulator destinations, the iOS platform component is missing:
