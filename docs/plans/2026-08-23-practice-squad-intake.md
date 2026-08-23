@@ -68,17 +68,15 @@ determinism pin read it.
   `rosterIDs + practiceSquadIDs`). Seating 224 rookie contracts on top of a full active roster will
   press the cap, and Task 4 exists because of it.
 
-## Open questions the owner still owns
+## Answered by the owner, 2026-08-23
 
-1. **Do all picks enter on the practice squad, or only those with no active seat?** All picks is what
-   makes the arithmetic work; overflow-only leaves it roughly where it is. This plan assumes **all
-   picks**, and Task 8 measures whether that is too strong.
-2. **How long may a player sit on the practice squad before being released?** With 224 entering a
-   year and 512 seats, an untrimmed squad overflows in the third season. This plan assumes **two
-   seasons**, which fits 448 into 512, and Task 5 makes the constant explicit rather than implied.
-3. **May a club promote a rookie mid-season, or only in `.rosterBuild`?** This plan assumes
-   `.rosterBuild` only, because in-season promotion needs an injury-replacement rule that does not
-   exist yet.
+1. **All picks enter on the practice squad**, not only those with no active seat. Overflow-only would
+   leave the intake arithmetic roughly where it is; all picks is what moves it. Task 8 still measures
+   whether it is too strong.
+2. **Two seasons** on the practice squad before release. 224 entering a year fits 448 into 512 seats
+   with headroom; Task 5 makes the constant explicit rather than implied.
+3. **`.rosterBuild` only** for promotion. In-season promotion needs an injury-replacement rule that
+   does not exist yet, and inventing one here would widen this slice.
 
 ## Tasks
 
