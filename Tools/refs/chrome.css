@@ -611,3 +611,44 @@
 }
 .fl-card__track i { display: block; height: 100%; }
 .fl-card__attr b { font-size: var(--size-action-small); flex: none; min-width: 22px; text-align: right; }
+
+/* ---- Bracket -------------------------------------------------------------------
+   A bracket is a shape. Rounds space out as the field halves, which is the whole
+   reading a table of pairings cannot give. */
+
+.fl-bracket { display: flex; gap: var(--gap-xl); align-items: stretch; }
+.fl-bracket__round {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: var(--gap-xxs);
+}
+.fl-bracket__team {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm-plus);
+  min-height: 26px;
+  padding: 0 var(--gap-md);
+  border-radius: var(--radius-row);
+  background: var(--surface-panel-deep);
+  box-shadow: inset 2px 0 0 var(--action-secondary);
+}
+.fl-bracket__team--out { opacity: 0.45; box-shadow: inset 2px 0 0 var(--rule-structural); }
+.fl-bracket__team em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--content-quiet);
+  min-width: 12px;
+}
+.fl-bracket__team b {
+  font: var(--weight-bold) var(--size-action-small) / 1 var(--font-display);
+  color: var(--content-primary);
+  letter-spacing: var(--track-micro);
+}
+.fl-bracket__team i {
+  font-style: normal;
+  margin-left: auto;
+  font-size: var(--size-action-small);
+  color: var(--content-secondary);
+}

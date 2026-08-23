@@ -681,6 +681,53 @@ class PlayerCard:
 
 
 @dataclass(frozen=True)
+class Bracket:
+    """A postseason bracket, drawn as a bracket.
+
+    The source's own not-produced register says it plainly: "No bracket geometry -- the
+    postseason is a table of pairings." A bracket is a shape, and the shape carries the
+    information a table cannot: who plays whom, who advances, and how far the run has to
+    go. Seeds are ranks, so nothing here is an arc."""
+
+    #: rounds, outermost first; each a tuple of (seed, abbreviation, score or None)
+    rounds: tuple[tuple[tuple[str, str, str | None], ...], ...]
+
+    def cells(self) -> int:
+        return sum(len(r) for r in self.rounds)
+
+    def readout_rows(self) -> int:
+        return max((len(r) for r in self.rounds), default=0)
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return len(self.rounds)
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 24.0 + max((len(r) for r in self.rounds), default=0) * 30.0
+
+    def render(self) -> str:
+        columns = []
+        for depth, teams in enumerate(self.rounds):
+            entries = "".join(
+                f'<span class="fl-bracket__team{" fl-bracket__team--out" if score is None else ""}">'
+                f'<em class="fl-figure">{escape(seed)}</em>'
+                f'<b>{escape(abbr)}</b>'
+                + (f'<i class="fl-figure">{escape(score)}</i>' if score else "")
+                + "</span>"
+                for seed, abbr, score in teams
+            )
+            columns.append(
+                f'<div class="fl-bracket__round" style="--depth: {depth}">{entries}</div>'
+            )
+        return f'<div class="fl-bracket">{"".join(columns)}</div>'
+
+
+@dataclass(frozen=True)
 class Chip:
     text: str
     tone: str = "quiet"  # quiet | live | positive | warning | negative | gold

@@ -276,3 +276,31 @@ The 28 that remain are mostly right as tables -- Inbox, Standings, Rankings, Bra
 Statistics, Record Book, Coaching Tree. The ones still worth a shape are Coaching HQ,
 Game Plan, Development Plan and Recruiting Board, all of which want a card or a track that
 the current copy does not yet name.
+
+### 25. Batches 5 and 6: the end of the sweep
+
+**46 of 59 surfaces now carry a shape**, from 18 before batch 1. The remaining 13 are not
+a backlog -- they are surfaces where a list or a form IS the shape, and drawing something
+on them would be decoration:
+
+Inbox · While You Were Away · World Search · News (message and result lists) · Settings &
+Accessibility · Appearance · New Career & Coach Identity (forms) · Record Book · Coaching
+Tree (records) · Teaching · Failure · System State · First Run (overlays that explain).
+
+**Batch 5** put the bar in the table track, which is what `ShareBar`'s own interface said
+it was for and which had never been used. Six list surfaces stopped being columns of
+numbers: roster snaps as a share of the 448 played, standings and rankings and league-map
+records as a share of games, statistics leaders as a share of the category's best,
+recruiting interest as a proportion. Distance, stars and rival count stay figures --
+they are a length, a rank and a count, and geometry.css refuses arcs for those.
+
+**Batch 6** built the last missing shape. The source's own register said "no bracket
+geometry -- the postseason is a table of pairings", so `Bracket` draws one: rounds spacing
+out as the field halves, which is the reading a table cannot give. Save & Continuity got a
+meter against the 8 MB save ceiling, which is a real project constraint (D7) that was
+printed as text. Career Line, Responsibilities and Career Hub took tracks.
+
+**A process defect worth recording.** A patch script that asserts inside its loop and
+writes at the end silently discards every edit when a late assertion fails -- five league
+edits were lost that way and only the shape census caught it. Assert all matches first,
+then write.

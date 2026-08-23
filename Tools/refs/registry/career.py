@@ -12,10 +12,16 @@ a registry that only models screens, and each one declares that as a gap."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, FormLine, Hero, Panel, Row, Rows, ShareBar, Split, Stack,
-    Status, Surface, Table, blocker, broadcast, desk, dossier, gap,
+    Chip, Chips, Col, FormLine, Hero, Meter, Panel, Row, Rows, ShareBar, Split,
+    Stack, Status, Surface, Table, blocker, broadcast, desk, dossier, gap,
 )
 from surface import Lean
+
+def SEASON(won: int, played: int, label: str):
+    from primitives import ShareBar
+
+    return ShareBar(won / played, "Season record", label, inline=True)
+
 
 LEGACY = "Sources/ProFootballCoachUI/LegacyHistoryView.swift -- 175 lines, four concepts, two record kinds"
 OVERLAY_GAP = (
@@ -61,9 +67,7 @@ career_hub = desk(
             Row("Oneonta Slate Lamplighters", ("Pro",), "Head coach, contacted"),
             Row("Our extension", ("Offered",), "Four years, decide by week 12"),
         ), kind="tappable")),
-        Rows((
-            Row("Board confidence", ("Secure",), "Seven straight wins, reputation rising"),
-        ), kind="readout"),
+        ShareBar(0.86, "Board confidence", "Secure", "--state-positive"),
     )),
     gaps=(
         blocker("SCREEN", "Five registry numbers alias here -- job board, offer, job security, carousel, appointment -- served by one switch."),
@@ -143,10 +147,10 @@ career_line = desk(
     status=Status.WRAPPER, parent="LegacyHistoryView", evidence=LEGACY,
     body=Panel("Seasons", Table(
         (Col("Year", 5, "right"), Col("Programme", 23, "left", False),
-         Col("Record", 7, "right"), Col("Finish", 20, "left", False)),
-        (("1", "Union Maritime Meridian", "4-8", "Sixth in conference"),
-         ("2", "Union Maritime Meridian", "8-4", "Third, bowl eligible"),
-         ("3", "Union Maritime Meridian", "7-0", "In progress")),
+         Col("Record", 12, "right"), Col("Finish", 20, "left", False)),
+        (("1", "Union Maritime Meridian", SEASON(4, 12, "4-8"), "Sixth in conference"),
+         ("2", "Union Maritime Meridian", SEASON(8, 12, "8-4"), "Third, bowl eligible"),
+         ("3", "Union Maritime Meridian", SEASON(7, 7, "7-0"), "In progress")),
     )),
     gaps=(
         blocker("DATA", "No career record kind; the line is assembled in the view from season state."),
@@ -172,13 +176,12 @@ responsibilities = desk(
     id="responsibilities", number=63, name="Responsibilities", family="career",
     status=Status.MISSING, evidence="no Swift case; source inventory M1",
     commit="Set the thresholds",
-    body=Panel("Ownership", Table(
-        (Col("Area", 20, "left", False), Col("Owner", 16, "left", False),
-         Col("Yields", 22, "left", False)),
-        (("Recruiting calls", "Cyrus Mbeki", "+2 contacts a week"),
-         ("Injury clearance", "Ines Fallon", "One day faster"),
-         ("Practice script", "Perrin Oduya", "Costs a red-zone block")),
-    )),
+    body=Panel("Ownership", Stack((
+        ShareBar(0.72, "Recruiting calls · Mbeki", "+2 contacts a week"),
+        ShareBar(0.55, "Injury clearance · Fallon", "One day faster"),
+        ShareBar(0.38, "Practice script · Oduya", "Costs a red-zone block", "--state-warning"),
+        ShareBar(0.00, "Eight areas unassigned", "No owner", "--state-negative"),
+    ))),
     gaps=(
         blocker("DATA", "No area enum, no assignment, no persistence, no surface. Every ownership line drawn in this system is unbacked without it."),
         blocker("RULE", "The interrupt thresholds that end a cruise are undefined, so delegation cannot be handed back."),
@@ -226,11 +229,14 @@ season_review = broadcast(
 save_continuity = desk(
     id="saveContinuity", number=69, name="Save & Continuity", family="career",
     status=Status.MISSING, evidence="no Swift case; source inventory M7",
-    body=Panel("Saves", Table(
-        (Col("Save", 20, "left", False), Col("Week", 8, "left", False),
-         Col("Build", 10, "left", False), Col("Size", 8, "right")),
-        (("Union Maritime, y3", "Week 7", "Current", "2.3 MB"),
-         ("Union Maritime, y2", "Week 14", "Older", "2.1 MB")),
+    body=Stack((
+        Panel("This save", Meter(2.3, 8.0, "Save size against the ceiling", " MB")),
+        Panel("Saves", Table(
+            (Col("Save", 20, "left", False), Col("Week", 8, "left", False),
+             Col("Build", 10, "left", False), Col("Size", 8, "right")),
+            (("Union Maritime, y3", "Week 7", "Current", "2.3 MB"),
+             ("Union Maritime, y2", "Week 14", "Older", "2.1 MB")),
+        )),
     )),
     gaps=(
         blocker("SCREEN", "A Continuity-v3 design sheet exists on the design-references branch with no screen to land on."),

@@ -7,7 +7,8 @@ branch. Those gaps are the placement spec Stream A's Phase 2 builds against."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, FormLine, Hero, Panel, Row, Rows, ShareBar, Split, Stack,
+    Bracket, Chip, Chips, Col, FormLine, Hero, Panel, Row, Rows, ShareBar, Split,
+    Stack,
     StatCompare, Status, Table, blocker, broadcast, desk, dossier, gap,
 )
 
@@ -47,12 +48,12 @@ league_map = desk(
     id="leagueMap", number=41, name="League Map", family="league", status=Status.BUILT,
     body=Panel("Conference", Table(
         (Col("Programme", 23, "left", False), Col("City", 16, "left", False),
-         Col("Record", 7, "right"), Col("Distance", 9, "right")),
-        (("Union Maritime Meridian", "New Bedford", "7-0", "--"),
-         ("Zumbrota Central Marsh", "Zumbrota", "6-1", "410 mi"),
-         ("Pecos Bramble", "Pecos", "4-3", "980 mi"),
-         ("Edgartown Cedar", "Edgartown", "3-4", "60 mi"),
-         ("Ephraim Maritime River", "Ephraim", "2-5", "1,240 mi")),
+         Col("Record", 12, "right"), Col("Distance", 9, "right")),
+        (("Union Maritime Meridian", "New Bedford", WINS(7, 7, "7-0"), "--"),
+         ("Zumbrota Central Marsh", "Zumbrota", WINS(6, 7, "6-1"), "410 mi"),
+         ("Pecos Bramble", "Pecos", WINS(4, 7, "4-3"), "980 mi"),
+         ("Edgartown Cedar", "Edgartown", WINS(3, 7, "3-4"), "60 mi"),
+         ("Ephraim Maritime River", "Ephraim", WINS(2, 7, "2-5"), "1,240 mi")),
     )),
     gaps=(
         gap("SCREEN", "There is no map. Real geography exists in the world model but nothing plots it."),
@@ -124,9 +125,12 @@ rankings = desk(
     evidence="Sources/ProFootballCoachUI/CompetitionOverviewView.swift",
     body=Stack((
         Panel("Top eight", Table(
-            (Col("#", 3, "right"), Col("Programme", 26, "left", False), Col("Record", 7, "right")),
-            (("1", "Hood River Maritime Iron", "8-0"), ("2", "Oneonta Slate Lamplighters", "7-0"),
-             ("3", "New London Valley Iron", "7-1"), ("4", "Union Maritime Meridian", "7-0")),
+            (Col("#", 3, "right"), Col("Programme", 26, "left", False),
+             Col("Record", 12, "right")),
+            (("1", "Hood River Maritime Iron", WINS(8, 8, "8-0")),
+             ("2", "Oneonta Slate Lamplighters", WINS(7, 7, "7-0")),
+             ("3", "New London Valley Iron", WINS(7, 8, "7-1")),
+             ("4", "Union Maritime Meridian", WINS(7, 7, "7-0"))),
         )),
         Panel("Our position", Rows((
             Row("In the field", ("Yes",), "Fourth seed if the season ended today"),
@@ -142,13 +146,12 @@ bracket = desk(
     id="bracketPostseason", number=46, name="Bracket / Postseason", family="league",
     status=Status.WRAPPER, parent="CompetitionOverviewView",
     evidence="Sources/ProFootballCoachUI/CompetitionOverviewView.swift",
-    body=Panel("Quarter-finals", Table(
-        (Col("Seed", 5, "right"), Col("Programme", 26, "left", False),
-         Col("vs", 4, "center", False), Col("Opponent", 24, "left", False)),
-        (("1", "Hood River Maritime Iron", "v", "Kirkwall Reach Iron"),
-         ("2", "Oneonta Slate Lamplighters", "v", "Watertown Coastal Marsh"),
-         ("3", "New London Valley Iron", "v", "Cambridge A&M Peat"),
-         ("4", "Union Maritime Meridian", "v", "Weiser Valley Flint")),
+    body=Bracket((
+        (("1", "HOO", "31"), ("8", "KIR", "17"), ("4", "UNI", "24"), ("5", "WEI", "21"),
+         ("2", "ONE", "20"), ("7", "WAT", "27"), ("3", "NEW", "14"), ("6", "CAM", "10")),
+        (("1", "HOO", "28"), ("4", "UNI", "31"), ("7", "WAT", "13"), ("3", "NEW", "24")),
+        (("4", "UNI", "31"), ("3", "NEW", "24")),
+        (("4", "UNI", None),),
     )),
     gaps=(
         blocker("ART", "A bracket without a competition mark is unbranded; the surface cannot say which competition it is."),
