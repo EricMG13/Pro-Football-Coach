@@ -9,18 +9,15 @@ mode, no throwing passes. Matches are watched in a 2D view and shaped by roster 
 identity, opponent preparation, staff and in-game decisions. Every school, team, conference, city,
 stadium, player and coach is fictional and original.
 
-> **Status: the Master Build Documentation rebaseline is active; M0 architecture hardening, M1
-> playable world, and M2 people lifecycle are implemented.** The normalized deterministic root runs exact
-> college and professional schedules, target-scale rosters, abstract results, regular-season
-> standings, postseason brackets, awards/records, causal development, health and fatigue,
-> eligibility/retirement, staff continuity, season rollover, and bounded history. M2 completed a
-> verified 20-season college/pro lifecycle soak. P4's detailed-engine calibration instrument remains
-> built but not calibrated. M3 college management is the active backend milestone. Exact gates and
-> exclusions are in `docs/STATUS.md`.
->
-> **The complete management game is not yet built** — college recruiting/portal/NIL, professional
-> roster markets, tactics, the full career/stakes layer, AI/delegation, persistence productionization,
-> the design system, and feature views remain ahead.
+> **Status: the Master Build Documentation rebaseline is active and has carried past the backend
+> milestones into the production UI.** The normalized deterministic root runs exact college and
+> professional schedules, target-scale rosters, abstract results, regular-season standings,
+> postseason brackets, awards/records, causal development, health and fatigue,
+> eligibility/retirement, staff continuity, season rollover, and bounded history. College
+> management, professional roster markets, tactics, the career and history layers, and a shipped
+> SwiftUI application root over a numbered screen registry all exist in the tree. What each gate
+> actually proved, and what it did not, is in `docs/STATUS.md` — this paragraph never restates a
+> gate result.
 >
 > The rejected v2, Stitch and 34-screen Film Room references were removed on 2026-08-11. The
 > corrected canonical language is **The Coach's World**, with Film Room reserved for scouting,
@@ -28,8 +25,9 @@ stadium, player and coach is fictional and original.
 > complete 62-family screen inventory and the three-proof gate. Reference HTML never becomes
 > production SwiftUI.
 >
-> [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this
-> paragraph. [`docs/HANDOFF-2026-08-10.md`](docs/HANDOFF-2026-08-10.md) is the cold-start pointer.
+> [`docs/STATUS.md`](docs/STATUS.md) is the honest picture, is the cold-start pointer, and takes
+> precedence over this paragraph. `docs/HANDOFF-2026-08-10.md` was deleted on 2026-08-11 and this
+> line used to link to it; `docs/DOC-MANIFEST.md` records why.
 
 ## Start here
 
@@ -97,9 +95,11 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | `docs/plans/` | Per-phase task plans, one per phase, written before that phase is built |
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | The Coach's World language, canonical 62-family screen inventory and proof gate |
 | `docs/reviews/` | The governing brief and the review that produced it |
-| `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG. P0–P4 |
-| `Sources/ProFootballCoachUI/` | The SwiftUI layer. Empty until P11 |
-| `Tests/SimTests/` | The suite and its hand-rolled harness |
+| `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG |
+| `Sources/ProFootballCoachUI/` | The SwiftUI layer: views, read models, design tokens |
+| `Sources/CoachWorldApp/` | The composition layer — the application root, the store, the save coordinator, and one read-model provider per screen family. It is where the root and the views meet, and the only target besides the engine that owns state |
+| `Tests/SimTests/` | The suite and its hand-rolled harness. `Suites/` holds the suites; `main.swift` maps each lane flag to them |
+| `Tests/ProFootballCoachTests/`, `Tests/ProFootballCoachUITests/` | The Xcode-side stubs the generated project needs. The real suite is `SimTests` |
 | `App/` | Thin `@main` iOS shell + `project.yml` for Xcode project generation |
 | `scripts/verify.sh` | Runs both machine gates and prints a pasteable result |
 
@@ -112,7 +112,10 @@ rebuild. `docs/PORT-LOG.md` records what survived and why, both ways.
 ./scripts/verify.sh
 ```
 
-That is the gate: `swift build`, then the suite. Pass `--build` for the build alone.
+That is the default `full` lane: a release build, then the complete suite. Pass `--build` for the
+build alone, or `--lane <name>` for a narrower one. The lanes are `accessibility`, `app`, `archive`,
+`calibration`, `core`, `determinism`, `full`, `release` and `soaks`; each keeps its own logs and its
+own SwiftPM scratch path, so a failed calibration cannot contaminate another run.
 
 Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the codebase is
 compile-verified from the command line without full Xcode. Neither XCTest nor swift-testing ships
@@ -121,8 +124,22 @@ harness (`Tests/SimTests/TestKit.swift`); it reports real pass/fail counts and e
 failure. The two commands underneath are:
 
 ```bash
-swift build && swift run -c release SimTests
+swift build -c release -Xswiftc -enable-testing
+swift run -c release -Xswiftc -enable-testing SimTests
 ```
+
+**`-Xswiftc -enable-testing` is not optional.** `SimTests` is a plain executable target, not a
+recognised `.testTarget`, so SwiftPM never infers testability for it the way `swift test` would —
+and it `@testable import`s both `ProFootballCoachUI` and `CoachWorldApp`. A debug build happens to
+enable testing anyway; `-c release` does not, so the release command without the flag fails every
+target it `@testable` imports with `module ... was not compiled for testing`. `scripts/verify.sh`
+passes the flag on your behalf, which is the reason to use it rather than these two.
+
+**A run counts only if it ends with TestKit's `N tests, M checks` line.** A Swift `precondition` is
+a SIGTRAP: it kills the process mid-run, prints nothing, and leaves an ordinary non-zero status, so
+a lane that stops short of that summary is a *truncated* run and says nothing about the suites after
+it. `verify.sh` greps for the line and reports `TRUNCATED` when it is absent. A raw
+`swift run` does not.
 
 To build and run the iOS app you need full Xcode and
 [XcodeGen](https://github.com/yonaskolb/XcodeGen) (a build-time tool, not an app dependency):
