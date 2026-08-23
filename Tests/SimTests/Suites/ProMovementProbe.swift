@@ -38,6 +38,8 @@ func runProMovementProbe() {
         var signedWithNoPriorClub = 0
         var retiredOrGone = 0
         var poolDepths: [Int] = []
+        var drafted = 0
+        var phaseWeeks: [ProMarketPhase: Int] = [:]
 
         while state.calendar.season < targetSeason {
             let transition: WorldTransition
@@ -53,6 +55,7 @@ func runProMovementProbe() {
             if before.proMarket.phase == .freeAgency {
                 poolDepths.append(before.proMarket.freeAgentIDs.count)
             }
+            phaseWeeks[before.proMarket.phase, default: 0] += 1
 
             for event in transition.emittedEvents {
                 switch event.payload {
@@ -70,6 +73,9 @@ func runProMovementProbe() {
                         signedToPracticeSquad += 1
                     }
                     ownerByPlayer[playerID] = teamID
+                case let .proDraftPick(prospectID, teamID, _, _):
+                    drafted += 1
+                    ownerByPlayer[prospectID] = teamID
                 default:
                     break
                 }
@@ -82,13 +88,29 @@ func runProMovementProbe() {
             ? "free agency never ran"
             : "weeks=\(poolDepths.count) depth min=\(poolDepths.min() ?? 0) max=\(poolDepths.max() ?? 0)"
 
+        // Active seats separately from ownership: `proOwnership` counts the practice squad too, and
+        // the roster-legality rule and the age-curve band both read `rosterIDs` alone. A league that
+        // is short only because its rookies are parked would look full here and empty to them.
+        let active = state.proTeams.values.reduce(0) { $0 + $1.rosterIDs.count }
+        let squad = state.proTeams.values.reduce(0) { $0 + $1.practiceSquadIDs.count }
+        let shortfalls = state.proTeams.values
+            .map { ProRules.activeRosterLimit - $0.rosterIDs.count }
+            .filter { $0 > 0 }
+        let phases = ProMarketPhase.allCases
+            .map { "\($0.rawValue)=\(phaseWeeks[$0] ?? 0)" }
+            .joined(separator: " ")
+
         print("""
         PROBE season \(targetSeason): expired=\(expired) \
-        returned=\(returned) relocated=\(relocated) \
+        returned=\(returned) relocated=\(relocated) drafted=\(drafted) \
         noPriorClub=\(signedWithNoPriorClub) toPracticeSquad=\(signedToPracticeSquad)
         PROBE season \(targetSeason): rosters=\(nowOwned.count) \
         unaccounted=\(retiredOrGone) poolLeft=\(state.proMarket.freeAgentIDs.count) \
         freeAgency \(poolSummary)
+        PROBE season \(targetSeason): active=\(active)/\(32 * ProRules.activeRosterLimit) \
+        practiceSquad=\(squad) shortTeams=\(shortfalls.count) \
+        shortBy min=\(shortfalls.min() ?? 0) max=\(shortfalls.max() ?? 0) \
+        weeks \(phases)
         """)
         ownerByPlayer = nowOwned.merging(ownerByPlayer) { current, _ in current }
     }
@@ -154,23 +176,56 @@ func runProDraftStallProbe() {
                 + "class=\(state.proMarket.draftClass.count) taken=\(takenIDs.count)")
             continue
         }
-        let cap = (try? ProManagementSystem.capSnapshot(teamID: teamID, in: state))
-        do {
-            _ = try ProMarketSystem.draft(
-                prospectID: prospect.id,
-                for: teamID,
-                contract: ProMarketSystem.rookieContract(for: prospect.player),
-                in: state
-            )
-            print("PROBE season \(reportedSeasons): first live pick succeeded for \(teamID)")
-        } catch {
-            print("""
-            PROBE season \(reportedSeasons): first live pick threw \(error) \
-            team=\(teamID) roster=\(team?.rosterIDs.count ?? -1)/\(ProRules.activeRosterLimit) \
-            practiceSquad=\(team?.practiceSquadIDs.count ?? -1)/\(ProRules.practiceSquadLimit) \
-            committedCap=\(cap?.committedCap ?? -1)/\(cap?.capLimit ?? -1) \
-            draftClass=\(state.proMarket.draftClass.count)
-            """)
+        _ = prospect
+        _ = team
+
+        // Walk the loop `makeDraftPicks` walks, with the same call it makes, and report where it
+        // stops and why. The first pick succeeding says nothing about the run: the live draft takes
+        // fifteen weeks to make two hundred picks, which is a loop that breaks and restarts, not one
+        // that runs.
+        var walk = state
+        var picks = 0
+        while walk.proMarket.phase == .draft, let onClock = walk.proMarket.currentPickTeamID {
+            let taken = Set(walk.proMarket.draftedProspectIDs)
+            guard let next = walk.proMarket.draftClass
+                .filter({ !taken.contains($0.id) })
+                .min(by: {
+                    $0.player.overall.value == $1.player.overall.value
+                        ? $0.id.uuidString < $1.id.uuidString
+                        : $0.player.overall.value > $1.player.overall.value
+                }) else {
+                print("PROBE season \(reportedSeasons): class exhausted after \(picks) picks")
+                break
+            }
+            do {
+                // The public entry point rather than the scheduler's: `draftForScheduler`
+                // is internal to the engine module. It differs only by an extra whole-root check,
+                // which can make a pick fail but never make one succeed, so a refusal here is a
+                // refusal there.
+                walk = try ProMarketSystem.draft(
+                    prospectID: next.id,
+                    for: onClock,
+                    contract: ProMarketSystem.rookieContract(for: next.player),
+                    in: walk
+                )
+                picks += 1
+            } catch {
+                let cap = (try? ProManagementSystem.capSnapshot(teamID: onClock, in: walk))
+                let club = walk.proTeams[onClock]
+                let deal = ProMarketSystem.rookieContract(for: next.player)
+                let cost = (deal.baseSalaryByYear.first ?? 0) + deal.annualBonusProration
+                print("""
+                PROBE season \(reportedSeasons): draft stopped after \(picks) picks — \(error) \
+                team=\(onClock) roster=\(club?.rosterIDs.count ?? -1)/\(ProRules.activeRosterLimit) \
+                practiceSquad=\(club?.practiceSquadIDs.count ?? -1)/\(ProRules.practiceSquadLimit) \
+                committedCap=\(cap?.committedCap ?? -1)/\(cap?.capLimit ?? -1) \
+                pickCost=\(cost) classLeft=\(walk.proMarket.draftClass.count - taken.count)
+                """)
+                break
+            }
+        }
+        if walk.proMarket.phase != .draft {
+            print("PROBE season \(reportedSeasons): draft ran to completion in \(picks) picks")
         }
     }
 }

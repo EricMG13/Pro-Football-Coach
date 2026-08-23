@@ -91,8 +91,12 @@ public enum SharedRules {
     /// its floor of 3. Which base defence the league plays is a design question `02` does not
     /// answer — the 4-3 shape lives only in `DepthChart`'s templates — and it is flagged for the
     /// owner rather than settled here.
+    ///
+    /// Running back read 1 until 2026-08-22, for the same reason and caught by the same assertion:
+    /// the offensive template gained the reserve back the run resolver picks its second carrier
+    /// from, so a roster at the old floor could not fill the formation it is required to field.
     public static let minimumPlayableRosterByPosition: [Position: Int] = [
-        .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
+        .quarterback: 1, .runningBack: 2, .wideReceiver: 3, .tightEnd: 1,
         .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
         .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 3,
         .cornerback: 3, .safety: 2, .kicker: 1, .punter: 1,

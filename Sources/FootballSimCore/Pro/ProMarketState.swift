@@ -150,6 +150,10 @@ public struct ProMarketState: Codable, Sendable, Equatable {
     public private(set) var draftOrder: [UUID]
     public private(set) var nextPick: Int
     public private(set) var draftedProspectIDs: [UUID]
+    /// Picks spent by a club that had no active seat to put a prospect in. `02` section 4.2,
+    /// 2026-08-23. Stored rather than derived because nothing else records that a pick happened and
+    /// took nobody, and `nextPick` alone cannot tell a passed pick from a made one.
+    public private(set) var passedPickCount: Int
     public private(set) var freeAgentIDs: [UUID]
     public private(set) var observations: [ProDraftObservation]
     public private(set) var archivedDraftProspectIDs: [UUID]
@@ -163,6 +167,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         draftOrder: [UUID] = [],
         nextPick: Int = 0,
         draftedProspectIDs: [UUID] = [],
+        passedPickCount: Int = 0,
         freeAgentIDs: [UUID] = [],
         observations: [ProDraftObservation] = [],
         archivedDraftProspectIDs: [UUID] = [],
@@ -175,6 +180,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         self.draftOrder = draftOrder
         self.nextPick = min(max(0, nextPick), self.draftClass.count)
         self.draftedProspectIDs = Self.canonicalIDs(draftedProspectIDs)
+        self.passedPickCount = min(max(0, passedPickCount), self.nextPick)
         self.freeAgentIDs = Self.canonicalIDs(freeAgentIDs)
         self.observations = Self.canonicalObservations(observations)
         self.archivedDraftProspectIDs = Self.canonicalIDs(archivedDraftProspectIDs)
@@ -191,6 +197,9 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         let draftOrder = try container.decode([UUID].self, forKey: .draftOrder)
         let nextPick = try container.decode(Int.self, forKey: .nextPick)
         let draftedProspectIDs = try container.decode([UUID].self, forKey: .draftedProspectIDs)
+        // Absent in every save written before 2026-08-23, where no pick could be passed and the
+        // count is therefore zero by construction.
+        let passedPickCount = try container.decodeIfPresent(Int.self, forKey: .passedPickCount) ?? 0
         let freeAgentIDs = try container.decode([UUID].self, forKey: .freeAgentIDs)
         let observations = try container.decode([ProDraftObservation].self, forKey: .observations)
         let archivedDraftProspectIDs = try container.decode(
@@ -208,7 +217,8 @@ public struct ProMarketState: Codable, Sendable, Equatable {
               draftClass.allSatisfy({ $0.draftSeason == season }),
               ProRules.isLegalDraftOrder(draftOrder) || phase == .closed,
               (0...draftClass.count).contains(nextPick),
-              draftedProspectIDs.count == nextPick,
+              passedPickCount >= 0,
+              draftedProspectIDs.count + passedPickCount == nextPick,
               Set(draftedProspectIDs).count == draftedProspectIDs.count,
               Set(draftedProspectIDs).isSubset(of: Set(draftClass.map(\.id))),
               freeAgentIDs.count <= Self.maximumFreeAgentIDs,
@@ -240,6 +250,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
             draftOrder: draftOrder,
             nextPick: nextPick,
             draftedProspectIDs: draftedProspectIDs,
+            passedPickCount: passedPickCount,
             freeAgentIDs: freeAgentIDs,
             observations: observations,
             archivedDraftProspectIDs: archivedDraftProspectIDs,
@@ -274,6 +285,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         self.draftClass = Self.canonicalProspects(draftClass)
         self.draftOrder = draftOrder
         self.nextPick = 0
+        self.passedPickCount = 0
         self.draftedProspectIDs = []
         self.freeAgentIDs = Self.canonicalIDs(freeAgentIDs)
         self.observations = []
@@ -296,6 +308,22 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         draftedProspectIDs.append(prospectID)
         draftedProspectIDs.sort { $0.uuidString < $1.uuidString }
         nextPick += 1
+        if nextPick >= draftClass.count { phase = .rosterBuild }
+        return true
+    }
+
+    /// Spends the pick on the clock without taking anybody, for a club that has no active seat to
+    /// put a prospect in. `02` section 4.2, 2026-08-23: expiry leaves clubs between six and seventeen
+    /// seats short against seven rounds, so the club that lost fewest fills up on its own sixth pick,
+    /// and treating that as fatal ended the round for every club behind it.
+    ///
+    /// Deliberately not `consumeDraftPick` with a nil prospect: `draftedProspectIDs` is what says a
+    /// prospect is off the board, and a passed pick leaves its prospect on it for the next club.
+    @discardableResult
+    public mutating func passDraftPick() -> Bool {
+        guard phase == .draft, nextPick < draftClass.count else { return false }
+        nextPick += 1
+        passedPickCount += 1
         if nextPick >= draftClass.count { phase = .rosterBuild }
         return true
     }
@@ -382,6 +410,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         draftClass = []
         draftOrder = []
         nextPick = 0
+        passedPickCount = 0
         draftedProspectIDs = []
         freeAgentIDs = []
         observations = []
@@ -398,7 +427,8 @@ public struct ProMarketState: Codable, Sendable, Equatable {
             && draftClass.allSatisfy { $0.draftSeason == season }
             && (phase == .closed || draftOrder.count == ProRules.draftPickCount)
             && (0...draftClass.count).contains(nextPick)
-            && draftedProspectIDs.count == nextPick
+            && passedPickCount >= 0
+            && draftedProspectIDs.count + passedPickCount == nextPick
             && Set(draftedProspectIDs).count == draftedProspectIDs.count
             && Set(draftedProspectIDs).isSubset(of: Set(draftClass.map(\.id)))
             && freeAgentIDs.count <= Self.maximumFreeAgentIDs

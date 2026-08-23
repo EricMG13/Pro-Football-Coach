@@ -1,6 +1,37 @@
 import Foundation
 import FootballSimCore
 
+/// Captures the root the weekly step loop had reached at one named checkpoint, so a test can
+/// re-simulate from the state the scheduler itself simulated from rather than from the root the
+/// week began on.
+private final class KickoffStateRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var captured: GameState?
+    private let checkpoint: String?
+
+    /// Named by the step it comes *before*, and resolved through `WorldScheduler.steps`, so a step
+    /// inserted ahead of kickoff moves this with it. Restating the predecessor by name would make
+    /// the day someone reorders the week the day this silently measures the wrong root.
+    init(before step: WorldStep) {
+        let steps = WorldScheduler.steps
+        checkpoint = steps.firstIndex(of: step)
+            .flatMap { $0 > 0 ? "step.\(steps[$0 - 1].rawValue)" : nil }
+    }
+
+    var state: GameState? {
+        lock.lock()
+        defer { lock.unlock() }
+        return captured
+    }
+
+    func observe(_ label: String, state: GameState) {
+        guard let checkpoint, label == checkpoint else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        captured = state
+    }
+}
+
 func runTacticalStateTests() {
     suite("M4 tactical state") {
         test("weekly plans are calendar-bound, persistent, and deterministic") {
@@ -167,12 +198,38 @@ func runTacticalStateTests() {
                 pressure: .attack
             )
             expect(state.tactical.setPlan(plan, for: game.homeID, at: state.calendar))
+
+            // `injuriesAndRecovery` runs before `nonUserGames`, so a player injured on the health
+            // tick is not on the field for the game played later the same week. Re-simulating from
+            // the root the week began on would compare against a squad that never took it, and the
+            // whole summary — not just the participant lists — is what this asserts. The
+            // comparison root is therefore the one the step loop had reached at the last step
+            // before kickoff.
+            let recorder = KickoffStateRecorder(before: .nonUserGames)
+            WorldScheduler.transactionObserver = { checkpoint, observed in
+                recorder.observe(checkpoint, state: observed)
+            }
+            defer { WorldScheduler.transactionObserver = nil }
+
+            let transition = try WorldScheduler.advanceWeek(state)
+            guard let kickoff = recorder.state else {
+                expect(false, "the week never reached the step before kickoff")
+                return
+            }
+            // The two inputs this call leaves out that `nonUserGames` passes in. The simulator reads
+            // neither from the root — only from these arguments — so stating them here is what makes
+            // the equality below a claim about the home plan being consumed rather than an accident
+            // of this seed. If a fixture ever gives the away side a plan or anyone a personnel plan,
+            // this says so instead of failing on an opaque summary diff.
+            expect(kickoff.tactical.plan(for: game.awayID, at: kickoff.calendar) == nil,
+                   "the away side carries a plan this comparison does not pass")
+            expect(kickoff.tactical.personnelPlansByOrganisation.isEmpty,
+                   "a personnel plan exists that this comparison does not pass")
             let expected = AbstractGameSimulator.play(
                 game,
-                in: state,
+                in: kickoff,
                 tacticalPlans: [game.homeID: plan]
             )
-            let transition = try WorldScheduler.advanceWeek(state)
             guard let completed = transition.state.competition.currentSchedule.games.first(where: {
                 $0.id == game.id
             }), let result = completed.result else {

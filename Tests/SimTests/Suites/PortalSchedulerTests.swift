@@ -34,20 +34,25 @@ private final class ScholarshipTransactionRecorder: @unchecked Sendable {
     }
 }
 
-private func portalSchedulerFinalWeekFixture(seed: UInt64) throws -> GameState {
+private func portalSchedulerFixture(seed: UInt64, throughWeek week: Int) throws -> GameState {
     var state = GameState.bootstrap(seed: seed)
-    while state.calendar.week < SharedRules.inSeasonWeeks {
+    while state.calendar.week < week {
         state = try WorldScheduler.advanceWeek(state).state
     }
-    precondition(state.calendar == CalendarState(
-        season: 0,
-        week: SharedRules.inSeasonWeeks
-    ))
+    precondition(state.calendar == CalendarState(season: 0, week: week))
     return state
 }
 
 func runPortalSchedulerTests() {
-    let finalWeek = try! portalSchedulerFinalWeekFixture(seed: 98_001)
+    // Two starting roots, not one. `recruitingMarket.terminal` runs on the tick *before* signing
+    // day (`CollegeRules.signingDayWeek - 1`), so a run that begins on the final week never reaches
+    // it and the checkpoint sweep below would pass by never looking. The final-week root is then
+    // one ordinary advance from the terminal one, which is the same sequence the old fixture ran.
+    let terminalWeek = try! portalSchedulerFixture(
+        seed: 98_001,
+        throughWeek: CollegeRules.signingDayWeek - 1
+    )
+    let finalWeek = try! WorldScheduler.advanceWeek(terminalWeek).state
     let postseason = try! WorldScheduler.advanceWeek(finalWeek)
     let spring = try! WorldScheduler.advanceWeek(postseason.state)
 
@@ -88,14 +93,41 @@ func runPortalSchedulerTests() {
         test("scholarships remain valid immediately after the season lifecycle transaction") {
             var state = finalWeek
             let programmeID = state.programmes.ids[0]
-            let playerID = state.college.programmes[programmeID]!.scholarshipPlayerIDs[0]
+            var programmeStates = state.college.programmes
+            let recruiting = programmeStates[programmeID]!
+            // Not `scholarshipPlayerIDs[0]` and not an unconditional `setRosterAllocation`: by the
+            // final week the programme has committed its whole NIL budget, and a player who already
+            // holds a recruiting or portal reservation is refused a roster one. What this test
+            // needs is any scholarship player carrying a roster allocation when the season turns
+            // over, so it takes one already carrying it and otherwise makes room for one — from the
+            // lowest-identified recruiting reservation, so the fixture is the same on every run.
+            var nilState = recruiting.nilState
+            let playerID: UUID
+            if let holder = recruiting.scholarshipPlayerIDs.first(where: {
+                nilState.rosterAllocations[$0] != nil
+            }) {
+                playerID = holder
+            } else {
+                if nilState.remaining < 1,
+                   let freed = nilState.recruitingReservations.keys
+                       .sorted(by: { $0.uuidString < $1.uuidString }).first {
+                    expect(nilState.setRecruitingReservation(0, for: freed))
+                }
+                guard let candidate = recruiting.scholarshipPlayerIDs.first(where: { candidate in
+                    var trial = nilState
+                    return trial.setRosterAllocation(1, for: candidate)
+                }) else {
+                    expect(false, "no scholarship player could take a roster allocation: "
+                        + "remaining \(nilState.remaining) of \(nilState.annualBudget), "
+                        + "\(recruiting.scholarshipPlayerIDs.count) scholarship players")
+                    return
+                }
+                playerID = candidate
+                expect(nilState.setRosterAllocation(1, for: playerID))
+            }
             state.players.update(playerID) {
                 $0.eligibility = Eligibility(seasonsRemaining: 1, yearsRemaining: 1)
             }
-            var programmeStates = state.college.programmes
-            let recruiting = programmeStates[programmeID]!
-            var nilState = recruiting.nilState
-            expect(nilState.setRosterAllocation(1, for: playerID))
             programmeStates[programmeID] = ProgrammeRecruitingState(
                 programmeID: programmeID,
                 boardIDs: recruiting.boardIDs,
@@ -141,9 +173,10 @@ func runPortalSchedulerTests() {
             }
             defer { WorldScheduler.transactionObserver = nil }
 
-            var state = finalWeek
-            state = try WorldScheduler.advanceWeek(state).state
-            state = try WorldScheduler.advanceWeek(state).state
+            var state = terminalWeek
+            for _ in 0..<3 {
+                state = try WorldScheduler.advanceWeek(state).state
+            }
             expectEqual(state.calendar, CalendarState(season: 1, week: 2))
 
             for checkpoint in [
