@@ -4,6 +4,37 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-23, third pass addendum — two findings the entry below does not cover.** Two agents
+> were committing to this branch at the same time; these two come from the concurrent sweep and are
+> recorded here rather than folded into that entry.
+>
+> - **`04` §6.1c says its eight composition-pattern names "map 1:1 onto Swift types". None of the
+>   eight ships under the name the table uses.** Six ship under a `Floodlit` prefix (`FloodlitRow`,
+>   `FloodlitCard`, `FloodlitLabel3`, `FloodlitPill`/`FloodlitFlag`, `FloodlitStaffVoice`,
+>   `FloodlitCommittingAction`), all in `Sources/ProFootballCoachUI/FloodlitPatterns.swift`. The
+>   glass panel is not a type at all — it is the `coachWorldFloodlitPanel` view modifier. The arc
+>   family's four names resolve two ways: `ArcGauge`, `AttributeDial` and `ShareBar` ship prefixed,
+>   and **`ValueRing` matches no type anywhere in the tree** — one comment in `RosterView.swift`
+>   uses the word and nothing else does. `FloodlitPatterns.swift`'s own header calls the arc
+>   family's smallest and largest steps `CoachWorldRatingRing` and `CoachWorldMeter`, both of which
+>   ship. Whether `ValueRing` was a third name for the first or a step nobody built is not decidable
+>   from the tree; it is an owner question. This is the same prefix drift §6.5 already records for
+>   the component registry, and the same rename-plus-walking-test that section books as P11/M8 work.
+> - **`App/project.yml` held the last live site naming `OrientationPolicyTest`.** `CLAUDE.md`, `05`
+>   and `06` were corrected earlier the same day; the orientation declaration's own comment still
+>   said "OrientationPolicyTest reads this file". No type of that name has ever existed. The
+>   assertion is the "Orientation policy" suite in `Tests/SimTests/Suites/DesignContractTests.swift`,
+>   whose line filter matches only `UISupportedInterfaceOrientations`/`UIInterfaceOrientation`
+>   lines, so a comment edit cannot affect it.
+>
+> **Verification for these two: no lane completed, and none is claimed.**
+> `./scripts/verify.sh --lane accessibility` was started and was still in its release build when it
+> was stopped, with the host at a one-minute load average above 850 on ten cores and a second agent
+> mutating the same working tree — a build over a tree changing underneath it proves nothing either
+> way. Both edits are prose: one in a Markdown section no test parses for structure, one in a YAML
+> comment outside the orientation suite's line filter. Neither adds nor removes a hex value, so the
+> `Design token sync` reader over `04` §6.1 is untouched by them.
+
 > **2026-08-23, later still — a third pass, on the same branch, found six more scan-root and
 > instrument-status claims the first two did not check.** Method unchanged: extract every backticked
 > type, path and test name from the canon documents and resolve it against the tree rather than
