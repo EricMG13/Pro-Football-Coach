@@ -152,6 +152,34 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-23 — the age band re-measured after the pool fix, and the pool fix is exonerated.**
+> `Lifecycle distributions hold their bands` is still red on exactly one check: season 6 reads
+> **0.067** past-decline against a band of 0.08…0.30. Release run at seed 84,010 on the merged
+> tree: **0.228, 0.196, 0.134, 0.067, 0.162** at seasons 0, 1, 3, 6, 10, means 27.07, 26.81, 25.79,
+> 25.59, 25.93, over n = 1696, 1411, 1475, 1459, 1471 — `--people-lifecycle`, 23 tests / 520,438
+> checks, one failed check.
+>
+> Those figures matter because the previous set was recorded **before** `a86de6e` re-cut the
+> free-agent pool by rating, and a rating-cut pool is exactly the shape that would exclude
+> post-decline players, who are lower-rated by construction. It does not: every figure is identical
+> to three decimals except season 10 (0.161 → 0.162), and `signFreeAgents` never reads age at all.
+> That suspect is closed.
+>
+> What is left is structural and needs no further sampling to state. Professional intake has two
+> sites, `ProMarketSystem.makeDraftClass` and `SeasonLifecycleSystem`'s backfill, and both enter a
+> player at 22 or 23 (`RosterPopulationGenerator.replacement`). The draft class is synthesised
+> rather than promoted from the college world, so no college age ever reaches the professional
+> tier. Decline arrives at 27 to 36 by position, so nothing that enters can decline for five to
+> twelve years while the bootstrap's veterans decay at 0.14 a year — the trough is that gap and
+> season 10 is the first cohorts ageing into it.
+>
+> **The decision this still needs is unchanged, and one tempting answer is wrong.** Season 0 draws
+> ages from `gaussian(mean: 27, sd: 3)`, a different distribution from the one the process sustains;
+> re-seeding season 0 from the process would hold the band everywhere and make the league
+> permanently too young to do it. The gap belongs to retention, not to the seed. `docs/HANDOFF-CLAUDE.md`
+> carries the full account.
+
+
 > **2026-08-23 — the legal sweep never read the shipped world, and now that it does, 155 of the 166
 > canonical teams fail one of the two colour guardrails.** `sweptWorlds` (`LegalTests.swift`) fed
 > both Tier A tests 200 synthetic leagues and never the canonical one:
