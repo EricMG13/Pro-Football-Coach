@@ -280,7 +280,7 @@ Verified against the standard and matching:
 
 ## Part B — per surface
 
-**Coverage as of 2026-08-23: 27 of 47 canonical destinations drawn.** Three families complete. The live count is
+**Coverage as of 2026-08-23: 31 of 47 canonical destinations drawn.** Four families complete. The live count is
 `guidelines/coverage.card.html`, which fails on a stale mapping rather than printing it as coverage.
 
 ### B1 · This Week — complete, 9/9, and every one re-sourced
@@ -410,7 +410,37 @@ decision to be re-made per screen: a consequence of the product's oldest content
 The corollary matters for the rebuild: **a surface with exactly one committing action is the only
 kind that may gild it.** Check the count before reaching for `actionPrimary`.
 
-### B3 · Not yet drawn — 20 canonical
+### B1d · Pro management — complete, 5/5
+
+| ID | Surface | Required change |
+|---:|---|---|
+| 34 | Cap & contracts | **REMOVE cap forecast, projected space, trade value, scouting grade, contract demand and probability** — six numbers a cap screen usually leads with. Unavailable actions **stay drawn and print their reason**. Zero gold. |
+| 35 | Contract negotiation | **REMOVE the demanded figure, acceptance probability and agent sentiment.** `NegotiationRow` holds what *you* offered, how often, and when it closes — so the surface is a record of your own conduct, not a read on theirs. One gold; its sub-label states the figure. |
+| 36 | Roster cuts | **Release states its exact dead money before it commits** — required by name. The commit's sub-label carries the cost, not the saving. No projected relief, no replacement suggestion, no ranking of who to cut. One gold. |
+| 39 | Draft room | No pick clock — no timed state exists. |
+| 62 | Pro front office | **`CapSummary` retains `remaining`, so it prints.** The rule is never *derive* a remainder, not never show one — NIL has no such field, which is why that screen prints committed-of-total instead. Hosts three aliases. Zero gold. |
+
+### C6 · An unavailable action must print its reason
+
+**ADD — to the component, not to each call site.** Every Pro `ActionRow` carries `isAvailable` and
+`unavailableReason` as a pair, and the contract states the rule outright:
+
+> "An unavailable action prints its `unavailableReason` rather than disappearing."
+
+Inbox states the same shape as `canContinue` / `continueReason`. **This is system-wide.**
+
+A control that vanishes teaches a coach the screen is inconsistent; one that greys out silently
+teaches them it is broken. Saying why is the only version that teaches them the rules of the game.
+
+`Commit` currently takes `disabled` with no reason, so the rule lives at each call site — which is
+the same shape as `--press-dim` existing with no consumer. **Give the disabled state a required
+reason** and the rule enforces itself.
+
+**Budget note for whoever lays out a plate:** a two-line unavailable cell makes its row 52 rather
+than 44. A plate with two of them holds four rows where it would hold five — measured, not
+estimated: `2×44 + 2×52 + 28 + 22 + 56 = 298` against the 311 a 54 pt band leaves.
+
+### B3 · Not yet drawn — 16 canonical
 
 Undrawn here means no Press Box composition exists yet, **not** that the Swift view is missing —
 all 62 have a view on `main`. These are queued in the order below.
@@ -418,7 +448,6 @@ all 62 have a view on `main`. These are queued in the order below.
 | Family | Remaining | Note |
 |---|---|---|
 | **recruiting** 3/7 | 8c Shortlist · 8d Contact & visit planner · 8e Class overview · 8j College offseason | |
-| **pro** 1/5 | 9a Cap & contracts · 9b Contract negotiation · 9c Roster cuts · 9h Pro front office | Money surfaces; integer dollars only, no floating-point currency |
 | **career** 4/9 | 11k Opportunities · 11d Record book · 11e Rivalries · 11c Career line · 11f Coaching tree | |
 | **entry** 0/1 | 11i New career & coach identity | **Riskiest omission for its size** — the first thing a player ever sees, never drawn against the register model |
 | **league** 1/11 | 10i Map · 10h Team profile · 10a Standings · 10b Schedule · 10c Rankings · 10d Bracket · 10e Statistics · 10f News · 10j Realignment · 10k World search | Last, deliberately — see C3 |
