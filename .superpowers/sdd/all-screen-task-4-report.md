@@ -1483,3 +1483,38 @@ work's only change to `LeagueMapView` was a `.background` stamp, which adds no l
 
 VoiceOver is unaffected: the label is `accessibilityHidden(true)`, so this is a visual collision
 only. Recorded as a confirmed finding with its evidence rather than patched by guess.
+
+## Task 12 -- Final gates, and the one that could not run
+
+**`./scripts/verify.sh` does not run in this worktree.** Not the app lane, not the accessibility
+lane, not the full lane:
+
+```
+unable to override package 'ProFootballCoach' because its identity 'pro-football-coach'
+doesn't match override's identity (directory name) 'mock-reconciliation-vertical-slice'
+```
+
+Xcode derives a local package override's identity from the *directory name*. The package is
+`ProFootballCoach`; the worktree is `mock-reconciliation-vertical-slice`. Any worktree not named
+`Pro-Football-Coach` hits this. It is structural, it predates this work -- `scripts/verify.sh` last
+changed in `d2404f44`, which is not from this session -- and no amount of correct code fixes it from
+inside a differently-named directory.
+
+The plan's step 2 says: "Do not call the branch ship-ready if this lane fails." It did not run, which
+is weaker than passing, so **the branch is not ship-ready** and is not described as such anywhere in
+this work. The equivalent gates were run directly through `swift build`, `swift run SimTests --<lane>`
+and `xcodebuild test`, and their numbers are in `docs/STATUS.md`.
+
+Two fixes for the owner to choose between: rename the worktree directory to `Pro-Football-Coach`,
+which is the one-line fix and what CI presumably does; or teach `verify.sh` to pass
+`--package-path`/`-workspace` so the override identity stops depending on where the checkout happens
+to sit. The second is the durable one, because worktrees are how this project is worked on and every
+future branch directory will hit the same wall.
+
+### Residue checks
+
+- No rail residue in `Sources`. The plan's own command scans `Sources Tests` and therefore can never
+  pass, because `DesignContractTests` names all three forbidden strings inside the scan that forbids
+  them.
+- `Sources/ProFootballCoachUI` holds no `CoachWorldTokens.light` and no `Environment(\.colorScheme)`.
+- `git diff --check` clean; no emoji in any added line.

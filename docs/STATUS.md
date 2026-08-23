@@ -19,6 +19,49 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **All-screen UI migration — 2026-08-23, branch `codex/mock-reconciliation-vertical-slice`.**
+> Tasks 5 to 11 of `docs/superpowers/plans/2026-08-22-all-screen-shell-and-hierarchy.md` are
+> committed. What is verified, and what is not, in the order that matters:
+>
+> **Verified by machine.** `swift build` green. SimTests: design-contracts 62/878, core-contracts
+> 242/3,271, screen-read-models 69/9,704, portal-contracts 28/138, college-state 39/4,102,
+> competition-only, realignment 7/150, career-arc 8/53, history-read-model 4/24, tactical-management
+> 8/81, depth-chart 7/252, pro-management 10/27, pro-market 13/64, cap-compliance 8/29,
+> pro-draft-probe 2/70, and `--m7-gate` 1/65 in release. UI suite 16 tests at `large` and 10 at
+> genuine AX5, zero failures, the two passes derived from the test source rather than hand-listed.
+>
+> **Coverage.** 47 canonical destinations and 15 aliases, matching `CoachWorldScreenID`. All 15
+> aliases provably resolve to their canonical destination and none mints an identity of its own.
+> The proof matrix in `docs/proofs/all-screen-ui/` holds 88 frames: **44 of 47** canonical
+> destinations at 844 x 390 in both content sizes, 37 stamped and 7 unavailable at each size.
+>
+> **Not verified, and not to be described as verified.**
+>
+> - **Entry 1, 2 and 6** and the **pro tier 34, 35, 36, 39, 62** are stamped and compiled and their
+>   identity is unproved. The harness starts a career and overrides the route, so it cannot stand
+>   before a career exists, and starting jobs are college-only by design. One debug seam that can
+>   place the app in a chosen tier or a pre-career state closes both.
+> - **`./scripts/verify.sh` cannot run in this worktree at all.** SwiftPM refuses the local package
+>   override because the worktree directory is named `mock-reconciliation-vertical-slice` while the
+>   package identity is `pro-football-coach`. It is structural, it predates this work, and it means
+>   the full shipping lane has not run. **This branch is therefore not ship-ready**, exactly as the
+>   plan's own instruction requires. The equivalent gates were run directly and are listed above.
+> - **`--career-portal-decisions` is red** and was red before this work, which touches no engine
+>   file. Two defects in the test that were masking the real one are fixed; what survives is real:
+>   a spring release writes no spring window record, only a postseason transfer. Engine question,
+>   escalated.
+> - **Device and assistive-technology checks are `manual-required`** and were not performed. No
+>   VoiceOver, Voice Control, Switch Control, sound, haptics or physical-device result exists.
+>   Nothing here was demonstrated on a device.
+> - **D7's save ceiling is now 50 MB** by owner decision on 2026-08-23, raised from 8 MB. Measured
+>   19.7 MB at season 20 and 27.5 MB at season 30, both inside it. The 4 MB target is unchanged and
+>   already unmet at season 1 (5.4 MB), and the falsifier's size limb will not fire until roughly
+>   season 50, so its growth-check limb is now the only one that can catch an unbounded collection.
+> - **One confirmed visual defect, unfixed**: League Map draws its region label underneath the
+>   selected place marker (`LeagueMapView.regionLabel` positions at the mean of member cities).
+>   Pre-existing; where the label should go instead is a canon question, not a code guess.
+
+
 > **Current-tree verification boundary — 2026-08-21.** On the working tree at `a547404`, the
 > canonical release-mode `--catalog` command lists **19 registered gates, 19 runnable commands,
 > and zero `MISSING RUNNER` entries**. `--commitment-coverage` passes at **4 tests / 20 checks**.
