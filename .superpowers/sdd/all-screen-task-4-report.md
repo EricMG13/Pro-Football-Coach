@@ -1543,3 +1543,69 @@ numbers should not be quoted interchangeably.
 This is also the evidence behind the claim made repeatedly above -- that a red engine lane such as
 `--career-portal-decisions` cannot have been caused by this work. It is not an argument from
 plausibility; the changed-symbol set contains no engine symbol at all.
+
+## Task 12 step 3 -- confidence review, and what inspecting the frames found
+
+### A refusal that only VoiceOver could read
+
+Screen 13's capture shows "Advance week" dimmed with **no reason beside it**, while screen 9's is
+live. Reading the code: `TeamHealthView` passed `model.continueReason` as an `.accessibilityHint`
+and nothing else. Six sites across four surfaces did the same -- Inbox, Roster twice, Recruiting
+Board twice, Team Health.
+
+So a disabled committing action told a VoiceOver user why it was refused and told everyone else
+nothing. That is the accessibility relationship **inverted** -- the assistive path carrying more
+information than the visual one -- and it breaks `.impeccable.md`'s rule that a system refusal
+"names the exact limit, what clears it, and the control that resolves it".
+
+Fixed at the component, not at the call sites: `FloodlitCommittingAction` now takes
+`disabledReason` and renders it under the action when disabled, so the rule belongs to the thing
+that owns the refusal and a new call site cannot forget it. `GitNexus impact` reported **HIGH** on
+that type -- 15 direct callers, 39 impacted, zero production processes -- so the parameter is
+defaulted and no existing caller changes behaviour. Reported before editing, per `CLAUDE.md`.
+
+**Two of the six are fixed and four are not, deliberately.** Team Health and Inbox used the
+component. The four in `RosterView.worldStrip`, `RosterView.accessibleWorldRoutes`,
+`RecruitingBoardView.worldStrip` and `RecruitingBoardView.accessibleWorldContext` are plain
+`Button`s inside route bars, not committing actions. Two of those four are chrome-gated legacy
+paths, but `accessibleWorldRoutes` and `accessibleWorldContext` **do render at AX5 in production**,
+so the defect survives there. They are listed here with their exact locations rather than patched by
+guess, because there is a larger question underneath them:
+
+**Roster and Recruiting Board have no canonical committing action at all.** Their "Advance week" is
+a route-bar `Button`, so it carries no `committing-action` identifier and the enumeration that
+`04` section 6.5 exists to make possible cannot see it. Whether these surfaces should own a
+committing action, or whether advancing the week belongs only to the weekly command family, is a
+canon question. It is also why the touch-floor proof covers screens 8 to 13 and not 16 or 24.
+
+### What inspecting the AX5 frames found
+
+**Screen 52, Career Hub at AX5: the footer overlaps the content behind it.** The status card is drawn
+over the word "Seeking", which is still legible underneath it. `CareerHubView` line 127 uses
+`.safeAreaInset(edge: .bottom) { footer }`.
+
+That is the **same pattern Task 4 already found defective and removed**. Inbox's last message slid
+behind its commit band under exactly this construction; the fix was to lift the band out of the
+`ScrollView` into a `VStack(spacing: .zero)`, and Inbox and Practice Plan now contain zero uses.
+
+**Twenty-three surfaces still use it**: Aftermath, Awards, Career Hub, Class Overview, College
+Offseason, Competition Overview, Contact & Visit Planner, Contract Negotiation, Development Plan,
+Game Detail, News, Opponent Film, Pro Management, Pro Offseason, Prospect Profile, Schedule,
+Shortlist, Staff Room, Standings, Statistics, Team Health, Team Profile, World Search.
+
+Task 4 fixed the two instances it was looking at and left the class standing -- the coverage boundary
+becoming the quality boundary again, in the same work that quotes the rule. Not fixed here: 23
+surfaces each need their own layout verification at both content sizes, which is a task, not an
+end-of-session edit. The fix pattern is already proven and in the tree, so this is the highest-value
+follow-up available.
+
+**Screen 16, Roster at AX5: the first viewport contains no actionable content.** The exception ribbon
+-- "Roster 105/105, Injuries 0, Open needs" -- expands with the type scale until it fills the entire
+844 x 390 window, pushing the roster rows and every control below the fold. `04` section 7 permits
+scrolling at AX5, so this is not a contract breach, but "first actionable content" is one of the
+inspection criteria and there is none.
+
+This is also the resolution of a loose end from Task 5. The "empty navy panel" that looked like a
+blank Roster was this ribbon, cropped by the faulty `app.screenshot()`. The diagnosis then -- capture
+artefact, not a layout defect -- was right about the artefact and wrong to stop there: the screen
+underneath does have an AX5 problem, and it took a faithful capture to see it.

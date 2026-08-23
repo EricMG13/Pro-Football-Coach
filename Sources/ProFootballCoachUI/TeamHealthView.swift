@@ -340,9 +340,9 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
             FloodlitCommittingAction(
                 "Advance week",
                 isEnabled: model.canContinue,
+                disabledReason: model.continueReason,
                 action: onContinue
             )
-            .accessibilityHint(model.continueReason ?? "")
         }
         .padding(.vertical, CoachWorldTokens.Pad.alert.v)
         .padding(.horizontal, CoachWorldTokens.Pad.alert.h)

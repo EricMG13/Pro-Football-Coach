@@ -307,9 +307,9 @@ public struct InboxView: View, CoachWorldChromedSurface {
             FloodlitCommittingAction(
                 "Advance week",
                 isEnabled: model.canContinue,
+                disabledReason: model.continueReason,
                 action: onContinue
             )
-            .accessibilityHint(model.continueReason ?? "")
         }
         .padding(.top, CoachWorldTokens.Gap.xs)
     }

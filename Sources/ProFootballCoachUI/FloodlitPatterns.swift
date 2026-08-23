@@ -473,22 +473,49 @@ struct FloodlitStaffVoice: View {
 struct FloodlitCommittingAction: View {
     private let title: String
     private let isEnabled: Bool
+    private let disabledReason: String?
     private let action: () -> Void
 
-    init(_ title: String, isEnabled: Bool = true, action: @escaping () -> Void) {
+    /// `disabledReason` is **shown**, not just spoken.
+    ///
+    /// Six call sites across four surfaces passed the model's reason as an `.accessibilityHint`
+    /// and nothing else, so a disabled committing action told a VoiceOver user why it was refused
+    /// and told everyone else nothing -- the accessibility relationship inverted, and against
+    /// `.impeccable.md`'s rule that a refusal names the exact limit. Taking the reason here means
+    /// the component owns the rule and a new call site cannot forget it; a hint alone is not a
+    /// refusal a sighted player can read.
+    init(
+        _ title: String,
+        isEnabled: Bool = true,
+        disabledReason: String? = nil,
+        action: @escaping () -> Void
+    ) {
         self.title = title
         self.isEnabled = isEnabled
+        self.disabledReason = disabledReason
         self.action = action
     }
 
     var body: some View {
-        CommittingAction(title: title, action: action)
-            .disabled(!isEnabled)
-            .opacity(isEnabled ? 1 : CoachWorldTokens.Motion.disabledOpacity)
-            // There is one of these per screen (`04` section 6.5), and `04` section 7 requires it
-            // to be in the initial viewport. Naming it here is what lets the proof enumerate the
-            // class by construction instead of listing labels screen by screen.
-            .accessibilityIdentifier("committing-action")
+        VStack(alignment: .trailing, spacing: CoachWorldTokens.Gap.hair) {
+            CommittingAction(title: title, action: action)
+                .disabled(!isEnabled)
+                .opacity(isEnabled ? 1 : CoachWorldTokens.Motion.disabledOpacity)
+                // There is one of these per screen (`04` section 6.5), and `04` section 7 requires
+                // it to be in the initial viewport. Naming it here is what lets the proof
+                // enumerate the class by construction instead of listing labels screen by screen.
+                .accessibilityIdentifier("committing-action")
+            if !isEnabled, let disabledReason, !disabledReason.isEmpty {
+                Text(disabledReason)
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(CoachWorldTokens.dark.contentSecondary.color)
+                    .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: false, vertical: true)
+                    // Spoken by the action itself, so the sentence is not read twice.
+                    .accessibilityHidden(true)
+            }
+        }
+        .accessibilityHint(isEnabled ? "" : (disabledReason ?? ""))
     }
 }
 

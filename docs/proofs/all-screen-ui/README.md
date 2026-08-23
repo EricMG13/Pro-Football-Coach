@@ -160,10 +160,21 @@ The walkthrough script is `docs/proofs/2026-08-23-all-screen-owner-walkthrough.m
 - **Increase Contrast renders identically.** No source file reads `colorSchemeContrast`, so the
   setting changes nothing. Capturing it would produce a duplicate image and imply a check that does
   not exist.
-- **852 x 393 and 956 x 440 representatives are not captured.** `testFamilyRepresentativesAtCurrentWindow`
-  exists and passed once on the 956 device before the capture method was corrected, so its images
-  would have been the faulty app-scoped kind and were not kept. The 852 device would not boot
-  alongside the 956 one on this host (`simctl boot` error 60). Regenerate with the capture script
-  against each device once only one simulator is booted at a time. Above the install floor only the
-  content column stretches, so this is a real gap in evidence rather than in the layout, and it is
-  the smallest of the gaps listed here.
+- **956 x 440 representatives are captured; 852 x 393 are not.**
+  `family-representatives/screen-NN-956-default.jpg` holds one destination per family -- 8, 16, 24,
+  34, 41, 52 -- at 2868 x 1320, the ceiling window. The 852 set is missing because CoreSimulator on
+  this host degraded repeatedly during the run (`simctl install` and `simctl boot` hanging, devices
+  stuck in `Booting`), not because the layout was not exercised.
+
+  A correction worth carrying: **iPhone 17 Pro is 402 x 874, not 393 x 852.** The promise floor
+  needs a 15 or 16 Pro; `PFC Task 6 iPhone 15 Pro` measures 1179 x 2556, which is the right device.
+  Six frames were nearly written from the 17 Pro under an `852` filename before that was checked --
+  they would have been correctly captured evidence with a wrong label, which is worse than no
+  evidence. Regenerate with one simulator booted at a time:
+
+  ```bash
+  xcrun simctl boot 54626BB2-491E-4758-BEE7-A3355E3D7BBF   # 393 x 852
+  SIMCTL_CHILD_PROOF_NEW_CAREER=424242 SIMCTL_CHILD_PROOF_SCREEN_NUMBER=<id> \
+    xcrun simctl launch --terminate-running-process <udid> com.ericmg.ProFootballCoach
+  xcrun simctl io <udid> screenshot out.png && sips -r 270 out.png
+  ```
