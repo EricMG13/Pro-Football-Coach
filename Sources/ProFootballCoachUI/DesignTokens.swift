@@ -93,14 +93,27 @@ public enum CoachWorldTokens {
     public enum Heat {
         public static let scaleFloor = 40
         public static let scaleCeiling = 99
+
+        /// `04` section 6.4, amended 2026-08-22: five bands diverging around a NEUTRAL centre.
+        /// The three-band red/amber/green this replaces painted 70-84 amber, so a perfectly
+        /// average starter read as a caution. The warm hue now sits below the median and 70-79
+        /// is neutral ink. Colour stays a second reading of a printed figure, never the only one.
+        public static let belowFloor = 60
+        public static let averageFloor = 70
+        public static let aboveFloor = 80
         public static let strongFloor = 85
-        /// `04` section 6.4: "red below 70, amber from 70-84 and green from 85 upward."
-        public static let steadyFloor = 70
+
+        /// Retained as the amber floor's old name so existing call sites keep compiling. It now
+        /// names where the warm band *ends*, not where it begins.
+        @available(*, deprecated, renamed: "averageFloor")
+        public static let steadyFloor = averageFloor
 
         public static func color(for rating: Int, palette: Palette) -> Color {
             switch rating {
             case strongFloor...: palette.statePositive.color
-            case steadyFloor..<strongFloor: palette.stateWarning.color
+            case aboveFloor..<strongFloor: Floodlit.heatAbove.color
+            case averageFloor..<aboveFloor: palette.contentSecondary.color
+            case belowFloor..<averageFloor: palette.stateWarning.color
             default: palette.stateNegative.color
             }
         }
@@ -276,15 +289,23 @@ public enum CoachWorldTokens {
     /// production light palette and no user-facing appearance switch. Role names are unchanged from
     /// the retired v3 palette; only the hex each role resolves to changed, so every call site that
     /// read `.dark` keeps compiling and keeps its meaning.
+    /// `04` 6.1a(ii) (2026-08-22): three roles are aliases, not repeated literals, so a future
+    /// divergence has to be a deliberate edit rather than one of two hexes drifting silently.
+    private static let negative = ColorValue(hex: 0xFF3B54)
+    private static let info = ColorValue(hex: 0x6FA8DC)
+
     public static let dark = Palette(
         page: .init(hex: 0x060A12), work: .init(hex: 0x100E16), raised: .init(hex: 0x12203A),
         contentPrimary: .init(hex: 0xF6FAFF), contentSecondary: .init(hex: 0xA9BACE),
         contentQuiet: .init(hex: 0x7A8A9E), actionPrimary: .init(hex: 0xFFC53D),
         actionSecondary: .init(hex: 0xA9BACE),
-        actionDestructive: .init(hex: 0xFF3B54), stateLive: .init(hex: 0x37E08A),
-        statePositive: .init(hex: 0x4FD08C), stateWarning: .init(hex: 0xFFB03A),
-        stateNegative: .init(hex: 0xFF3B54), stateInfo: .init(hex: 0x6FA8DC),
-        collegeIdentity: .init(hex: 0xB07BD6), proIdentity: .init(hex: 0x6FA8DC),
+        actionDestructive: negative, stateLive: .init(hex: 0x37E08A),
+        // Left the yellow band on 2026-08-22. At 6.1 degrees from `actionPrimary`, identical
+        // saturation and 0.6% luminance apart, a caution and a commit were the same colour at
+        // 11 pt under a thumb. 24.1 degrees from gold, 5.57:1 on page. `04` 6.1a(ii).
+        statePositive: .init(hex: 0x4FD08C), stateWarning: .init(hex: 0xC9704A),
+        stateNegative: negative, stateInfo: info,
+        collegeIdentity: .init(hex: 0xB07BD6), proIdentity: info,
         fieldTurf: .init(hex: 0x072616), fieldLine: .init(hex: 0xF6FAFF),
         fieldAnnotation: .init(hex: 0xFFCE6A), fieldLive: .init(hex: 0x4FD08C)
     )
@@ -309,6 +330,10 @@ public enum CoachWorldTokens {
         public static let goldLight = ColorValue(hex: 0xFFE196)
         public static let goldDeep = ColorValue(hex: 0xD89713)
         public static let goldInk = ColorValue(hex: 0x150F02)
+
+        /// `04` 6.4's fourth heat band, "state.positive, lightened". A band colour, not a state:
+        /// 80-84 is above average, and the role token means something else.
+        public static let heatAbove = ColorValue(hex: 0x7FCB9E)
 
         public static let liveInk = ColorValue(hex: 0xFF8E9C)
         public static let goInk = ColorValue(hex: 0x7DF0B6)

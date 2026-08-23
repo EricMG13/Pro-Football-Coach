@@ -510,29 +510,47 @@ func runDesignContractTests() {
         // `Heat.color(for:palette:)` rather than each carrying their own switch, so testing this one
         // function against canon, across the whole rating range, is what makes all three agree by
         // construction rather than by three people remembering to keep three copies in sync.
+        // 2026-08-22: 6.4 replaced the one-sentence three-band scale with a five-band table, so the
+        // parser reads the table's ranges. The point of the test is unchanged — one function is
+        // tested against canon across the whole range, so the three call sites that delegate to it
+        // agree by construction rather than by three people keeping three copies in sync.
         test("Heat.color's banding matches 04 section 6.4's stated heat scale, across the whole range") {
-            guard let steadyFloorText = matches(of: "red below (\\d+)", in: canon).first,
-                  let strongFloorText = matches(of: "green from (\\d+) upward", in: canon).first,
-                  let canonSteadyFloor = Int(steadyFloorText),
-                  let canonStrongFloor = Int(strongFloorText)
-            else {
-                expect(false, "could not parse 04 section 6.4's heat-scale sentence — "
+            // Rows read "| Well below | 40–59 | ... |" with an en dash. The neutral row is bolded
+            // in canon, so the range may arrive as "**70–79**"; canon stays readable and the parser
+            // tolerates the emphasis rather than dictating how the table is written.
+            let floors = matches(of: "\\|\\s*\\*{0,2}(\\d+)–\\d+\\*{0,2}\\s*\\|", in: canon)
+                .compactMap(Int.init)
+            guard floors.count >= 5 else {
+                expect(false, "could not parse 04 section 6.4's five-band table — "
                     + "the parser, not the tokens, is what failed")
                 return
             }
-            expectEqual(CoachWorldTokens.Heat.steadyFloor, canonSteadyFloor,
-                        "Heat.steadyFloor must match 04 section 6.4's stated amber floor")
-            expectEqual(CoachWorldTokens.Heat.strongFloor, canonStrongFloor,
-                        "Heat.strongFloor must match 04 section 6.4's stated green floor")
+            let (wellBelow, below, average, above, strong) =
+                (floors[0], floors[1], floors[2], floors[3], floors[4])
+            expectEqual(CoachWorldTokens.Heat.scaleFloor, wellBelow,
+                        "Heat.scaleFloor must match 6.4's first band floor")
+            expectEqual(CoachWorldTokens.Heat.belowFloor, below,
+                        "Heat.belowFloor must match 6.4's second band floor")
+            expectEqual(CoachWorldTokens.Heat.averageFloor, average,
+                        "Heat.averageFloor must match 6.4's neutral band floor")
+            expectEqual(CoachWorldTokens.Heat.aboveFloor, above,
+                        "Heat.aboveFloor must match 6.4's fourth band floor")
+            expectEqual(CoachWorldTokens.Heat.strongFloor, strong,
+                        "Heat.strongFloor must match 6.4's top band floor")
 
             let palette = CoachWorldTokens.dark
             for rating in CoachWorldTokens.Heat.scaleFloor...CoachWorldTokens.Heat.scaleCeiling {
-                let expected = rating >= canonStrongFloor ? palette.statePositive.color
-                    : rating >= canonSteadyFloor ? palette.stateWarning.color
+                let expected = rating >= strong ? palette.statePositive.color
+                    : rating >= above ? CoachWorldTokens.Floodlit.heatAbove.color
+                    : rating >= average ? palette.contentSecondary.color
+                    : rating >= below ? palette.stateWarning.color
                     : palette.stateNegative.color
                 expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), expected,
                             "rating \(rating) does not land in the band 04 section 6.4 describes")
             }
+            // 6.4's centre band must not be the caution colour — the whole point of the amendment.
+            expect(CoachWorldTokens.Heat.color(for: 74, palette: palette) != palette.stateWarning.color,
+                   "an average rating must not render as a caution")
         }
     }
 
