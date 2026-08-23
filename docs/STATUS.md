@@ -4,6 +4,46 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-22 — Match Day moves like football now, and one engine defect is escalated.** The owner
+> watched the 2D animation on a booted iPhone 17e and rejected it: players stopped moving after the
+> play, did not follow it to the end, and tackles did not read as tackles. Measured over 200
+> resolved snaps, **62% of actor-snaps had `end == start`** — 13.6 of the 22 frozen every snap, with
+> coverage, run fits and decoys still **100%** of the time, the quarterback still 97%, and 1,342 of
+> the 1,673 movers drawn as one constant-velocity straight line across the whole playback.
+>
+> That was **canon, not a defect**: `03` §9.6 read "one man converges on the ball, and only one …
+> everyone in coverage or a run fit holds", so it could not be fixed in the view. §9.6 is amended
+> (`928105b`) around the principle it was reaching for — *a recorded fact is inviolable, unrecorded
+> geometry may come from a deterministic template, a template may never assert a fact* — which also
+> resolves an inconsistency already in canon, since §9.4 has always invented every player's stance.
+> §9.7 became what a template may not invent (the legal limb on playbook route trees is untouched)
+> and a new §9.8 pins the VoiceOver sentence to the record alone.
+>
+> **After: 0% frozen, and no mover without an interior waypoint.** Same 200-snap measurement. On
+> device, mean per-frame motion while the field is live rose from 0.68 to 1.01. Tokens now print the
+> position shorthand MATCH-DAY.md §4 and `04` §6.5 #18 both specify (`LT LG C RG RT QB RB X H Z TE`
+> / `RE NT DT LE W M N RC LC FS SS`) instead of `SnapRole` codes, on a new `Actor.shorthand` kept
+> separate from `position` so the printed label getting shorter cannot shorten what VoiceOver says.
+>
+> **Verified:** `--snap-anchors` 34 tests / 2,887 checks, `--engine` 60 / 32,443, `--core-contracts`
+> 232 / 3,356, `--screen-read-models` 74 / 9,997, `--design-contracts` 50 / 914, `--legal-only`
+> 30 / 193, `--reduce-motion` and `--match-reducer` — all green, and the app builds and runs on the
+> simulator. The full `./scripts/verify.sh` lane is red in four suites — portal scheduler lifecycle,
+> M5 career arc, M4 tactical state, and the lifecycle distribution bands. **All four are
+> pre-existing**: M4 tactical state and M5 career arc were reproduced red on `main` at the same
+> check counts, and the other two are unreachable from this diff by construction — `SnapAnchors` and
+> `AnchorRules` are referenced only from `CoachWorldMatchProvider` and `MatchDayView`, never from
+> the simulation loop, and the one `SnapResolver` edit is a proven no-op (`tackler` and `defender`
+> are the same object on attempt zero).
+>
+> **ESCALATED, not fixed — the recorded tackler.** `Assignment.assign` builds `pursuit` as
+> `ranked(defense)`, best-first and blind to the play, and `yardsAfterContact` always starts its
+> break-tackle chain at index zero. So the highest-rated defender on the field is the recorded
+> tackler on **every snap of a game**: 200 of 200 measured tackles went to one position. Whoever is
+> first in that list is whose `tackling` the leverage reads, so ordering it by run gap, coverage and
+> target moves the yardage distribution and the calibration bands with it. That is its own task with
+> its own gate and needs an owner decision; the defect is written down at the line that causes it.
+
 > **2026-08-20 — Calibration continuation:** the fresh isolated
 > `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**
 > and M3 recruiting calibration **20 tests / 412 checks**. The M3 terminal-week defect was fixed
