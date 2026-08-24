@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+# One run per ref. A superseded push cancels the run it superseded: the macos-15
+# pool caps at 5 concurrent jobs and a full lane may take 180 minutes, so a stale
+# run holds a slot every other PR is queued behind.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   full:
     runs-on: macos-15
