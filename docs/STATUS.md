@@ -4,6 +4,137 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-23 — live portal capacity reads the active limits, and one of the two frozen copies of
+> them is gone.** `CollegePortalMatchingV1.makeMarketSnapshot` measured every destination's
+> `rosterOpenings` and `scholarshipOpenings` against `CollegePortalPolicyV1`'s own frozen
+> `rosterLimit` (105) and `scholarshipLimit` (85) rather than `CollegeRules`'. **There was no live
+> bug and there is no behaviour change**: the copies were still equal to the rules. What there was
+> is the condition that produced one: two numbers that must agree, nothing comparing them, and no
+> way for a test to notice when they stop — the state `minimumPlayableRosterByPosition` was in
+> before it fell a man below `SharedRules` at `.runningBack` and `.linebacker` (`d5400e1`, on its
+> own branch). The two guards that reject an over-limit programme before a window opens read the
+> frozen copies too, so a raised limit would not merely have mis-sized capacity: a legal roster
+> would have failed `makeMarketSnapshot` and the entire window would have returned nil.
+>
+> **The decode-side ceiling is the harder half, and it is split rather than deleted.**
+> `CollegePortalCapacitySnapshot.isValid` is shared between the memberwise initializer and
+> `init(from:)`, and a limit-sized ceiling there fails in one direction whichever copy it reads: a
+> frozen ceiling traps the initializer's `precondition` on a *live* snapshot once the live limit is
+> raised, and a live ceiling makes *archived* snapshots undecodable once the live limit is
+> lowered — which is the undecodable career record the freeze exists to prevent. So the ceiling
+> moved to the live path alone, as two `precondition`s on the memberwise initializer, and the shared
+> predicate keeps a bound too slack for any balance pass to make it bind: one programme's openings
+> cannot exceed every roster slot in the college world (`programmeCount * rosterLimit`, 14,070
+> today). That survives a raise, because the bound rises with the limit; it survives a lowering,
+> because an archived 105 clears 134 × any limit down to 1. It is not a no-op — a decoded opening
+> count feeds a multiplication in `WorldIntegrity`, and refusing the save is the graceful failure.
+>
+> **`CollegePortalPolicyV1.scholarshipLimit` is deleted; `rosterLimit` is renamed, not kept.** With
+> openings on `CollegeRules`, `scholarshipLimit` had no readers left. `rosterLimit` still had three,
+> all of them coarse ceilings on an *archived position-room count* rather than readings of the
+> roster rule, so it is now `maximumPositionRoomSize`. The rename is the point: a constant named
+> `rosterLimit` sitting one scope from `CollegeRules.rosterLimit` is what a careful person reaches
+> for, and it is the reach that caused this twice. Because both constants are `internal` to
+> `FootballSimCore` and `SimTests` imports it without `@testable`, a cross-check could not have been
+> asserted from the suite at all — the duplication had to go, and where it could not go it had to
+> stop looking like a duplicate.
+>
+> **Two new tests, and both were proved able to fail before being trusted.** *Capacity openings are
+> measured against the active limits* compares an opening read off a real offer to `CollegeRules`
+> rather than to 105 and 85; it cannot fail today, because the two agree today, so it was made to
+> fail by simulating the drift it exists to catch — `CollegeRules.rosterLimit` raised to 106 with
+> matching pointed back at a frozen 105 gives `expected 3, got 2`. *An archived capacity above the
+> live limits still decodes* is a real regression test that fails on the unfixed code: restoring the
+> frozen ceiling to `isValid` gives `expected Optional(112), got nil`.
+>
+> **Verified on the merged tree, release mode, from one build.** `--portal-contracts`
+> **28 tests / 138 checks**, `--portal-policy` **13 / 716** (the cross-check included),
+> `--portal-matching` **19 / 145** (both capacity tests included), `--portal-transaction`
+> **17 / 133**, `--architecture-only` **29 / 245** — so every pinned cross-process fingerprint still
+> holds and none needed re-deriving, which is the number to read twice, because the merge brought in
+> `56d2911`'s re-brief of the 52 marks the earlier re-key stranded — and `--portal-scheduler`
+> **13 / 27,861**. That last lane prints the portal characterization, and on the merged tree it is
+> byte-identical to the pre-merge build, to the run before these changes, and to the figure
+> `d5400e1` recorded for a detached build at `2de6268`: `entrantWindows=431 retained=99
+> transferred=224 returned=108 transferNILTotal=6400 transferNILMin=0 transferNILMax=500`. So
+> neither change nor the merge moved portal behaviour on the covered seeds. Behaviour neutrality is
+> otherwise argued from numeric identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a
+> fresh detached baseline, which is a weaker claim than `d5400e1`'s and is stated as such.
+>
+> **The one failure was pre-existing, and it is now gone — the branch was simply based too far
+> back.** `--portal-contracts` trapped here with exit 133, zero bytes on stdout and stderr and no
+> summary, at `PortalContractTests.swift:869` ("policy-v1 admission components rederive from compact
+> immutable evidence"). A detached worktree at `b25a60d` — this branch's original base — trapped
+> identically, with `TRACE_TESTS=1` naming the same last-entered test on both binaries, so it was
+> never this change's doing. But proving it against `b25a60d` proved it against a baseline `main`
+> had already moved past: `8900f40` fixes exactly that trap, rebuilding the `wideReceiverKnowledge`
+> probe from the frozen v1 attribute list instead of `Position.ratedAttributes`, which
+> `CollegePortalKnowledgeSnapshot`'s own precondition had started refusing after `3bba7c9` gave
+> receivers `.vision` and `.elusiveness`. A detached build at `6610a8c` runs the lane green at
+> **28 tests / 138 checks**. So `origin/main` was merged into this branch at `2700515` — cleanly,
+> no conflicts — and the lane is green here too. **Reporting it as "pre-existing, not mine" and
+> stopping would have been true and useless**; the lane was red because the branch was stale, and
+> the fix was to stop being stale.
+>
+> **Residual hazard, named and not fixed here.** The three `maximumPositionRoomSize` checks are
+> still shared between decode and live construction — `CollegePortalIntentEvidence.init` and its
+> two siblings `precondition` on the same predicate `init(from:)` uses. Raising
+> `CollegeRules.rosterLimit` past 105 would let a live position room exceed the frozen ceiling and
+> trap. It is a different surface from the one this change was scoped to, the ceiling is roughly an
+> order of magnitude above any real room, and the fix when it is needed is the split
+> `CollegePortalCapacitySnapshot` just received.
+>
+> **The second frozen copy was taken to the owner and came back as "fix it the same way" — and
+> reading every site changed the finding.** `CollegePortalPolicyV1.programmeCount` is a frozen 134
+> beside `CollegeRules.programmeCount`, and the earlier revision of this entry guessed it was a real
+> policy bound. It is, and for a stronger reason than was guessed: it is the divisor in the
+> `.teamSuccess` component formulas at `CollegePortalPolicyV1.swift:306` and `:341`, and
+> `CollegePortalIntentExplanation.isValid` requires an archived explanation's stored components to
+> equal what the policy recomputes today. Point that divisor at `CollegeRules` and every career
+> record archived under the old ladder stops rederiving. **This is the freeze rationale actually
+> reaching a live computation** — which is exactly what it did not do for `rosterLimit` and
+> `scholarshipLimit`, and why those two could be deleted and this one cannot.
+>
+> **So the live readings were moved and the constant was not.** Two sites had no business on the
+> frozen copy: `makeSnapshot`'s `state.programmes.count <= maximumKnowledgeObservers` and
+> `makeMarketSnapshot`'s `state.programmes.count == programmeCount` are readings of how big the
+> world is, and now read `CollegeRules.programmeCount`. `makeSnapshot` additionally carries
+> `CollegeRules.programmeCount == frozenProgrammeCount` as an explicit version gate, so the two
+> numbers are compared rather than silently substituted: a world this policy was not frozen against
+> needs a policy v2, and refusing the window is the honest answer. The constant is renamed
+> `frozenProgrammeCount` for the same reason `rosterLimit` was renamed — a frozen copy wearing the
+> live rule's name is what a careful person reaches for.
+>
+> **Two sites deliberately keep the frozen ladder.** `uniqueRank`'s `(1...frozenProgrammeCount)`
+> bound stays frozen because the rank it returns is archived on evidence whose decode bound is the
+> same frozen number; a rank the live world allows and the archive refuses would trap rather than
+> return nil. `ScoutingState`'s three `maximumKnowledgeObservers` bounds stay because they bound the
+> observer table's capacity, not the world's size.
+>
+> **This time the cross-check could be asserted, and that is the whole difference.**
+> `maximumKnowledgeObservers` and `CollegeRules.programmeCount` are both `public`, so
+> `PortalPolicyTests` compares them without `@testable` — the assertion the `internal`
+> roster and scholarship limits made impossible.
+>
+> **How far that test was proved, exactly.** It was made to fail by comparing
+> `maximumKnowledgeObservers` against `CollegeRules.programmeCount + 1`, which gives a clean
+> `expected 135, got 134` at `PortalPolicyTests.swift:154` with the suite completing and exiting 1.
+> That proves the assertion reads both real constants and goes red when they differ. It is a weaker
+> proof than the two capacity tests got, and the reason is worth recording on its own: setting
+> `CollegeRules.programmeCount` to 135 for real does **not** produce a clean red. `--portal-policy`
+> then exits **133** with zero bytes on stdout and no summary, having entered "intent evidence
+> rederives the frozen six-component v1 explanation" last — so a genuine ladder change takes the
+> buffered result of every earlier test in the lane with it, including this one's. The run-time
+> version gate in `makeSnapshot` cannot be falsified from inside one process at all, because
+> `CollegeRules.programmeCount` is a compile-time constant.
+>
+> **This conflicts with `d5400e1` on merge, and should.** Both changes edit
+> `CollegePortalCapacitySnapshot.isValid`, the same constant block in `CollegePortalPolicyV1`, the
+> same capacity literal in `makeMarketSnapshot`, and the same insertion point in
+> `PortalMatchingTests`. Resolve by keeping both: deficits on `SharedRules`, openings on
+> `CollegeRules`, no per-position ceiling, and the openings bound at `programmeCount * rosterLimit`
+> with the limit-sized ceiling on the initializer.
+
 > **2026-08-22 — `main` was red for eight suites, and seven of them were a merge, not a defect.**
 > CI run `32558005794` on `da0eb73` failed `Legal: shipped copy`, `League generation`, `Game loop`,
 > `Authoritative game state`, `College portal scheduler lifecycle`, `M5 career arc`, `M4 tactical
