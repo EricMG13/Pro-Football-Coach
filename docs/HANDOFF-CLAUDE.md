@@ -19,7 +19,17 @@ What was done, in order:
    `DepthChart.offensiveTemplate` now fields. This was a new failure the merge created, caught by
    the existing cross-check in `RulesTests`; no determinism lane moved with it.
 
-### The one that is still red, and must not be re-pinned
+### Closed 2026-08-24 — the band holds, and the cause was an intake that invented players
+
+`46b96bb8` offers a seat vacated by retirement to the professionals the league already has before
+generating one. The past-decline share reads **0.228, 0.196, 0.183, 0.203, 0.218** at seasons 0, 1,
+3, 6 and 10, against 0.228, 0.196, 0.134, **0.067**, 0.162 before; mean age holds at 27.07, 26.81,
+26.56, 26.80, 26.70 instead of sagging to 25.59. `--people-lifecycle` passes at 24 tests / 520,238
+checks, `--architecture-only` at 29 / 245 with no pin moved. No band was widened and no retirement
+constant moved. Everything below is the investigation that got there, kept because four of its
+findings are things not to retry.
+
+### What it was, and must not be re-pinned
 
 `Lifecycle distributions hold their bands`. The professional past-decline share reads 0.228, 0.196,
 0.146, **0.073**, 0.170 at seasons 0, 1, 3, 6, 10 against a band of 0.08…0.30. It is a real

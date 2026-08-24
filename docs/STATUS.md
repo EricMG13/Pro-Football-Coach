@@ -152,33 +152,36 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
-> **2026-08-23 — the age band re-measured after the pool fix, and the pool fix is exonerated.**
-> `Lifecycle distributions hold their bands` is still red on exactly one check: season 6 reads
-> **0.067** past-decline against a band of 0.08…0.30. Release run at seed 84,010 on the merged
-> tree: **0.228, 0.196, 0.134, 0.067, 0.162** at seasons 0, 1, 3, 6, 10, means 27.07, 26.81, 25.79,
-> 25.59, 25.93, over n = 1696, 1411, 1475, 1459, 1471 — `--people-lifecycle`, 23 tests / 520,438
-> checks, one failed check.
+> **2026-08-24 — the professional age band holds, and the cause was an intake that invented
+> players.** `Lifecycle distributions hold their bands` had been red since 2026-08-22 on one check:
+> the past-decline share read **0.067** at season 6 against a band of 0.08…0.30. The draft stall,
+> the sample point, the roster shortfall and the free-agent pool's coin-toss cut were each
+> investigated and each ruled out; the pool fix in particular was re-measured and moved nothing
+> (0.161 → 0.162 at season 10, every other figure identical to three decimals).
 >
-> Those figures matter because the previous set was recorded **before** `a86de6e` re-cut the
-> free-agent pool by rating, and a rating-cut pool is exactly the shape that would exclude
-> post-decline players, who are lower-rated by construction. It does not: every figure is identical
-> to three decimals except season 10 (0.161 → 0.162), and `signFreeAgents` never reads age at all.
-> That suspect is closed.
+> `--pro-movement-probe` named it: `expired=257 returned=2` in season 2 and `expired=200 returned=2`
+> in season 3. **Two players a season came back to a professional roster** while 223 were drafted and
+> the unattached population grew past 1,100. The tier had two intakes — `makeDraftClass` and
+> `SeasonLifecycleSystem`'s retirement backfill — and both minted 22-year-olds, so the league
+> refreshed itself almost entirely with rookies and could not age. The trough was never veterans
+> leaving too fast; it was a seat being filled by a new player while the man who used to hold one
+> sat unsignable.
 >
-> What is left is structural and needs no further sampling to state. Professional intake has two
-> sites, `ProMarketSystem.makeDraftClass` and `SeasonLifecycleSystem`'s backfill, and both enter a
-> player at 22 or 23 (`RosterPopulationGenerator.replacement`). The draft class is synthesised
-> rather than promoted from the college world, so no college age ever reaches the professional
-> tier. Decline arrives at 27 to 36 by position, so nothing that enters can decline for five to
-> twelve years while the bootstrap's veterans decay at 0.14 a year — the trough is that gap and
-> season 10 is the first cohorts ageing into it.
+> `46b96bb8` offers a vacated seat to the professionals the league already has before generating
+> one. Measured at seed 84,010, seasons 0/1/3/6/10:
 >
-> **The decision this still needs is unchanged, and one tempting answer is wrong.** Season 0 draws
-> ages from `gaussian(mean: 27, sd: 3)`, a different distribution from the one the process sustains;
-> re-seeding season 0 from the process would hold the band everywhere and make the league
-> permanently too young to do it. The gap belongs to retention, not to the seed. `docs/HANDOFF-CLAUDE.md`
-> carries the full account.
-
+> | | 0 | 1 | 3 | 6 | 10 |
+> |---|---|---|---|---|---|
+> | before | 0.228 | 0.196 | 0.134 | **0.067** | 0.162 |
+> | after | 0.228 | 0.196 | 0.183 | **0.203** | 0.218 |
+>
+> Mean age holds at 27.07, 26.81, 26.56, 26.80, 26.70 instead of sagging to 25.59. The trough is
+> gone rather than lifted over the floor, and season 10 at 0.218 against season 0's 0.228 says the
+> process now sustains what the bootstrap seeds — there is no demographic echo left to damp. **No
+> band was widened, no retirement constant moved, and the draft reserve is untouched**, so `02`
+> §4.2 needs no amendment. `--architecture-only` passes at 29 tests / 245 checks with no pin moved,
+> because the generator's `ordinal` still indexes the departure rather than the unfilled seats.
+> `docs/HANDOFF-CLAUDE.md` carries the full account, including the two suspects it rules out.
 
 > **2026-08-23 — the legal sweep never read the shipped world, and now that it does, 155 of the 166
 > canonical teams fail one of the two colour guardrails.** `sweptWorlds` (`LegalTests.swift`) fed
@@ -234,6 +237,53 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > any more, and re-running the canonical colours through `ColourGenerator`'s own avoidance logic is
 > the standing option when the owner wants that guarantee back before release. Verified with
 > `--legal-only`: 30 tests, 195 checks, all green.
+> **2026-08-23 — the heat scale caught up with canon, and the parser that hid the gap was the
+> reason it could.** `--core-contracts` was red on `main` for one check:
+> `Design token sync / Heat.color's banding matches 04 section 6.4's stated heat scale`, failing in
+> its own guard with "the parser, not the tokens, is what failed". That was accurate and it
+> understated the position. `60f0c2d` amended `04` §6.4 on 2026-08-22 from a three-band
+> red/amber/green scale to a **five-band table** diverging around a neutral centre, so that an
+> average starter stops reading as a caution. Nothing downstream followed: `CoachWorldTokens.Heat`
+> still held a three-case switch, and the test read canon with `matches(of: "red below (\d+)")`, so
+> the moment canon became a table the check stopped examining the tokens at all. **A test that
+> reads canon in one syntax is a test canon can silently outrun.**
+>
+> **Now implemented.** `Heat` carries the five bands — 40-59 `state.negative`, 60-69
+> `state.warning`, 70-79 `content.secondary`, 80-84 `state.positive` lightened, 85-99
+> `state.positive` — and is the single definition every surface that colours a rating already
+> resolved through (nine files, `CoachWorldRatingRing` among them), so all nine moved together. The Above band is **derived, not a new hex**:
+> `state.positive` mixed 30% toward `content.primary` (`#81DDAE` as it resolves today), so
+> re-valuing the positive role moves the band with it rather than leaving it behind, which is the
+> failure this whole entry is about.
+>
+> **`state.warning` moved with it, because §6.4 names "the amended `state.warning`".** §6.1a(ii)
+> derived `#C9704A` on 2026-08-22 — 24.1° off gold, 5.57:1 on `world.page` — and the palette still
+> shipped `#FFB03A` at 6.1° off gold. Gold marks the committing action and carries no other
+> meaning; a caution that close to it is the collision the amendment calls "the serious one". `04`
+> §6.1a's table and its filled-ink measurements now state the shipped value.
+>
+> **The test now reads the table.** `canonHeatBands` parses §6.4's rows, asserts the five bands
+> partition `scaleFloor...scaleCeiling` with no gap or overlap, and checks every rating from 40 to
+> 99 against the role its band names — plus §6.4's two stated constraints, 4.5:1 on `world.page`
+> and 24° off gold, at every rating. It ships the planted-offender self-test the other scans do:
+> the superseded prose sentence must **not** parse as bands.
+>
+> **The other three collisions are closed too, as declared aliases** — the resolution §6.1a(ii)
+> itself names. Each shared value is declared once in the token layer and referenced by every role
+> that takes it, so `state.negative`/`action.destructive` and `state.info`/`pro.identity` are one
+> declaration apiece instead of a literal typed twice, and **`state.live` now resolves to
+> `state.positive`'s `#4FD08C`** in place of `#37E08A`. That is a visible change — the live
+> indicator is very slightly duller green — and it removes a second-order incoherence the collision
+> table never reached: `field.live` already shipped `#4FD08C` while `state.live` shipped `#37E08A`,
+> so the two roles that both mean *in play* did not agree with each other.
+>
+> **Enforcing it by construction found two more pairs than canon's table listed:**
+> `content.primary`/`field.line` and `content.secondary`/`action.secondary`. The table was measured
+> over state and action roles, so it could not see a pair spanning content and field — the coverage
+> boundary again. `DesignContractTests` now asserts **no colour literal appears twice** in
+> `DesignTokens.swift`, with a planted-duplicate self-test, and deliberately does *not* pin which
+> roles are equal: canon wants diverging a pair on purpose to stay possible, and a pinned equality
+> would forbid it.
 
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
@@ -3565,6 +3615,20 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 | `PRODUCT.md` | Rewritten from the §6.3 gap argument | — |
 
 **Nothing in this table has been compiled, because there is nothing to compile yet.**
+
+> **Superseded 2026-08-23.** That sentence is true of the *table*, which lists documents only, and
+> false of the repository it now reads as describing. `Sources/` holds three targets and 317 Swift
+> files; `Tests/SimTests` is a running suite. What is compiled, and what each run actually covered,
+> is the dated evidence above this section — not this table, which was never extended past the
+> document package and is kept for that record.
+>
+> The same pass corrected the structural documents that had drifted from the tree: `03b` §1 (the
+> module layout, and `CoachWorldApp`, which it never mentioned), `03b` §2–§3 (three type names that
+> were never built), `03b` §4 (the save is zlib-compressed and shipping, not gzip-and-pending),
+> `03b` §5 (the test layout and the `-Xswiftc -enable-testing` flag a release run cannot omit),
+> `DOC-MANIFEST` §7 (it still described the pre-P0 tree as prior art), and `06` (two of its fifteen
+> named tests do not exist). `README.md` pointed at a deleted handoff and at an Xcode project path
+> `xcodegen` does not write.
 
 ---
 
