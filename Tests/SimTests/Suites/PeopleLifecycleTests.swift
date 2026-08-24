@@ -627,6 +627,57 @@ func runPeopleLifecycleTests() {
         }
     }
 
+    suite("Professional seats are refilled before they are invented") {
+        // `--pro-movement-probe` measured `expired=257 returned=2`: two players a season came back
+        // to a professional roster while 223 were drafted and the unattached population grew past
+        // 1,100. A seat vacated by a retirement was filled by a freshly generated 22-year-old
+        // without the pool ever being consulted, so the league could not age -- which is the whole
+        // of `Lifecycle distributions hold their bands`' season-6 trough.
+        test("a retiring professional's seat goes to an unattached player before a new one is made") {
+            var state = GameState.bootstrap(seed: 84_020)
+            let teamID = state.proTeams.ids[0]
+            let donorID = state.proTeams.ids[1]
+            guard let seat = state.proTeams[teamID]?.rosterIDs.first,
+                  let position = state.players[seat]?.position else {
+                expect(false, "the canonical world produced no professional roster to retire from")
+                return
+            }
+            // Retire the seat's holder outright: `retires` returns true unconditionally at the
+            // guaranteed margin, so this needs no draw to go a particular way.
+            _ = state.players.update(seat) {
+                $0.age = position.declineAge + PeopleRules.guaranteedRetirementYearsAfterDecline
+            }
+            // One unattached professional at that position, released from another club rather than
+            // invented, so their people-state bookkeeping is the bookkeeping of a real career.
+            guard let veteranID = state.proTeams[donorID]?.rosterIDs.first(where: {
+                state.players[$0]?.position == position
+            }) else {
+                expect(false, "no donor club carried a \(position) to release")
+                return
+            }
+            _ = state.proTeams.update(donorID) { $0.rosterIDs.removeAll { $0 == veteranID } }
+            _ = state.players.update(veteranID) {
+                $0.contract = nil
+                $0.age = position.declineAge
+            }
+            state.calendar = CalendarState(
+                season: state.calendar.season,
+                week: SharedRules.inSeasonWeeks
+            )
+            state.league.week = SharedRules.inSeasonWeeks
+
+            let transition = try SeasonLifecycleSystem.advance(after: state.calendar, in: state)
+            guard let roster = transition.proTeams[teamID]?.rosterIDs else {
+                expect(false, "the club lost its roster across the boundary")
+                return
+            }
+            expect(!roster.contains(seat), "the retired player kept his seat")
+            expect(roster.contains(veteranID),
+                   "the seat was filled without the unattached \(position) being offered it")
+            expectEqual(roster.count, state.proTeams[teamID]?.rosterIDs.count)
+        }
+    }
+
     suite("Lifecycle distributions hold their bands") {
         test("the age curve and the injured share hold their bands across a long run") {
             var state = GameState.bootstrap(seed: 84_010)
