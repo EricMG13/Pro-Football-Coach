@@ -1036,7 +1036,7 @@ same one curve back and forth; the shape of a single cycle is unchanged, only it
 | **value** | 0.22 | discrete: the new figure appears, no settle | A rating, score or attribute value changing |
 | **world** | 0.42 | discrete: the destination appears, no travel | A world-scale transition — screen to screen, register to register |
 | **panelEnter** | 0.24 | discrete: the panel is present or absent, never entering | The staff call-in panel's entrance |
-| **pulse** | 1.5 | discrete: the live indicator is shown at full opacity, never dimming | The live-snap dot, `04:448`'s named example — a period, not a state-change duration, so it is the one row that repeats rather than resolving once |
+| **pulse** | 1.5 | discrete: the live indicator is shown at full opacity, never dimming | The live-snap dot, `04` §6.1b's named example — a period, not a state-change duration, so it is the one row that repeats rather than resolving once |
 
 **Companions, not durations:**
 
@@ -1046,11 +1046,11 @@ same one curve back and forth; the shape of a single cycle is unchanged, only it
 | **pressDim** | 0.12 | How far a committing control dims on press — a dim, never a scale, so a control never shrinks under the thumb committing it |
 | **disabledOpacity** | 0.4 | The resting opacity of a disabled control. Not paired with an animation — a control does not animate into disabled, it simply is — but it ships from `Motion` alongside the values that do, so it belongs in this table rather than nowhere |
 
-**The reduced-form rule, stated once rather than four times.** `04:826` already requires it globally:
+**The reduced-form rule, stated once rather than four times.** `04` §7 already requires it globally:
 Reduce Motion replaces travel, reveal and field animation with discrete state changes. Applied to
 this table, a reduced form is never "the same animation, faster" — duration collapsing to near-zero
 still asks a screen reader and a motion-sensitive player to track something moving. It is the
-*destination state*, presented immediately, exactly as `04:448` already requires for Match Day: the
+*destination state*, presented immediately, exactly as `04` §6.1b already requires for Match Day: the
 ball's flight, the live dot's pulse and the panel push are removed, not accelerated.
 
 **Nothing here licenses a screen to animate.** §2's per-register motion phrase and §4.5's motion
@@ -1114,7 +1114,7 @@ than the day someone remembers to list it.
    world-context → dominant-object → evidence → actions → navigation rule above, made checkable.
 3. **Added 2026-08-18.** If it uses a construct §6.7 cannot wrap in the choke point —
    `TimelineView`, `matchedGeometryEffect`, `phaseAnimator`, `keyframeAnimator`, `symbolEffect` — it
-   also declares `accessibilityReduceMotion` is read. `04:826`'s reduced-form requirement is a
+   also declares `accessibilityReduceMotion` is read. `04` §7's reduced-form requirement is a
    contract clause the enumeration machinery already existed to check; this is `ReduceMotionContractTest`,
    the release gate `PRODUCT.md` already names, made to actually run rather than exist as a
    registered name with nothing behind it.
