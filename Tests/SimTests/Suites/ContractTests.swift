@@ -481,7 +481,7 @@ private func codingKeyRepresentableTypes(in files: [(path: String, text: String)
 
 // MARK: - The directories each scan walks
 
-// 03 section 3.5: `id: UUID = UUID()` as a default parameter is legitimate in Model/, and a scan
+// 03 section 3 clause 5: `id: UUID = UUID()` as a default parameter is legitimate in Model/, and a scan
 // cannot tell a default from a call. So Model/ is exempt BY NAME and everything else in the engine
 // is covered by construction — the inverse of a hand-written list of covered directories, which
 // would give a P3 that invents Sources/FootballSimCore/Simulation/ zero coverage while staying

@@ -7,9 +7,9 @@ import Foundation
 /// reverse — because `02-GAME-DESIGN.md` section 9 carries a career across the two tiers and a
 /// hard type split makes every readout that spans them a conversion.
 ///
-/// `Model/` is the one directory the ambient-identity source scan exempts (`03` section 3.5), so
-/// `id: UUID = UUID()` is legal here. Engine construction still passes `rng.uuid()` explicitly;
-/// the default exists for tests and for surfaces building a throwaway.
+/// `Model/` is the one directory the ambient-identity source scan exempts (`03` section 3
+/// clause 5), so `id: UUID = UUID()` is legal here. Engine construction still passes
+/// `rng.uuid()` explicitly; the default exists for tests and for surfaces building a throwaway.
 public struct Player: Codable, Sendable, Equatable, Identifiable {
     public let id: UUID
     public var firstName: String

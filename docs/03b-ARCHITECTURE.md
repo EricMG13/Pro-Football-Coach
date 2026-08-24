@@ -58,13 +58,13 @@ the build:
 | Engine boundary | no `import SwiftUI` / `UIKit` / `AppKit`, no UI type | `FootballSimCore/` |
 | Authoritative root | no file that imports a UI framework may name `GameState` | every file importing SwiftUI/UIKit/AppKit |
 | Seeding | no `hashValue`, `Hasher(`, `hash(into:)` — every per-launch-salted hash, not one spelling | `FootballSimCore/` |
-| Ambient randomness | no `UUID()`, `Date()`, `Date.now` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3.5) | `FootballSimCore/`, less `Model/` |
+| Ambient randomness | no `UUID()`, `Date()`, `Date.now` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3 clause 5) | `FootballSimCore/`, less `Model/` |
 | Design tokens | no literal spacing, radius, colour, font size or animation duration | every file importing SwiftUI/UIKit/AppKit, less `CoachWorldMotion.swift` |
 
 **Three Root cells were corrected on 2026-08-23, all in the same direction: canon named a directory,
 the scan enumerates by construction.** Ambient randomness read `Engine/`, `Generation/`, `AI/`,
 `Abstracted/` — four of the engine's twenty-three directories; the scan walks the whole target and
-exempts `Model/` by name, and the same hand list was removed from `03` §3.5. Design tokens and
+exempts `Model/` by name, and the same hand list was removed from `03` §3 clause 5. Design tokens and
 authoritative root both read `ProFootballCoachUI/`; each scan actually enumerates **every file that
 imports a UI framework**, because the rule is about code that draws and the composition layer is a
 second target that does — the authoritative-root scan's own comment records that a directory-only
@@ -85,8 +85,8 @@ editing this table; the table names the five the boundary is built from.
 
 **Every scan strips comments properly and ships a self-test that fails on a planted offender.** The
 prior build's scan exempted any offending line carrying a trailing comment, and never looked for
-`UUID()` at all — which is how five real determinism leaks survived a green suite (`03` §3.5). A scan
-that has never failed is not known to be a scan.
+`UUID()` at all — which is how five real determinism leaks survived a green suite (`03` §3
+clause 5). A scan that has never failed is not known to be a scan.
 
 That last one is the direct structural answer to `AUDIT.md`'s systemic pattern 2, which counted 43
 literal spacings, 25 literal radii and 9–10 hard-coded font sizes against `DESIGN.md`'s own written

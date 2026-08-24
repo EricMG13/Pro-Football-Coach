@@ -37,7 +37,7 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 | **G3 Surface audit** | Touched surfaces score **≥31/40 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md` — its eight dimensions at 0–5 each, owner-approved 2026-08-11. The older ≥17/20 five-dimension frame (Accessibility, Performance, Appearance & Theming) is superseded and the bars are not equivalent. |
 | **G4 Scope** | The diff contains what the phase specifies and nothing else. No opportunistic refactors. |
 | **G5 Calibration** | All bands in `03` §5 hold under TOST. |
-| **G6 Determinism** | Same seed reproduces exactly, **across processes**; **both** determinism source scans pass — no `hashValue`, and no ambient `UUID()`/`Date()` (`03` §3.5). |
+| **G6 Determinism** | Same seed reproduces exactly, **across processes**; **both** determinism source scans pass — no `hashValue`, and no ambient `UUID()`/`Date()` (`03` §3 clause 5). |
 | **G7 Soak** | The 20-season soak passes every assertion in `03` §6 **that the phase's scope can reach** — see the note below. |
 | **G8 Milestone audit** | The whole app scores **≥31/40 with zero P0/P1** against `04b`'s eight dimensions, with the world-scope dimensions (4 world identity and continuity, 8 craft and resilience) judged across screen families rather than one surface. |
 
