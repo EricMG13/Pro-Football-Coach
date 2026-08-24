@@ -90,21 +90,34 @@ public enum CollegePortalPolicyV1 {
         .nilOpportunity,
     ]
 
-    static let programmeCount = maximumKnowledgeObservers
+    // Frozen, and unlike `rosterLimit` and `scholarshipLimit` this one genuinely cannot follow
+    // `CollegeRules`: it is the divisor in the `.teamSuccess` component formulas below, and an
+    // archived explanation has to rederive its stored components from it exactly. Move it and every
+    // career record archived under the old ladder stops rederiving. A world of a different size
+    // therefore needs a policy v2, not a live reading -- `makeSnapshot` refuses the window when
+    // `CollegeRules.programmeCount` and this disagree, and `PortalPolicyTests` asserts they do not.
+    static let frozenProgrammeCount = maximumKnowledgeObservers
     static let portalPoolLimit = maximumEntrants
     static let portalWindowCount = 2
     static let maximumOffersPerWindow = portalPoolLimit * maximumOffersPerEntrant
     static let postseasonCalendarWeek = 21
     static let springCalendarWeek = 1
     static let maximumGamesPerSeason = 16
-    static let rosterLimit = 105
+    // A frozen, deliberately coarse ceiling on an *archived* position-room count -- not a copy of
+    // `CollegeRules.rosterLimit`, and never to be read as one. No live computation may use it:
+    // roster and scholarship openings are live readings and take `CollegeRules`.
+    // Residual hazard, unfixed here because it is a different surface: the three
+    // `CollegePortalState` room-count checks that use this ceiling are shared between decode and
+    // live construction, so raising `CollegeRules.rosterLimit` past 105 would let a live room
+    // exceed it and trap. Split those the way `CollegePortalCapacitySnapshot` now is when that
+    // becomes possible.
+    static let maximumPositionRoomSize = 105
     static let minimumPlayableRosterByPosition: [Position: Int] = [
         .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
         .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
         .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 2,
         .cornerback: 3, .safety: 2, .kicker: 1, .punter: 1,
     ]
-    static let scholarshipLimit = 85
     static let eligibilityClockYears = 5
     static let maximumNILBudget = 9_900
     static let nilBandUnit = 100
@@ -215,7 +228,11 @@ public enum CollegePortalPolicyV1 {
         }
         guard portal.targetSeason == targetSeason,
               state.college.recruitingSeason == targetSeason,
-              state.programmes.count <= maximumKnowledgeObservers,
+              // The live world size against the live rule, and the live rule against what this
+              // policy version can represent. Before 2026-08-23 this read the frozen copy for both
+              // and nothing compared the two.
+              state.programmes.count <= CollegeRules.programmeCount,
+              CollegeRules.programmeCount == frozenProgrammeCount,
               let evaluatedAt = window.expectedCalendar(targetSeason: targetSeason),
               state.calendar == evaluatedAt else { return nil }
         let intents = deriveIntents(
@@ -286,7 +303,7 @@ public enum CollegePortalPolicyV1 {
             CollegePortalIntentComponent(
                 reason: .teamSuccess,
                 value: (evidence.sourceFinalRankingPosition - 1) * 20
-                    / (programmeCount - 1) - 10
+                    / (frozenProgrammeCount - 1) - 10
             ),
             CollegePortalIntentComponent(
                 reason: .restless,
@@ -321,7 +338,7 @@ public enum CollegePortalPolicyV1 {
             .staffQuality: (evidence.recruitingStaffAverage.value - ratingFloor) * 10
                 / ratingSpan,
             .teamSuccess: 10 - (evidence.archivedFinalRankingPosition - 1) * 10
-                / (programmeCount - 1),
+                / (frozenProgrammeCount - 1),
             .nilOpportunity: min(10, nilAllocationAdjustment),
         ]
         return pitchOrder.map { reason in
@@ -755,7 +772,10 @@ public enum CollegePortalPolicyV1 {
         let matches = ranking.enumerated().filter { $0.element == programmeID }
         guard matches.count == 1 else { return nil }
         let rank = matches[0].offset + 1
-        return (1...programmeCount).contains(rank) ? rank : nil
+        // The frozen ladder, not the live one: this rank is archived on evidence whose decode
+        // bound is the same frozen number, so a rank the live world allows and the archive refuses
+        // would trap rather than return nil.
+        return (1...frozenProgrammeCount).contains(rank) ? rank : nil
     }
 
     private static func windowHistoryAllowsEntry(

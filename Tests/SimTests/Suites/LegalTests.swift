@@ -39,9 +39,223 @@ func sweepSeed(_ index: Int) -> UInt64 {
 /// Three tests here plus IdentityDistributionTests all want the same 200 leagues, and generating
 /// them per test made the suite four times slower for no extra coverage. Computed lazily so a run
 /// that skips these suites does not pay for them.
+///
+/// **The canonical world is a member, not a spot-check.** `CanonicalTeamBranding` overrides every
+/// name, nickname and colour at `worldSeed` and returns early at any other seed, so a sweep of
+/// arbitrary seeds reads generator output that the shipped world replaces -- and the one league
+/// every tester actually sees was the one league no legal test read. It sits last so the existing
+/// per-index failure messages keep meaning what they meant.
 let sweptWorlds: [GeneratedWorld] = (0..<LEGAL_SWEEP_LEAGUES).map {
     LeagueGenerator.generate(seed: sweepSeed($0))
-}
+} + [LeagueGenerator.generate(seed: CanonicalTeamBranding.worldSeed)]
+
+/// Owner decision 2026-08-23: beta-level implementation is the priority; these canonical teams'
+/// colour-guardrail violations are approved exceptions, addressed near the end of development
+/// rather than now. Named and pinned by team id, not waved through wholesale --
+/// `pendingCanonAmendment`'s pattern in DesignContractTests.swift and "the artwork still owed is
+/// counted, not left to a red gate" (STATUS.md) are the same idiom: an owner-approved gap stays
+/// visible and exact, so a new violation beyond this dated list still fails. Detail, examples and
+/// the two guardrail counts: docs/STATUS.md, "2026-08-23 -- the legal sweep never read the shipped
+/// world...". Applies to the canonical world only (`index == LEGAL_SWEEP_LEAGUES` below) -- these
+/// are fixed team-id slots reused by every synthetic league too, and a synthetic league landing on
+/// one of these ids by chance must still be caught.
+///
+/// **148 of 166, not a smaller sample.** `collidesWithTradeDress` is a ΔE < 25 CIE76 match against
+/// all 71 `Blocklist.tradeDress` pairs in both orderings -- the near-miss standard `02` section
+/// 11.3.5 fixes, not exact-hex equality. The 200 synthetic leagues never produce a single offender
+/// because `ColourGenerator.next` rejects and retries any pair that collides before returning it;
+/// the canonical table is hand-authored and was never run through that filter, so it drew from the
+/// same general "bold sports colour" palette real programmes draw from and lands near one of 71
+/// real pairs at a very high rate once both colours and both orderings are checked.
+let ownerApprovedTradeDressExceptions: Set<UUID> = [
+    UUID(uuidString: "0017F958-E7D0-4FFC-9EA8-01A252B40FD6")!,  // Zumbrota Central Lodestars
+    UUID(uuidString: "00A6282E-56F8-4971-953D-08DB822B3CC7")!,  // Winnemucca Agricultural Atoms
+    UUID(uuidString: "00EBE0C0-2B2B-4988-A450-BB870D6D3881")!,  // Union Maritime Sentinels
+    UUID(uuidString: "02D86903-1751-489C-83A9-579368E3BB40")!,  // Binghamton Shrikes
+    UUID(uuidString: "0344382F-0BA9-4C30-A1FF-EEF7E9DCE73D")!,  // Carlin A&M Founders
+    UUID(uuidString: "07CA9577-9354-4F7D-8ED8-E60A784DB48F")!,  // Milford Coastal Nightwings
+    UUID(uuidString: "0D81D2F9-0383-4BD5-A741-76604D277691")!,  // Rexburg A&M Sharks
+    UUID(uuidString: "0E106627-801B-485A-A173-B723F51CD305")!,  // Middlebury Coastal Goshawks
+    UUID(uuidString: "0E961082-75BA-47B1-A5B4-CAFEF9D9DC93")!,  // Dagsboro Comets
+    UUID(uuidString: "0F05F4F3-68CA-4674-B210-9DD7B75E1088")!,  // Edgartown Arbors
+    UUID(uuidString: "0FB78D18-D089-4719-B861-DD1E9F9C2082")!,  // Ephraim Maritime Stallions
+    UUID(uuidString: "1032E7BD-52E6-4C02-85D4-4DC399B13B7A")!,  // Hood River Maritime Gaffers
+    UUID(uuidString: "10AA9D4C-D1C1-4E25-9B8B-86520D782A68")!,  // Zeeland Sabrecats
+    UUID(uuidString: "10B39F02-2AE6-489D-964E-3A3AC7C808AC")!,  // Oneonta Bitterns
+    UUID(uuidString: "10E07F5C-24A8-414C-83AE-8B54CBE2BCB8")!,  // Hamilton Ursids
+    UUID(uuidString: "14A2B6E2-62D4-4F68-B5C8-99DD51B84249")!,  // New London Valley Kestrels
+    UUID(uuidString: "1652A3B7-3E69-4E18-88F0-B2E2F0ADBA86")!,  // Kanab Tempests
+    UUID(uuidString: "16A673C3-8E4D-4C59-A0EA-2D3047C8D6EA")!,  // Lexington Regional Curlews
+    UUID(uuidString: "1982A97F-CD2B-459B-AF23-89D5151A9829")!,  // New Castle Maritime Sentinels
+    UUID(uuidString: "1C8CC9B1-F549-4AE4-8CF1-8E4C718D0245")!,  // San Angelo A&M Hoplites
+    UUID(uuidString: "218774CA-1F35-4B02-9FAA-54C54191C80F")!,  // Watertown Coastal Reapers
+    UUID(uuidString: "234A4A68-7B33-464E-801A-D4A52CD357B5")!,  // Weiser Valley Marlins
+    UUID(uuidString: "236E7A67-CFFC-4AD0-A041-DABDD7CB3492")!,  // Danville Curlews
+    UUID(uuidString: "26C528C1-BFD0-4048-B126-D9B601B22071")!,  // Laurel Tech Squall
+    UUID(uuidString: "29C6A2AE-BFCA-4266-81A5-DF123A3DB00D")!,  // Goshen Prowlers
+    UUID(uuidString: "2DBDBC5E-18D2-417B-BC73-C6596576F72B")!,  // Shelbyville Poly Pumas
+    UUID(uuidString: "2E2D3637-D977-4D9E-9007-16ACB14ED7C7")!,  // Danbury State Breakers
+    UUID(uuidString: "3011BF87-371C-48EA-8A1B-0B2452408AB1")!,  // Waynesboro Poly Quarrymen
+    UUID(uuidString: "304B950B-6445-4300-8EEE-13F6F6B0B971")!,  // Wapakoneta Poly Tempests
+    UUID(uuidString: "306B310F-484F-48B9-8FC0-4F76DCE0F51F")!,  // Rockland Prowlers
+    UUID(uuidString: "320CF43A-6943-4341-BF51-B90853823208")!,  // Kirksville State Navigators
+    UUID(uuidString: "343AE8DE-59CC-4017-96B2-46AE69E744BE")!,  // Parkersburg Poly Meteors
+    UUID(uuidString: "3A59F5FD-43A8-4418-A103-62D1275E07B4")!,  // Mesquite Comets
+    UUID(uuidString: "3E7B8999-7AE8-46D6-91FA-65C4712CBD1C")!,  // Flandreau Maritime Cacti
+    UUID(uuidString: "3FEBFCA9-A9F3-4C2B-9740-7F27575C64BB")!,  // Delaware City Marlins
+    UUID(uuidString: "4025813E-0EF7-4FBA-A821-87DB4A5D967F")!,  // Carlisle Goshawks
+    UUID(uuidString: "40329404-47DB-4AD9-B97B-35BFC6B34854")!,  // Aberdeen Regional Tornadoes
+    UUID(uuidString: "40ADB459-3F48-4A55-804E-42FFC987D1BA")!,  // Pella Martens
+    UUID(uuidString: "4135CA8D-38DC-4CDE-AC7C-F4951BC6E52E")!,  // Dalhart Nightwings
+    UUID(uuidString: "42330E58-BBFC-4870-B3C6-AA4232F6BFF3")!,  // Carbondale Coastal Racers
+    UUID(uuidString: "428AF1A5-E2DB-4ADE-AC55-F97D76F94FBF")!,  // Calexico Regional Foremen
+    UUID(uuidString: "465D568E-3258-4DFD-BBD0-92640592A749")!,  // Biddeford Central Goshawks
+    UUID(uuidString: "49697F49-CF9B-463E-BC2E-E3FD1FB6DC4D")!,  // Zanesville Valley Lynx
+    UUID(uuidString: "4C697B3A-741A-4D32-AE66-86A3B92CB4F7")!,  // Warrensburg Kestrels
+    UUID(uuidString: "4CACCDE7-340F-4E4F-8869-031E960CD31E")!,  // Sturgis Comets
+    UUID(uuidString: "4D2BD12B-F3B7-46FE-8863-CD6973A66EB1")!,  // Red Wing State Meteors
+    UUID(uuidString: "4D74C029-1A74-48D9-BF51-CAEDFCCBEFA0")!,  // Siloam Springs State Miners
+    UUID(uuidString: "4F61ED93-A823-4F4A-B32D-ABED1B6AA243")!,  // Nampa Kestrels
+    UUID(uuidString: "50F026EE-0C7B-45A7-ABDC-48BBB936D396")!,  // Petoskey Regional Raccoons
+    UUID(uuidString: "520C4F29-4C68-4D36-B1C8-681CF1869908")!,  // Sedalia Shards
+    UUID(uuidString: "545D878F-D881-45B0-A7C2-F1AC3B3E018E")!,  // Ridgway Coastal Prowlers
+    UUID(uuidString: "57E1B055-AFBA-4F86-931D-51D9B1769E46")!,  // Glenwood Springs Valley Thunderbolts
+    UUID(uuidString: "5964FBBF-088C-4B89-BD17-7C44C4CB1FED")!,  // Skowhegan Valley Lynx
+    UUID(uuidString: "5C4CE91F-969D-4A74-8E1A-7E672C9631AB")!,  // Hermann Coastal Lancers
+    UUID(uuidString: "5E8574FC-01C2-4A46-86F9-6B7D135139C5")!,  // Saranac Lake Central Torchbearers
+    UUID(uuidString: "5EB19F56-8781-43B2-9200-BB201482D59D")!,  // Essex Junction Maritime Orcas
+    UUID(uuidString: "5ECE4678-DCAA-4412-981D-396E9EFACE56")!,  // Natchez Maritime Comets
+    UUID(uuidString: "606AF674-1C1B-484F-A13F-E6D511734B15")!,  // Titusville Breakers
+    UUID(uuidString: "6504837E-4DE4-4C06-8C9A-2E818B668BC5")!,  // Pipestone Breakers
+    UUID(uuidString: "65AC24FD-9E0B-4C56-A06A-53A589DAADD4")!,  // Clayton Poly Geckos
+    UUID(uuidString: "66F382C0-4B27-4283-89C4-C43B1F75C729")!,  // Gillette Maritime Goshawks
+    UUID(uuidString: "6A58BFEC-098E-40C2-94F6-A1B551F098DD")!,  // Lovelock Kestrels
+    UUID(uuidString: "6CAF0BE7-40EB-4945-9E4B-DB5ABDD40D8A")!,  // Chanute Ursids
+    UUID(uuidString: "7124CE9C-8D5F-4FC9-9D0B-88A78F18BA90")!,  // Beverly Maritime Nightwings
+    UUID(uuidString: "729F50FA-DC6F-4122-80E5-EBCCB0E0569E")!,  // Escanaba Coastal Anchors
+    UUID(uuidString: "73490D92-65A6-4A96-BAFF-0C67F093918F")!,  // Camas Poly Sharks
+    UUID(uuidString: "74CBDAB2-62B0-4A15-B1C5-547E005A7E4F")!,  // Burlington A&M Kestrels
+    UUID(uuidString: "74FA7E3F-3395-408F-883C-3CB271E0FA9F")!,  // Davenport Agricultural Tornadoes
+    UUID(uuidString: "759E3564-09AA-496B-9037-952E6830FA52")!,  // Rapid City Central Marlins
+    UUID(uuidString: "7767AA6A-6FA7-4402-98D6-B02EEA82AF5F")!,  // Ripon Regional Corsairs
+    UUID(uuidString: "7A931080-33EA-4761-B5A7-499C7451D9F5")!,  // Effingham Cobras
+    UUID(uuidString: "7DCE509D-76EB-4570-9326-49648DD2DDA2")!,  // Pinedale Tech Dragons
+    UUID(uuidString: "7DEF46FB-1805-44A3-9484-F2589F1712ED")!,  // Wilber Sharks
+    UUID(uuidString: "7E474219-E18A-4091-ADB2-A7C4A3A5A445")!,  // Smithfield Central Firebirds
+    UUID(uuidString: "812CEEE7-CE13-45A9-9DC8-C1EB8FA27A6C")!,  // Johnstown Hoplites
+    UUID(uuidString: "84233BCF-267B-4311-89BD-5FE567EDDCCB")!,  // Sharon Nightwings
+    UUID(uuidString: "886F0CB0-71D2-40A4-AD1E-8D1AF548BE14")!,  // Ely Poly Engineers
+    UUID(uuidString: "889EB520-67E7-4878-B29F-4936D9C0715C")!,  // Hillsboro Whirlwinds
+    UUID(uuidString: "88C162AB-213F-44EE-AC3D-F217EDFAB616")!,  // Barre Coastal Stonebreakers
+    UUID(uuidString: "8AA6D28B-6EBE-454A-B27E-973800B9FE5C")!,  // Jerome Whirlwinds
+    UUID(uuidString: "8C11B43C-26AF-44CC-9D1D-313C56292C16")!,  // Claremont Maritime Martens
+    UUID(uuidString: "8E5802E1-2E34-4C2E-90F1-4D92567B26BD")!,  // Iron Mountain Orcas
+    UUID(uuidString: "8FA882FD-D69C-4228-858D-172434456DA9")!,  // Klamath Falls A&M Shields
+    UUID(uuidString: "90CFDB4C-A355-4A5A-8B3D-94B9A73A5AB5")!,  // Grangeville Poly Prowlers
+    UUID(uuidString: "91F2A57B-E7C9-4E6E-8217-17490CBB784B")!,  // Adrian Wizards
+    UUID(uuidString: "93906BE6-0664-47D6-B43D-818955AE7DC8")!,  // Lihue Thunder
+    UUID(uuidString: "94D568ED-1B87-419B-B8E4-005F63171F1F")!,  // Fairbury Cannoneers
+    UUID(uuidString: "958DF3C5-5675-44A6-8A80-999F90B172A4")!,  // Cambridge A&M Reapers
+    UUID(uuidString: "99FD7E6A-C476-4FA2-97F3-89E767D8D29F")!,  // Spencer Maritime Coopers
+    UUID(uuidString: "9BBB69C9-4FBA-4C26-BFDF-8BAEF98A8682")!,  // Lebanon Regional Ursids
+    UUID(uuidString: "9ECF043D-3EFC-4A72-9819-CE233D8C7DDA")!,  // Waverly Anchors
+    UUID(uuidString: "9F0787A8-3784-407F-BCDA-8A2CDEB855FC")!,  // Cohoes Coastal Tornadoes
+    UUID(uuidString: "A11631F5-EF41-4BD0-90A1-34F29549AFBA")!,  // Sulphur Springs A&M Shrikes
+    UUID(uuidString: "A23E5915-3CDF-4522-9C22-AA9AD1D72EB9")!,  // Janesville Central Lynx
+    UUID(uuidString: "A34541EA-0304-4A47-8CA0-9B3BC0B6DC46")!,  // Bristol Shrikes
+    UUID(uuidString: "A3B3903E-148F-481A-8469-00002BEB8BBB")!,  // Dover A&M Captains
+    UUID(uuidString: "A3C286C7-47C6-46F6-BCF3-318840C3E6DA")!,  // Lapeer State Aviators
+    UUID(uuidString: "A404526F-1958-4108-B555-4027E21DFBDF")!,  // Shamokin Corsairs
+    UUID(uuidString: "A490D536-5671-4340-BE18-CD697CEED26A")!,  // Olney Cacti
+    UUID(uuidString: "A4A0B0B0-62DB-42A3-B145-67E3DD7C1A04")!,  // Geneseo State Wildcatters
+    UUID(uuidString: "A6B3C25F-D8C2-410D-9981-8F260720A790")!,  // Millinocket Coastal Sea Dragons
+    UUID(uuidString: "A6E5417A-9D72-4874-AAC3-8CD372E646BB")!,  // Hinton Coastal Sentinels
+    UUID(uuidString: "A9B34775-5B86-4716-92FB-62A181590973")!,  // Missoula Conductors
+    UUID(uuidString: "ABD2FF25-9964-494B-86E3-4B89E24B5348")!,  // Kerrville Lamplighters
+    UUID(uuidString: "AC5D9C75-1059-4B7C-9C98-8B557A5EAE3D")!,  // Cranston Crystals
+    UUID(uuidString: "AD2C6F9A-1B65-4766-8FB1-B27E3B03AD5A")!,  // Sandpoint Regional Goshawks
+    UUID(uuidString: "ADE3144D-D5B5-4619-B40D-53EDB4C2D1B1")!,  // Texarkana Tech Marlins
+    UUID(uuidString: "B0196DF2-F075-4EAB-9A45-E39466DFAF14")!,  // Elmira Prowlers
+    UUID(uuidString: "B495A8A8-AAFA-4736-875B-C4ECD8E1C5DF")!,  // Derby Central Fletchers
+    UUID(uuidString: "B6783970-BA3D-485C-815D-9A62F25005C9")!,  // Orangeburg A&M Whirlwinds
+    UUID(uuidString: "BB6717ED-25E7-4CE3-838D-9292E41AA8C1")!,  // New Haven Shipwrights
+    UUID(uuidString: "BC1EBE0F-069B-4BC9-A33B-23A887CA898C")!,  // Redding Gars
+    UUID(uuidString: "BCB38CAC-CC60-4EF4-8760-567F2E725486")!,  // Wahpeton Prowlers
+    UUID(uuidString: "BF72B120-52D0-42A5-9152-136626721018")!,  // Bridgeport Poly Giraffes
+    UUID(uuidString: "C07AC0D1-16CE-4510-B262-83DB4CAD3E38")!,  // Terre Haute A&M Gorillas
+    UUID(uuidString: "C0A6908A-FD4D-408A-B0BE-70A2298C0B70")!,  // Moberly Tornadoes
+    UUID(uuidString: "C1E1DD21-4DB7-4A9B-B72F-E028B4AAA9C3")!,  // Ellensburg Regional Reapers
+    UUID(uuidString: "C1FDC4CC-8A24-47C9-A71A-D1EB2C31DFF4")!,  // Abingdon Stallions
+    UUID(uuidString: "C28B0A9D-F937-4F64-BD4A-517AFC174BC1")!,  // Lewisburg Oncas
+    UUID(uuidString: "C2A1B50D-C824-46F7-9CFB-BD477BF5ABAD")!,  // Springville Maritime Leopards
+    UUID(uuidString: "C3412C59-7F59-4D90-8015-CBD76155AAF6")!,  // Savanna Snow Leopards
+    UUID(uuidString: "CB7833BC-70FE-42C0-943A-61D73AADC350")!,  // Waimea Coastal Clouded Leopards
+    UUID(uuidString: "CBDF8F99-B7C6-4B27-B545-E5FDC61EB999")!,  // Baggs Cheetahs
+    UUID(uuidString: "CF442D44-8E80-4045-8888-B1EC5CC934E4")!,  // Scottsbluff State Servals
+    UUID(uuidString: "CF446B37-9C11-417D-ADF8-C4952970D1C9")!,  // New Prague Thunder
+    UUID(uuidString: "CFC2D13A-E399-42B8-8450-11D1C91934FD")!,  // McCook Caracals
+    UUID(uuidString: "D01A0E13-7818-4053-ABDE-4C27F590D24E")!,  // Lock Haven Regional Ocelots
+    UUID(uuidString: "D3563C9A-7703-4E80-A87E-D02C6E12D677")!,  // Rocky Mount A&M Lamplighters
+    UUID(uuidString: "D4F46917-036A-4BBC-9FA1-98D66B8F1819")!,  // Ada Margays
+    UUID(uuidString: "D851E5D2-C6A4-40CF-8308-5FA0947078EF")!,  // Holly Springs Coastal Pallas Cats
+    UUID(uuidString: "DB188E3A-70F3-449E-A094-00D189ECF16B")!,  // New Ulm Halos
+    UUID(uuidString: "DEC9D295-AA77-4D57-8CEC-E3E92EFDC219")!,  // Weatherford Prisms
+    UUID(uuidString: "E0853162-478C-4A88-8FCC-5720801797FB")!,  // Rangeley Links
+    UUID(uuidString: "E175143F-FFD4-41AB-9CB8-7F317FCE2082")!,  // Canandaigua Tech Galaxies
+    UUID(uuidString: "E2034539-439C-471E-82C2-4E04DCE73B42")!,  // Penn Yan Spires
+    UUID(uuidString: "E287BED9-67CC-4457-8619-9A7BBC9998F3")!,  // Ocean City Agricultural Bolts
+    UUID(uuidString: "E2EA9F87-85EC-4B2D-A307-6FAE41E7C490")!,  // Oak Bluffs Tech Shooting Stars
+    UUID(uuidString: "E335B640-25F6-4A29-A0C8-EB8A69A0960A")!,  // Eastport Knots
+    UUID(uuidString: "E7F41714-0989-41A4-B322-379A36119847")!,  // Gallipolis Poly Shards
+    UUID(uuidString: "E8D76C2D-F87A-4503-A1B5-B80193FC4F5B")!,  // Ketchikan Citadels
+    UUID(uuidString: "F22A5A2B-A734-4FB1-B57D-1D6424D04E56")!,  // Miles City Vortices
+    UUID(uuidString: "F565417A-C5DA-40AC-BEF3-FE5B0EE0B8F7")!,  // Leesburg Deltas
+    UUID(uuidString: "FAE94B0E-BD99-4B65-AE37-6DAB8D288CBC")!,  // Holdrege Tech Lamplighters
+    UUID(uuidString: "FC2EB19D-2F6C-4658-8473-CE9FCB5D5559")!,  // Elko Sentinels
+    UUID(uuidString: "FCC35CCD-6BB6-4320-9190-9239ECE10D62")!,  // Red Lodge State Starbursts
+    UUID(uuidString: "FCD34F9B-7C24-472A-B689-0C44A0D33C47")!,  // Carefree Tornadoes
+    UUID(uuidString: "FD596501-2D90-49B5-9EDA-275EE0141BA5")!,  // Camden Bolts
+    UUID(uuidString: "FF88B667-1155-4033-8E70-AEFC3087A0F0")!,  // Delavan Tech Monoliths
+]
+
+let ownerApprovedContrastExceptions: Set<UUID> = [
+    UUID(uuidString: "02D86903-1751-489C-83A9-579368E3BB40")!,  // Binghamton Shrikes
+    UUID(uuidString: "1032E7BD-52E6-4C02-85D4-4DC399B13B7A")!,  // Hood River Maritime Gaffers
+    UUID(uuidString: "10AA9D4C-D1C1-4E25-9B8B-86520D782A68")!,  // Zeeland Sabrecats
+    UUID(uuidString: "10E07F5C-24A8-414C-83AE-8B54CBE2BCB8")!,  // Hamilton Ursids
+    UUID(uuidString: "1982A97F-CD2B-459B-AF23-89D5151A9829")!,  // New Castle Maritime Sentinels
+    UUID(uuidString: "1C8CC9B1-F549-4AE4-8CF1-8E4C718D0245")!,  // San Angelo A&M Hoplites
+    UUID(uuidString: "218774CA-1F35-4B02-9FAA-54C54191C80F")!,  // Watertown Coastal Reapers
+    UUID(uuidString: "3011BF87-371C-48EA-8A1B-0B2452408AB1")!,  // Waynesboro Poly Quarrymen
+    UUID(uuidString: "304B950B-6445-4300-8EEE-13F6F6B0B971")!,  // Wapakoneta Poly Tempests
+    UUID(uuidString: "306B310F-484F-48B9-8FC0-4F76DCE0F51F")!,  // Rockland Prowlers
+    UUID(uuidString: "320CF43A-6943-4341-BF51-B90853823208")!,  // Kirksville State Navigators
+    UUID(uuidString: "3A59F5FD-43A8-4418-A103-62D1275E07B4")!,  // Mesquite Comets
+    UUID(uuidString: "3ADF86BC-763D-4996-AA5C-4A847C44EE0E")!,  // Waurika Maritime Palisades
+    UUID(uuidString: "428AF1A5-E2DB-4ADE-AC55-F97D76F94FBF")!,  // Calexico Regional Foremen
+    UUID(uuidString: "4CACCDE7-340F-4E4F-8869-031E960CD31E")!,  // Sturgis Comets
+    UUID(uuidString: "545D878F-D881-45B0-A7C2-F1AC3B3E018E")!,  // Ridgway Coastal Prowlers
+    UUID(uuidString: "5F09D018-DCA9-41F7-8ACD-040A07230254")!,  // Yreka Agricultural Surveyors
+    UUID(uuidString: "66F382C0-4B27-4283-89C4-C43B1F75C729")!,  // Gillette Maritime Goshawks
+    UUID(uuidString: "729F50FA-DC6F-4122-80E5-EBCCB0E0569E")!,  // Escanaba Coastal Anchors
+    UUID(uuidString: "74FA7E3F-3395-408F-883C-3CB271E0FA9F")!,  // Davenport Agricultural Tornadoes
+    UUID(uuidString: "87497AA4-AED8-4757-B45C-C5EFEBA7EBEC")!,  // Ogallala Coastal Palisades
+    UUID(uuidString: "886F0CB0-71D2-40A4-AD1E-8D1AF548BE14")!,  // Ely Poly Engineers
+    UUID(uuidString: "892CB41F-7F6E-4692-86FF-64FA39A7E48D")!,  // Nacogdoches Poly Planters
+    UUID(uuidString: "900EF64D-9234-456E-AA4E-D488C78B968E")!,  // Payson A&M Sabrecats
+    UUID(uuidString: "9ECF043D-3EFC-4A72-9819-CE233D8C7DDA")!,  // Waverly Anchors
+    UUID(uuidString: "A34541EA-0304-4A47-8CA0-9B3BC0B6DC46")!,  // Bristol Shrikes
+    UUID(uuidString: "A80F1424-2952-443A-8737-7DA109C31124")!,  // Webster City Coastal Tornadoes
+    UUID(uuidString: "B6783970-BA3D-485C-815D-9A62F25005C9")!,  // Orangeburg A&M Whirlwinds
+    UUID(uuidString: "C0A6908A-FD4D-408A-B0BE-70A2298C0B70")!,  // Moberly Tornadoes
+    UUID(uuidString: "C2A1B50D-C824-46F7-9CFB-BD477BF5ABAD")!,  // Springville Maritime Leopards
+    UUID(uuidString: "C3412C59-7F59-4D90-8015-CBD76155AAF6")!,  // Savanna Snow Leopards
+    UUID(uuidString: "CB7833BC-70FE-42C0-943A-61D73AADC350")!,  // Waimea Coastal Clouded Leopards
+    UUID(uuidString: "CFC2D13A-E399-42B8-8450-11D1C91934FD")!,  // McCook Caracals
+    UUID(uuidString: "E0853162-478C-4A88-8FCC-5720801797FB")!,  // Rangeley Links
+    UUID(uuidString: "EA82FD9D-8540-464A-BF06-EA0374CDBDB3")!,  // Falmouth Maritime Gatekeepers
+    UUID(uuidString: "F565417A-C5DA-40AC-BEF3-FE5B0EE0B8F7")!,  // Leesburg Deltas
+]
 
 /// The one file exempt from the shipped-copy scan, because it *is* the list of real names.
 let blocklistSourcePath = "Generation/Blocklist.swift"
@@ -504,19 +718,29 @@ func runLegalTests() {
     }
 
     suite("Legal: trade dress") {
-        test("no generated colour pair in any swept league sits within delta E of a real pair") {
+        test("no generated colour pair in any swept league sits within delta E of a real pair, "
+            + "beyond the owner-approved exceptions") {
             var offenders: [String] = []
+            var approvedCount = 0
             for (index, world) in sweptWorlds.enumerated() {
-                for (_, identity) in world.identities
+                for (id, identity) in world.identities
                 where ColourGenerator.collidesWithTradeDress(identity.colours.primary,
                                                              identity.colours.secondary) {
+                    if index == LEGAL_SWEEP_LEAGUES, ownerApprovedTradeDressExceptions.contains(id) {
+                        approvedCount += 1
+                        continue
+                    }
                     offenders.append("seed \(index): \(identity.colours.primary.hex)/"
                         + identity.colours.secondary.hex)
                 }
             }
             expect(offenders.isEmpty,
-                   "generated pairs sit inside a real programme's trade dress: "
-                       + offenders.prefix(10).joined(separator: ", "))
+                   "generated pairs sit inside a real programme's trade dress, beyond the "
+                       + "owner-approved exceptions: " + offenders.prefix(10).joined(separator: ", "))
+            expect(approvedCount == ownerApprovedTradeDressExceptions.count,
+                   "the approved trade-dress exception list no longer matches the canonical "
+                       + "world exactly (\(approvedCount) of \(ownerApprovedTradeDressExceptions.count) "
+                       + "still collide) -- update the list deliberately rather than leaving it stale")
         }
 
         test("the trade-dress test catches a planted real pair") {
@@ -559,15 +783,22 @@ func runLegalTests() {
                    "one shared colour was treated as trade dress")
         }
 
-        test("every generated pair carries legible text") {
+        test("every generated pair carries legible text, beyond the owner-approved exceptions") {
             // 04 section 2.1 requires the contrast contract to hold AT GENERATION TIME. This is the
             // structural fix for the prior build's whole "white on the team gradient" class: a pair
             // that cannot carry text is never constructed, so no call site has to remember.
             var worstText = Double.infinity
             var worstSecondary = Double.infinity
-            for world in sweptWorlds {
-                for (_, identity) in world.identities {
+            var approvedCount = 0
+            for (index, world) in sweptWorlds.enumerated() {
+                for (id, identity) in world.identities {
                     worstText = Swift.min(worstText, identity.colours.textContrast)
+                    if index == LEGAL_SWEEP_LEAGUES, ownerApprovedContrastExceptions.contains(id) {
+                        if identity.colours.secondaryContrast < ColourGenerator.secondaryContrastFloor {
+                            approvedCount += 1
+                        }
+                        continue
+                    }
                     worstSecondary = Swift.min(worstSecondary, identity.colours.secondaryContrast)
                 }
             }
@@ -575,8 +806,13 @@ func runLegalTests() {
                    "the worst generated pair carries text at \(worstText):1, under the "
                        + "\(ColourGenerator.textContrastFloor):1 floor")
             expect(worstSecondary >= ColourGenerator.secondaryContrastFloor,
-                   "the worst generated secondary reads at \(worstSecondary):1 on its primary, "
-                       + "under the \(ColourGenerator.secondaryContrastFloor):1 floor")
+                   "beyond the owner-approved exceptions, the worst generated secondary reads at "
+                       + "\(worstSecondary):1 on its primary, under the "
+                       + "\(ColourGenerator.secondaryContrastFloor):1 floor")
+            expect(approvedCount == ownerApprovedContrastExceptions.count,
+                   "the approved contrast exception list no longer matches the canonical world "
+                       + "exactly (\(approvedCount) of \(ownerApprovedContrastExceptions.count) "
+                       + "still fail) -- update the list deliberately rather than leaving it stale")
         }
 
         test("every fallback pair passes both tests, so the escape hatch is not the hole") {

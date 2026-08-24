@@ -141,7 +141,7 @@ extension CollegePortalPolicyV1 {
             targetSeason: targetSeason,
             window: window,
             in: state
-        ), state.programmes.count == programmeCount else { return nil }
+        ), state.programmes.count == CollegeRules.programmeCount else { return nil }
 
         var citiesByID: [UUID: MapCity] = [:]
         for city in state.map.cities {
@@ -168,7 +168,7 @@ extension CollegePortalPolicyV1 {
 
         var ownerByPlayerID: [UUID: UUID] = [:]
         for programme in state.programmes.values {
-            guard programme.rosterIDs.count <= rosterLimit,
+            guard programme.rosterIDs.count <= CollegeRules.rosterLimit,
                   Set(programme.rosterIDs).count == programme.rosterIDs.count,
                   Set(programme.staffIDs).count == programme.staffIDs.count,
                   programme.staffIDs.allSatisfy({ state.staff[$0] != nil }),
@@ -178,7 +178,7 @@ extension CollegePortalPolicyV1 {
                   recruiting.nilState.season == targetSeason,
                   recruiting.nilState.isValid,
                   recruiting.nilState.portalReservations.isEmpty,
-                  recruiting.scholarshipPlayerIDs.count <= scholarshipLimit,
+                  recruiting.scholarshipPlayerIDs.count <= CollegeRules.scholarshipLimit,
                   Set(recruiting.scholarshipPlayerIDs).count
                     == recruiting.scholarshipPlayerIDs.count,
                   Set(recruiting.scholarshipPlayerIDs)
@@ -269,10 +269,21 @@ extension CollegePortalPolicyV1 {
                 targetSeason: targetSeason,
                 window: window,
                 capturedAt: policy.evaluatedAt,
-                rosterOpenings: max(0, rosterLimit - programme.rosterIDs.count),
+                // The active limits, not frozen copies of them. Capacity is a reading of a
+                // roster as it stands now, so the openings the live rules call openings are the
+                // ones matching has to allocate. `CollegePortalPolicyV1` kept its own
+                // `rosterLimit` and `scholarshipLimit` until 2026-08-23; they were still equal to
+                // `CollegeRules`', and nothing compared them -- exactly the state the frozen
+                // `minimumPlayableRosterByPosition` just below is in, where the same silence has
+                // already let `.runningBack` and `.linebacker` fall a man below `SharedRules`.
+                // (`d5400e1` fixes the deficit reading on its own branch; it is deliberately not
+                // duplicated here.) The frozen policy's reason -- an archived schema-six
+                // explanation stays decodable through a balance pass -- does not reach a live
+                // computation.
+                rosterOpenings: max(0, CollegeRules.rosterLimit - programme.rosterIDs.count),
                 scholarshipOpenings: max(
                     0,
-                    scholarshipLimit - recruiting.scholarshipPlayerIDs.count
+                    CollegeRules.scholarshipLimit - recruiting.scholarshipPlayerIDs.count
                 ),
                 minimumCoverageDeficits: Dictionary(uniqueKeysWithValues:
                     CollegePortalPolicyV1.minimumPlayableRosterByPosition.compactMap {

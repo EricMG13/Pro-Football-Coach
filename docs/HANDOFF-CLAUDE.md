@@ -19,7 +19,17 @@ What was done, in order:
    `DepthChart.offensiveTemplate` now fields. This was a new failure the merge created, caught by
    the existing cross-check in `RulesTests`; no determinism lane moved with it.
 
-### The one that is still red, and must not be re-pinned
+### Closed 2026-08-24 — the band holds, and the cause was an intake that invented players
+
+`46b96bb8` offers a seat vacated by retirement to the professionals the league already has before
+generating one. The past-decline share reads **0.228, 0.196, 0.183, 0.203, 0.218** at seasons 0, 1,
+3, 6 and 10, against 0.228, 0.196, 0.134, **0.067**, 0.162 before; mean age holds at 27.07, 26.81,
+26.56, 26.80, 26.70 instead of sagging to 25.59. `--people-lifecycle` passes at 24 tests / 520,238
+checks, `--architecture-only` at 29 / 245 with no pin moved. No band was widened and no retirement
+constant moved. Everything below is the investigation that got there, kept because four of its
+findings are things not to retry.
+
+### What it was, and must not be re-pinned
 
 `Lifecycle distributions hold their bands`. The professional past-decline share reads 0.228, 0.196,
 0.146, **0.073**, 0.170 at seasons 0, 1, 3, 6, 10 against a band of 0.08…0.30. It is a real
@@ -60,6 +70,73 @@ age-curve sample was moved in-season and measured. It came back 0.228, 0.228, 0.
 0.147 against 0.228, 0.196, 0.134, 0.067, 0.161 at the boundary — season 6 *worse*, because a full roster carries
 the 223 rookies the draft has just seated. Reverted. The model does not retain enough post-decline
 professionals on any sample point.
+
+**The pool fix did not move the age band — measured 2026-08-23, do not re-suspect it.** The
+figures above were recorded at `c5b9251` (03:20), and the pool fix `a86de6e` landed at 09:27, so
+every number in this file predated it and rating-cut pooling was a live suspect: a post-decline
+professional is by construction lower-rated than a 22-year-old intake, so cutting a 512-deep pool
+by rating is exactly the shape that would exclude the players this band counts. Re-run in release
+at seed 84,010 on the merged tree, the share reads **0.228, 0.196, 0.134, 0.067, 0.162** with means
+27.07, 26.81, 25.79, 25.59, 25.93 over n = 1696, 1411, 1475, 1459, 1471. Identical to three
+decimals except season 10, which moved 0.161 → 0.162. Ranking the pool by rating does not move the
+age curve, and `signFreeAgents` never reads age at all.
+
+**The mechanism, stated by construction rather than by sampling.** Professional intake has exactly
+two sites — `ProMarketSystem.makeDraftClass` and `SeasonLifecycleSystem`'s departure backfill — and
+both go through `RosterPopulationGenerator.replacement`, where
+
+    let age = tier == .college ? 18 : 22 + ordinal % 2
+
+The draft class is **synthesised, not promoted from the college world**, so no college player's age
+ever reaches the professional tier. Against `SharedRules.declineAgeByPosition` — running back 27,
+corner/receiver/edge 29, safety/linebacker/tackle/tight end 30, line 31, quarterback 34, kicker and
+punter 36 — nothing that enters can reach decline for five to twelve years, while the bootstrap's
+post-decline players decay at `retirementProbabilityPerYearAfterDecline` = 0.14 a year. The trough
+is that gap, and season 10's recovery is the first drafted cohorts ageing into it. `5db6c8cd`
+already tried to damp this with `ordinal % 2`; one year of spread against a five-to-twelve-year gap
+is not damping, and it was already in place when every figure above was measured.
+
+**Measured 2026-08-24 — the band's cause is the draft reserve, and it is arithmetic.**
+`--pro-movement-probe` reports `expired=257 returned=2` in season 2 and `expired=200 returned=2` in
+season 3. **Two players a season return to a professional roster, league-wide**; every other vacated
+seat is filled by a 22-year-old draftee (`drafted=223`, `218`) or by a move between clubs
+(`relocated=68`, `37`). That is the whole of "the model does not retain enough post-decline
+professionals", and the arithmetic behind it is exact:
+
+* `signFreeAgents` computes `signingLimit = ProRules.activeRosterLimit - remainingPicks`, which at
+  the start of an offseason is `53 - 7 = 46`;
+* the probe measures clubs `shortBy min=6 max=10` after expiry, so rosters sit at 43…47;
+* a club therefore signs only while `roster < 46` — only if it is **eight or more short**. Most are
+  six or seven short and can sign nobody at all;
+* league-wide the reserve is `32 * 7 = 224` seats against 200…257 vacancies, so the reserve alone
+  exceeds the whole free-agent opportunity before a single signing is attempted.
+
+The league is refreshed roughly ninety per cent by rookies every year, which is why the past-decline
+share must collapse until the drafted cohorts age in.
+
+This refines rather than contradicts the throughput entry above: that one measured **seat counts**,
+and the league genuinely is fully seated mid-season. On **who fills the seats**, throughput is two
+a season.
+
+**The fix has a canon dependency, so it is not made here.** The reserve exists because
+`makeDraftPicks` once treated a full roster as fatal — one full club ended the round for the other
+thirty-one. `a86de6e` changed an unseatable pick to pass instead. The two mechanisms are now
+redundant, and together they starve free agency; shrinking the reserve is the change. But `02`
+section 4.2 is cited at that line, and the doc-first rule says canon answers a gameplay question
+before code does. **What canon has to decide is how many seats a club reserves for picks it has not
+yet made, now that a pick it cannot seat is passed rather than fatal.**
+
+**The obvious fix is the wrong one, and that is the owner's decision.** Season 0 draws ages from
+`min(34, max(22, gaussian(mean: 27, sd: 3)))` — a different distribution from the one the process
+sustains, which is what 0.228 at season 0 against 0.162 at season 10 says. Re-seeding season 0 from
+the process would remove the transient and hold the band at every sample point. It would also be
+fitting the model to the test: 0.16 is low for the sport and 0.228 is the closer figure, so that
+change buys a green suite by making the league permanently too young. **The gap belongs to
+retention — how long a post-decline professional stays in the league — not to the seed
+distribution**, and moving `retirementProbabilityPerYearAfterDecline`, the post-decline rating
+decay, or a club's willingness to re-sign a veteran are three different design answers with three
+different consequences for the game. That is the decision `docs/STATUS.md` asks for, and it is
+still open.
 
 **The free-agent pool picked its members by coin toss — fixed 2026-08-23.** `openOffseason` capped
 the pool at `maximumFreeAgentIDs` (512) with `sorted { $0.uuidString < ... }.prefix(512)`, so once

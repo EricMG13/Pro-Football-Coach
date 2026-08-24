@@ -286,6 +286,77 @@ func runPortalMatchingTests() {
             })
         }
 
+        test("capacity openings are measured against the active limits") {
+            // Regression, 2026-08-23: this read `CollegePortalPolicyV1`'s own frozen copies of the
+            // roster and scholarship limits. They were still equal to `CollegeRules`', so nothing
+            // was wrong yet and nothing could see it go wrong -- the exact state the frozen
+            // coverage floor was in shortly before it fell a man low at two positions. Asserted
+            // against `CollegeRules` rather than against 105 and 85, so it fails the day the two
+            // disagree rather than the day someone changes a limit.
+            let fixture = portalMatchingFixture(destinationOpenings: [2], destinationNIL: [1_000])
+            let destinationID = fixture.destinationProgrammeIDs[0]
+            let rosterCount = fixture.state.programmes[destinationID]!.rosterIDs.count
+            let result = CollegePortalPolicyV1.match(using:
+                CollegePortalPolicyV1.makeMarketSnapshot(
+                    targetSeason: 1,
+                    window: .postseason,
+                    in: fixture.state
+                )!
+            )!
+            let offers = portalMatchingOffers(result, destinationProgrammeID: destinationID)
+            expect(!offers.isEmpty)
+            let scholarshipCount = result.programmes[destinationID]!.scholarshipPlayerIDs.count
+            for (_, offer) in offers {
+                expectEqual(
+                    offer.fixedCapacity.rosterOpenings,
+                    CollegeRules.rosterLimit - rosterCount
+                )
+                expectEqual(
+                    offer.fixedCapacity.scholarshipOpenings,
+                    CollegeRules.scholarshipLimit - scholarshipCount
+                )
+            }
+        }
+
+        test("an archived capacity above the live limits still decodes") {
+            // The lowered-limit direction of the same change. `isValid` is shared with
+            // `init(from:)`, so a ceiling named there rejects a snapshot archived under a higher
+            // limit -- the undecodable career record the frozen policy exists to prevent. The live
+            // ceiling therefore sits on the memberwise initializer alone, and this proves the
+            // decode path did not quietly inherit it. Encoded from a real offer rather than a
+            // hand-built value, because the memberwise initializer would trap on this input by
+            // design.
+            let fixture = portalMatchingFixture(destinationOpenings: [1], destinationNIL: [1_000])
+            let destinationID = fixture.destinationProgrammeIDs[0]
+            let result = CollegePortalPolicyV1.match(using:
+                CollegePortalPolicyV1.makeMarketSnapshot(
+                    targetSeason: 1,
+                    window: .postseason,
+                    in: fixture.state
+                )!
+            )!
+            let offers = portalMatchingOffers(result, destinationProgrammeID: destinationID)
+            guard let archived = offers.first?.1.fixedCapacity else {
+                expect(false, "the fixture produced no offer to archive")
+                return
+            }
+            // `stable()` is the encoder every save uses, so this is the archive format itself and
+            // not a second one that only this test can produce.
+            let raised = CollegeRules.rosterLimit + 7
+            let field = "\"rosterOpenings\":\(archived.rosterOpenings)"
+            var json = String(data: try JSONEncoder.stable().encode(archived), encoding: .utf8)!
+            expect(json.contains(field))
+            json = json.replacingOccurrences(
+                of: field,
+                with: "\"rosterOpenings\":\(raised)"
+            )
+            let decoded = try? JSONDecoder.stable().decode(
+                CollegePortalCapacitySnapshot.self,
+                from: Data(json.utf8)
+            )
+            expectEqual(decoded?.rosterOpenings, raised)
+        }
+
         test("destination fit is exactly rederived from frozen evidence") {
             let evidence = CollegePortalDestinationEvidence(
                 candidatePosition: .quarterback,

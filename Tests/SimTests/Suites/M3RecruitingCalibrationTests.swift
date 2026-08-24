@@ -639,7 +639,8 @@ private func runM3RecruitingCalibration(seed: UInt64) throws -> M3RecruitingCali
                     recruitedScholarshipJoins += 1
                 case .walkOn:
                     walkOnJoins += 1
-                case .provisionalReplacement:
+                case .provisionalReplacement, .returningProfessional:
+                    // Neither is college intake; this probe counts recruiting only.
                     break
                 }
             case let .commitmentResolved(_, _, outcome):

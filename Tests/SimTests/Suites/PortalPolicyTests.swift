@@ -142,6 +142,21 @@ func runPortalPolicyTests() {
     let base = portalPolicyFixture()
 
     suite("College portal policy v1") {
+        test("the frozen ranking ladder still matches the live programme count") {
+            // The cross-check the roster and scholarship limits could not have: both of these are
+            // `public`, so SimTests can compare them without `@testable`, and
+            // `CollegePortalPolicyV1.frozenProgrammeCount` is `maximumKnowledgeObservers` under
+            // another name. That constant is the divisor an archived explanation rederives its
+            // `.teamSuccess` component from, so it cannot follow `CollegeRules` the way openings
+            // now do -- when these two disagree, policy v1 can no longer model the world and needs
+            // a v2. `makeSnapshot` refuses the window at run time in that case, which no test in
+            // this process can force; this is the part that can fail, and it fails at build time.
+            expectEqual(
+                CollegePortalPolicyV1.maximumKnowledgeObservers,
+                CollegeRules.programmeCount
+            )
+        }
+
         test("intent evidence rederives the frozen six-component v1 explanation") {
             let batch = portalPolicySnapshot(base.state)
             let intents = batch.intents

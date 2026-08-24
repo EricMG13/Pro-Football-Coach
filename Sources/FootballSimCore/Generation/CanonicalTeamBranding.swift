@@ -1,7 +1,7 @@
 import Foundation
 
 /// Owner-approved names and colours for the canonical 166-team world.
-enum CanonicalTeamBranding {
+public enum CanonicalTeamBranding {
     struct Record {
         let id: UUID
         let name: String
@@ -20,7 +20,10 @@ enum CanonicalTeamBranding {
         }
     }
 
-    static let worldSeed: UInt64 = 20_260_812
+    /// The one seed this table brands. Public because the legal sweep has to include it: every
+    /// other seed reaches the generator's own names and colours, and this one does not, so a sweep
+    /// that does not name this seed inspects output the shipped world replaces.
+    public static let worldSeed: UInt64 = 20_260_812
     private static let recordsByID = Dictionary(uniqueKeysWithValues: records.map { ($0.id, $0) })
 
     static func apply(
