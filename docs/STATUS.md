@@ -61,6 +61,33 @@ The honest picture: what exists, what is verified, what is not.
 > otherwise argued from numeric identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a
 > fresh detached baseline, which is a weaker claim than `d5400e1`'s and is stated as such.
 >
+> **Re-merged `origin/main` a second time on 2026-08-24, and CI's two failures are now one.**
+> `main` moved ten commits past the first merge while PR 81 sat blocked, so `origin/main` was merged
+> again at `68b3b7b9` — clean, no conflicts, all three portal changes intact. The `full` run on
+> `d597b17` had failed on two checks, and both were proved `main`'s: run `32635811241` at `1221b034`
+> fails with byte-identical messages. One of them is now fixed upstream. `b070c05d` lands the
+> five-band heat scale `04` section 6.4 has specified since `60f0c2d`, deriving the 80-84 band as
+> `statePositive.mixed(with: contentPrimary, amount: 0.30)` rather than giving it a hex, so
+> re-valuing the positive role moves the band with it. `--design-contracts` runs **56 tests / 1,049
+> checks** here.
+>
+> **The one that remains is a real open modelling defect, not flake.** `Lifecycle distributions hold
+> their bands` fails at `PeopleLifecycleTests.swift:741` — `season 6: 0.067 of professionals are at
+> or past their decline age, outside the band 0.08...0.30`. `5b355017` moved the sample point
+> in-season to test the obvious suspect, measured 0.228 / 0.228 / 0.149 / 0.056 in-season against
+> 0.228 / 0.196 / 0.134 / 0.067 at the boundary, and reverted: the band says what it says, and the
+> model does not retain enough post-decline professionals at any sample point. Nothing in this
+> branch touches it.
+>
+> **Re-verified on the second merge, release mode, from one build.** `--portal-contracts`
+> **28 tests / 138 checks**, `--portal-policy` **13 / 716**, `--portal-matching` **19 / 145**,
+> `--portal-transaction` **17 / 133**, `--architecture-only` **29 / 245**, `--design-contracts`
+> **56 / 1,049**, `--portal-scheduler` **13 / 27,861**. `--architecture-only` holding is the figure
+> to read twice a second time: the merge brought in `88c397a3`'s application refactor and a large
+> batch of new logo assets, and no determinism pin moved. The scheduler characterization is
+> byte-identical yet again: `entrantWindows=431 retained=99 transferred=224 returned=108
+> transferNILTotal=6400 transferNILMin=0 transferNILMax=500`.
+>
 > **The one failure was pre-existing, and it is now gone — the branch was simply based too far
 > back.** `--portal-contracts` trapped here with exit 133, zero bytes on stdout and stderr and no
 > summary, at `PortalContractTests.swift:869` ("policy-v1 admission components rederive from compact
