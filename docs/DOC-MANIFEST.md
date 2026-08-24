@@ -305,12 +305,12 @@ it, and discarding something requires the same justification in the other direct
 ## 8. Every directory under `docs/`, classified — added 2026-08-23
 
 This manifest decides what is canon, and until this section existed it did not name six of the
-fifteen directories that hold markdown under `docs/`. Between them they held **45 documents at paths
-with no recorded status** — including one titled `10-CANON-AMENDMENT-04.md`, which a cold builder
-could reasonably read as an amendment to canon. §1's rule already answered the question in the
-abstract, since a path listed nowhere carries no authority; but silence reads as omission rather
-than as classification, and this manifest exists precisely so that no reader has to guess which one
-it is.
+fifteen directories that then held markdown under `docs/`. Between them they held **45 documents
+at paths with no recorded status** — including one titled `10-CANON-AMENDMENT-04.md`, which a cold
+builder could reasonably read as an amendment to canon. §1's rule already answered the question in
+the abstract, since a path listed nowhere carries no authority; but silence reads as omission
+rather than as classification, and this manifest exists precisely so that no reader has to guess
+which one it is.
 
 `DocumentManifestTests` enumerates the directories under `docs/` that contain markdown and fails if
 one is not named here, so a directory added tomorrow is classified the day it appears rather than
@@ -324,4 +324,5 @@ hand-maintained list becomes the coverage boundary.
 | `docs/superpowers/plans/` | Sixteen skill-generated task plans | **None.** Dated records of intended work, exactly as `docs/plans/` |
 | `docs/superpowers/specs/` | Nine design specs, several marked superseded in their own headers | **None.** Read the `Status:` line before believing any of them |
 | `docs/refs/` | The surface-reference generator's baseline, decisions and gap manifest. `Tools/refs/build.py` writes here; the rendered HTML is gitignored because the deliverable is a published artifact | **None.** Generated output plus the notes explaining a pinned commit |
+| `docs/loops/` | The loop series that hunts faults no current assertion is shaped to detect: `README.md` explaining the series, `catalog.json` holding 25 loop records in the Loop Library publication schema, and `aspects.json` mapping them to areas of the game. The register an agent actually reads is `LOOPS.md` at the repository root | **None, by its own words.** Its `README.md` states "These files carry no canon authority" and requires a loop that turns out to need a design decision to stop and escalate. A loop prompt is work to be done, never a rule |
 | `docs/proofs/figma-pool-2026-08-13/`, `docs/proofs/stitch-2026-08-13/` | Dated proof artefacts beneath the already-listed `docs/proofs/` | **None.** Evidence of what was tried on a date. Note that `CLAUDE.md` records the Stitch references as rejected on 2026-08-11; this directory postdates that and is the proof, not a revival |
