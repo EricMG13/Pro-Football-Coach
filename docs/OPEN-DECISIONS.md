@@ -243,6 +243,20 @@ the 2.0 s ceiling cannot be met, the lever is **D14's programme count**, not the
 **Falsifier — instrument: `PerformanceBudgetTests` + Instruments trace on device.** Falsified if any
 hard ceiling is exceeded on the oldest supported device at the shipping programme count.
 
+**Instrument status, 2026-08-24: the suite exists and the falsifier still cannot fire.**
+`Tests/SimTests/Suites/PerformanceBudgetTests.swift` ships and is dispatched from `main.swift` as
+`--performance-budget`, which distinguishes it from D8's and D10's instruments — those have no file
+at all. But it asserts only that the world bootstraps at 134 programmes and that the recruiting AI
+returns a non-empty decision set. The week-advance timing is a formatted `print` whose own text ends
+"host measurement; no pass/fail threshold", so **no ceiling in the table above can turn it red**. It
+is additionally unreachable in practice: it is not in `SuiteCatalog.defaultRun`, the no-flag
+`SimTests` run does not call `runPerformanceBudgetTests()`, and no `scripts/verify.sh` lane passes
+`--performance-budget` — the gate runs only when a person types the flag. Its catalogue lane reads
+`"performance"`, which is not one of the nine lanes `verify.sh` accepts. `05`'s P5 entry additionally
+requires it to "assert only in release, and must measure in both"; the file contains no
+build-configuration branch, so neither half of that requirement is implemented. Until a threshold
+exists, this instrument is evidence a reader must interpret, not a falsifier.
+
 **Cost of reversal: low for the numbers, high for what they imply.** Loosening the week-advance
 ceiling changes the felt pace of the whole game.
 
@@ -657,6 +671,12 @@ ceiling. Felt pace is worth more than programme count.
 `IdentityDistributionTests`.** Falsified if 134 cannot meet D4, or if identity fails to differentiate
 at that scale (a large flat league is worse than a small textured one).
 
+**Instrument status, 2026-08-24: half of this falsifier cannot fire.**
+`IdentityDistributionTests` ships and asserts. `PerformanceBudgetTests` ships, prints the
+week-advance timing against the 1.2 s target and 2.0 s ceiling, and asserts nothing about either —
+see D4 above for the full statement. "134 cannot meet D4" is therefore a reading a human takes off
+a log line, not a condition the suite detects.
+
 **Cost of reversal: medium before the engine exists, high after.** The programme count is a constant;
 what it costs to change is the tuning built around it.
 
@@ -699,6 +719,9 @@ the 17e remain unsourced and are recorded as gaps, not guessed.
   gate name it too; all three sites now say so.
 - `PerformanceBudgetTests` plus the D4 Instruments trace on the oldest promised device at shipping
   scale. If the budgets fail on the A17-Pro class, the choice bought nothing and is falsified.
+  **Status 2026-08-24: the suite exists but holds no threshold**, and nothing has run on an
+  A17-Pro-class device. See D4's instrument status. Unlike `SmallestDeviceLayoutTest` above, the
+  failure here is not an absent file — it is a present file that cannot go red.
 - The density claim: one proof screen rendered at 844 × 390 and 852 × 393 side by side. If any
   surface fits at least one additional data row or sheds a disclosure level at the higher floor,
   the "worthless in pixels" verdict is falsified and this entry must be re-argued.

@@ -142,6 +142,15 @@ prior build learned this concretely: its week-advance test asserted 150 ms and m
 debug, with no build-configuration guard. Measure both configurations, print both, assert on release.
 *(Lesson taken from `adf5af1` on the unmerged `rebuild/spec-package` branch.)*
 
+**Gate status, 2026-08-24: neither half of that paragraph is implemented.**
+`Tests/SimTests/Suites/PerformanceBudgetTests.swift` ships and measures one configuration —
+whichever it was built in — and asserts nothing about the timing at all: the numbers go out through
+a `print` that labels itself "no pass/fail threshold". There is no `#if DEBUG` branch, so it does
+not measure both, and no release assertion, so it does not assert on one. It is also outside
+`SuiteCatalog.defaultRun`, outside the no-flag run, and outside every `verify.sh` lane; only an
+explicit `--performance-budget` runs it. The phase names it as a gate, and as written it is
+evidence. See D4 in `docs/OPEN-DECISIONS.md`.
+
 **And the budgets are Mac numbers until a device says otherwise.** `03` §7 now requires an
 iPhone 15-class device; nothing has measured them on one. A green `PerformanceBudgetTests` on an
 Apple-silicon Mac is necessary and not sufficient, and `docs/STATUS.md` says so.
