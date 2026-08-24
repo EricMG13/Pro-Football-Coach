@@ -712,7 +712,7 @@ been written in rather than left in a design tool the repository cannot open:
 | §5.3 | Team identity resolved once at the stage; nil is the honest teamless case, reachable by construction rather than by discipline. |
 | §6.1a | The gold budget in three cases, including **zero for several equal actions**, and destructive actions taking `state.negative`. Team colour never carries an action. |
 | §6.2 | The display end of the type scale is register-aware. The working end does not move. |
-| §6.6 | **The icon rail is removed**; every management surface takes the leading 63 that Title, Job Board and Offer already used, and the content column derives to **761**. The header's top comes off the safe-area inset, not the frame. |
+| §6.1c | **The icon rail is removed**; every management surface takes the leading 63 that Title, Job Board and Offer already used, and the content column derives to **761**. The header's top comes off the safe-area inset, not the frame. |
 | §7 | Increase Contrast raises hairlines and drops material and **moves no ink** — every ink is already measured, and a setting that repairs a palette is a report that the palette was wrong. |
 
 `04b` moved with it: its enforcement list asserted *"both appearances meet contrast"* a week after
@@ -731,6 +731,17 @@ match it, and Parts A to C of this ledger are that gap. Amending canon before im
 order `CLAUDE.md` requires, not evidence that the implementation exists.
 
 ---
+
+## One found defect this ledger does not own
+
+`04` §9 ("Match Day") has no numbered subsections, but line 1291 cites **§9.4** for the anchor-set
+position template — a pointer introduced by `1f236d4e` that leads nowhere. **Not fixed here, because
+fixing it means guessing what it was meant to name**, and a confident wrong pointer is worse than an
+obviously broken one. Whoever wrote the anchor contract knows; a ten-second answer from them beats an
+inference from me.
+
+Found by scanning every `§n.n` in `04` against its own headings — one pass, and the only dangling
+reference in 1,290 lines, which is a good result for a document this old and this amended.
 
 ## Keeping this current
 

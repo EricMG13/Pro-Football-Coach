@@ -202,7 +202,7 @@ The currencies and caps above stand. What follows are the measured numbers behin
 section previously stated only as ratios.
 
 At the install floor the content box is **761 × 319 pt** — 709 until the icon rail was removed on
-2026-08-23, §6.6 — but the **usable scroll viewport measures 291 pt**, and **241 pt** once a surface reserves a committing bar outside the scroll. The budgets
+2026-08-23, §6.1c — but the **usable scroll viewport measures 291 pt**, and **241 pt** once a surface reserves a committing bar outside the scroll. The budgets
 follow from the viewport, not from the box:
 
 | Tier | Row height | Viewport | Rows | Columns | Cells |
@@ -723,7 +723,7 @@ size are allowed to differ; tappable size is not allowed to drop below 44.
 
 §6.1c placed a 19 pt mark in the identity header beside a separate icon rail. Club identity was
 consequently near-absent from every management surface, which is what makes a football game read as a
-database. (The rail itself is gone as of 2026-08-23, §6.6; the band below is what replaced both it
+database. (The rail itself is gone as of 2026-08-23, §6.1c; the band below is what replaced both it
 and the 19 pt mark.)
 
 On every management surface the club's colour, mark, name and record are carried in a **single band
@@ -1060,7 +1060,7 @@ still asks a screen reader and a motion-sensitive player to track something movi
 ball's flight, the live dot's pulse and the panel push are removed, not accelerated.
 
 **The two navigation moves, named 2026-08-23.** With navigation living entirely in the identity band
-(§6.6) there are exactly two moves between surfaces, and until now only one of them had a value.
+(§6.1c's stage, §6.1d's band) there are exactly two moves between surfaces, and until now only one of them had a value.
 **Neither adds a duration** — this section caps the vocabulary, and a third transition token would be
 the leak it warns about.
 
