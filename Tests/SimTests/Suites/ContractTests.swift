@@ -986,6 +986,9 @@ func runContractTests() {
             let composition = uiFiles.first {
                 $0.path.hasSuffix("/CoachWorldFloodlitComposition.swift")
             }?.text ?? ""
+            let floodlitChrome = uiFiles.first {
+                $0.path.hasSuffix("/FloodlitChrome.swift")
+            }?.text ?? ""
             let hq = uiFiles.first { $0.path.hasSuffix("/CoachingHQView.swift") }?.text ?? ""
             let roster = uiFiles.first { $0.path.hasSuffix("/RosterView.swift") }?.text ?? ""
             let depth = uiFiles.first { $0.path.hasSuffix("/DepthChartView.swift") }?.text ?? ""
@@ -1033,17 +1036,22 @@ func runContractTests() {
             // owner, not resolved by this test).
             expect(Chrome.familySize > 0 && Chrome.familySize < 20,
                    "family label size drifted to a value that cannot be a micro-label")
-            expect(Chrome.railLabel > 0 && Chrome.railLabel < 20,
-                   "rail label size drifted to a value that cannot be a micro-label")
+            expect(Chrome.jumpToSymbol > 0 && Chrome.jumpToSymbol < 20,
+                   "jump-to symbol size drifted to a value that cannot sit in a micro-row")
             expect(Chrome.siblingSize > 0 && Chrome.siblingSize < 20,
                    "sibling link size drifted to a value that cannot be a micro-label")
-            expect(Chrome.railLabelFloor > 0 && Chrome.railLabelFloor <= 1,
-                   "railLabelFloor must be a valid minimumScaleFactor")
+            // The overlay and its opener stay in the composition; the control that calls the
+            // opener moved into the identity band on 2026-08-23 when the icon rail was removed.
+            // Both halves are asserted, in the file that now holds each — removing a control the
+            // band already duplicated must not remove the only route to every other family, and a
+            // check that looked in one file would have passed while the route disappeared.
             expect(composition.contains("SurfaceRegistryOverlay")
                        && composition.contains("onOpenRegistry")
-                       && composition.contains("ALL TASKS")
                        && composition.contains("availableScreens"),
-                   "All Tasks must open the live canonical task registry")
+                   "the surface registry overlay and its opener must stay in the composition")
+            expect(floodlitChrome.contains("ALL TASKS")
+                       && floodlitChrome.contains("onOpenRegistry"),
+                   "the identity band must carry the control that opens the task registry")
             expect(hq.contains("noDecision")
                        && hq.contains("preparationNeeded")
                        && hq.contains("isEnabled: canAdvance"),

@@ -170,7 +170,13 @@ The SwiftUI phase must add machine checks for boundaries a test can truthfully o
 - no literal authored type below 12 pt;
 - interactive targets meet 44 × 44 pt;
 - exact landscape frames have no horizontal overflow or hidden mandatory control;
-- both appearances meet contrast on composited surfaces;
+- composited surfaces meet contrast in the one appearance that ships — **corrected 2026-08-23**:
+  this read "both appearances" after §6.1a retired the light register on 2026-08-16, so a scanner
+  running it either cannot run or passes vacuously, which is worse than not having the check;
+- the Increase Contrast branch raises hairlines and drops material, and moves no ink (`04` §7);
+- gold appears at most once per surface, and **not at all** on a surface offering several equal
+  actions (`04` §6.1a) — countable in source, which is the point of stating it here;
+- every unavailable control is drawn beside its stated reason, never removed and never silent;
 - all animations have Reduce Motion forms;
 - no screen imports engine internals or mutates simulation outcome;
 - every unbounded-looking feed has a bound;

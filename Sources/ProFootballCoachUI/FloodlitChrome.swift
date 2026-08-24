@@ -1,13 +1,15 @@
 import SwiftUI
 
-// The shared management stage: world backdrop, identity header, icon rail, content, grain
+// The shared management stage: world backdrop, identity header, content, grain
 // (`04` section 6.1c, `FLOODLIT-SURFACES.md` section 1).
 //
 // Every management surface renders inside `CoachWorldFloodlitSurface`. Match Day does not — it is
 // the broadcast register and owns its whole frame (section 6.1b).
 //
-// Navigation lives in the identity header rather than in a rail or a tab bar: the family on the
-// left, jump-to on the right. The icon rail names kinds of thing, not routes within a family.
+// Navigation lives in the identity header and nowhere else: the family on the left, the siblings
+// beside it, jump-to on the right. **The 44 pt icon rail was removed on 2026-08-23** — it named
+// the same places the band already reaches, which made it a second navigation rather than a
+// shortcut, and it cost the content column 52 pt to say so.
 
 // MARK: - Read model
 
@@ -20,29 +22,6 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         case facility
         /// The one place the light goes cold: a projector beam, and glass without the warm sheen.
         case film
-    }
-
-    /// One entry in the icon rail. `symbol` is an SF Symbol from `04` section 6.6's control
-    /// furniture — a marked control read from its label, never a symbol to be learned.
-    public struct RailEntry: Sendable, Equatable, Identifiable {
-        public var id: CoachWorldScreenID { screen }
-        public let screen: CoachWorldScreenID
-        public let symbol: String
-        /// Written sentence case; the rail uppercases on render.
-        public let label: String
-        public let intentID: CoachWorldIntentID
-
-        public init(
-            screen: CoachWorldScreenID,
-            symbol: String,
-            label: String,
-            intentID: CoachWorldIntentID
-        ) {
-            self.screen = screen
-            self.symbol = symbol
-            self.label = label
-            self.intentID = intentID
-        }
     }
 
     /// A sibling surface in the current family — the header's second-row links.
@@ -77,14 +56,12 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
     /// The right-hand context chip: `Sat · Halloran Tech`.
     public let context: String?
     public let contextOpponent: CoachWorldTeamReference?
-    public let rail: [RailEntry]
     public let siblings: [Sibling]
     /// Canonical tasks whose read models are retained for this career. Legacy aliases are never
     /// included here; they remain decode inputs only.
     public let availableScreens: [CoachWorldScreenID]
 
     public var family: CoachWorldSurfaceFamily { screen.family }
-    public var showsIconRail: Bool { screen.showsIconRail }
 
     public init(
         screen: CoachWorldScreenID,
@@ -95,7 +72,6 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         conference: String? = nil,
         context: String? = nil,
         contextOpponent: CoachWorldTeamReference? = nil,
-        rail: [RailEntry] = [],
         siblings: [Sibling] = [],
         availableScreens: [CoachWorldScreenID] = CoachWorldScreenID.allCases
     ) {
@@ -107,7 +83,6 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         self.conference = conference
         self.context = context
         self.contextOpponent = contextOpponent
-        self.rail = rail
         self.siblings = siblings
         self.availableScreens = availableScreens
     }
@@ -294,6 +269,10 @@ struct FloodlitIdentityHeader: View {
     let model: FloodlitChromeReadModel
     let palette: CoachWorldTokens.Palette
     let onNavigate: (CoachWorldIntentID) -> Void
+    /// Opens the surface registry. This was the icon rail's seventh entry until 2026-08-23; the
+    /// rail went and the route had to come with it, or removing a redundant control would have
+    /// quietly removed the only way to reach every surface outside the current family.
+    let onOpenRegistry: () -> Void
 
     private var identity: CoachWorldTeamIdentity? {
         CoachWorldTeamIdentity(
@@ -425,9 +404,36 @@ struct FloodlitIdentityHeader: View {
                 siblingLink(sibling)
             }
             Spacer(minLength: CoachWorldTokens.Gap.xs)
+            jumpToLink
         }
         .padding(.horizontal, CoachWorldTokens.Gap.md)
         .frame(minHeight: CoachWorldTokens.Stage.headerSecondaryRow)
+    }
+
+    /// Jump-to, on the right of the band. Ink, not gold: gold marks the action that moves the game
+    /// forward, and opening a list of places does not. It keeps its label beside its symbol, so it
+    /// is a marked control read from its words rather than a glyph to be learned (`04` 6.6).
+    private var jumpToLink: some View {
+        Button(action: onOpenRegistry) {
+            HStack(spacing: CoachWorldTokens.Gap.xxs) {
+                Image(systemName: "square.grid.3x3")
+                    .coachWorldIcon(Chrome.jumpToSymbol, weight: .semibold)
+                    .accessibilityHidden(true)
+                Text("ALL TASKS")
+                    .coachWorldDisplay(Chrome.siblingSize, weight: .semibold)
+                    .tracking(CoachWorldTokens.DisplaySize.tracking(0.09, at: Chrome.siblingSize))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color.opacity(0.66))
+            // Same trick as the sibling links: pad out to the 44 pt target, then cancel the same
+            // amount, so the hit area meets the floor without growing the 16 pt row.
+            .padding(.vertical, Chrome.siblingTargetPad)
+            .contentShape(Rectangle())
+            .padding(.vertical, -Chrome.siblingTargetPad)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("All tasks")
+        .accessibilityHint("Opens the list of every surface in this career")
     }
 
     private func siblingLink(_ sibling: FloodlitChromeReadModel.Sibling) -> some View {
@@ -459,87 +465,6 @@ struct FloodlitIdentityHeader: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(sibling.accessibleTitle)
-        .accessibilityAddTraits(isCurrent ? .isSelected : [])
-    }
-}
-
-// MARK: - Icon rail
-
-/// Seven entries, each a 44 pt stack of a symbol over a tracked label. Icons name a kind of thing;
-/// every one carries its label, so none is a symbol the player has to learn (`04` section 6.6).
-struct FloodlitIconRail: View {
-    let entries: [FloodlitChromeReadModel.RailEntry]
-    let current: CoachWorldScreenID
-    let palette: CoachWorldTokens.Palette
-    let onNavigate: (CoachWorldIntentID) -> Void
-    let onOpenRegistry: () -> Void
-    var axis: Axis = .vertical
-
-    var body: some View {
-        Group {
-            if axis == .vertical {
-                VStack(spacing: CoachWorldTokens.Stage.railGap) {
-                    ForEach(entries) { entry in railButton(entry) }
-                }
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: CoachWorldTokens.Stage.railGap) {
-                        ForEach(entries) { entry in railButton(entry) }
-                    }
-                }
-            }
-        }
-        .accessibilityLabel("Sections")
-    }
-
-    private func railButton(_ entry: FloodlitChromeReadModel.RailEntry) -> some View {
-        let isCurrent = entry.screen == current
-        return Button {
-            if entry.screen == .worldSearch {
-                onOpenRegistry()
-            } else {
-                onNavigate(entry.intentID)
-            }
-        } label: {
-            VStack(spacing: CoachWorldTokens.Gap.hair) {
-                Image(systemName: entry.symbol)
-                    .coachWorldIcon(Chrome.railSymbol, weight: .semibold)
-                    .accessibilityHidden(true)
-                // Deferred (S-0 Phase 3, 2026-08-19): fixed in both dimensions (width:
-                // CoachWorldTokens.Stage.railWidth, height: CoachWorldTokens.Shape.minimumTarget,
-                // below), same class as FloodlitArcGauge/FloodlitAttributeDial/FloodlitStaffVoice's
-                // three deferred sites in FloodlitPatterns.swift. minimumScaleFactor(railLabelFloor)
-                // is already a no-op at 1.0 (S-3/no-clip finding), so scaling the base size here
-                // would grow text with no shrink-back and no room to wrap, inside a 44 pt tap target
-                // stacked directly under the icon above it. Needs a considered geometry fix, not a
-                // token swap.
-                Text(entry.label.uppercased())
-                    .font(CoachWorldTokens.display(Chrome.railLabel, weight: .bold))
-                    .tracking(CoachWorldTokens.DisplaySize.tracking(0.1, at: Chrome.railLabel))
-                    .lineLimit(1)
-                    .minimumScaleFactor(Chrome.railLabelFloor)
-            }
-            .frame(
-                width: CoachWorldTokens.Stage.railWidth,
-                height: CoachWorldTokens.Shape.minimumTarget
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(isCurrent ? palette.actionPrimary.color : palette.contentSecondary.color)
-        .background {
-            if isCurrent {
-                CoachWorldCutCorner.row.fill(palette.actionPrimary.color.opacity(0.14))
-            }
-        }
-        .overlay {
-            if isCurrent {
-                CoachWorldCutCorner.row.stroke(
-                    palette.actionPrimary.color, lineWidth: CoachWorldTokens.Shape.hairline
-                )
-            }
-        }
-        .accessibilityLabel(entry.label)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 }
@@ -627,9 +552,7 @@ enum Chrome {
     static let pennantHeight: CGFloat = 14
     static let pennantDot: CGFloat = 3
 
-    static let railSymbol: CGFloat = 16
-    static let railLabel: CGFloat = 9
-    static let railLabelFloor: CGFloat = 1.0
+    static let jumpToSymbol: CGFloat = 11
 
     static let notBuiltWidth: CGFloat = 330
     static let notBuiltPadH: CGFloat = 22

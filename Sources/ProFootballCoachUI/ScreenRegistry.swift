@@ -232,15 +232,6 @@ public enum CoachWorldScreenID: Int, CaseIterable, Sendable, Hashable {
         }
     }
 
-    /// The three surfaces that sit outside the coaching week and so carry no icon rail
-    /// (`FLOODLIT-SURFACES.md` section 3). They start at the rail-free leading edge instead.
-    public var showsIconRail: Bool {
-        switch self {
-        case .titleContinue, .jobBoard, .offer: false
-        default: true
-        }
-    }
-
     public var canonicalName: String {
         switch self {
         case .titleContinue: return "Title / Continue"

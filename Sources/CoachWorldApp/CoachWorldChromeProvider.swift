@@ -34,7 +34,6 @@ public extension CoachWorldReadModelProvider {
             contextOpponent: context == nil || !isFixtureContext(for: canonicalScreen)
                 ? nil
                 : hub.opponent,
-            rail: rail(current: canonicalScreen),
             siblings: siblings(for: canonicalScreen, availableScreens: availableScreens),
             availableScreens: availableScreens
         )
@@ -53,29 +52,6 @@ public extension CoachWorldReadModelProvider {
             return .pitch
         default:
             return .facility
-        }
-    }
-
-    /// The seven kinds of thing a coaching week contains. Fixed, because the rail is a learned
-    /// place — a rail whose entries move is a rail nobody learns.
-    static func rail(current: CoachWorldScreenID) -> [FloodlitChromeReadModel.RailEntry] {
-        let entries: [(CoachWorldScreenID, String, String)] = [
-            (.coachingHQ, "calendar", "Week"),
-            (.inbox, "tray.full", "Inbox"),
-            (.roster, "person.2", "Squad"),
-            (.gamePlan, "rectangle.3.group", "Plan"),
-            (.opponentReportFilmRoom, "film", "Film"),
-            (.teamHealth, "cross.case", "Health"),
-            // The reference's seventh entry opens the registry overlay, not the league.
-            (.worldSearch, "square.grid.3x3", "All tasks"),
-        ]
-        return entries.map { entry in
-            .init(
-                screen: entry.0,
-                symbol: entry.1,
-                label: entry.2,
-                intentID: .init(rawValue: "route|\(entry.0.rawValue)")
-            )
         }
     }
 
