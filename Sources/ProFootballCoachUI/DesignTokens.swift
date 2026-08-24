@@ -372,6 +372,221 @@ public enum CoachWorldTokens {
 
     /// Glass, as the handoff states it: a fill, a hairline, and a directional sheen. Held as alphas
     /// on white/black rather than as hexes, because that is what they are.
+    /// Translucent surfacing (`04` section 6.1a, added 2026-08-23).
+    ///
+    /// **Every value here is a pigment at an alpha, never an independent colour**, and that is the
+    /// whole reason this exists. A view that writes `Color.white.opacity(0.07)` has hard-coded
+    /// `contentPrimary` and will not follow when it moves — and a hex scan never sees it, because
+    /// it is not a hex. That is a coverage boundary mistaken for a quality boundary, and it is how
+    /// the design standard's own components accumulated 75 hard-coded colours while its colour
+    /// rule read PASS.
+    ///
+    /// Named by **job**, not by opacity: a wash lifts a surface off its ground, a recess pushes one
+    /// behind. Reach for the nearest step rather than adding one — the point of a scale is that it
+    /// runs out.
+    public enum Surfacing {
+        /// A surface lifted off its ground. `contentPrimary` at an alpha.
+        public enum Wash: Double, Sendable, CaseIterable {
+            case faintest = 0.01
+            case faint = 0.07
+            case soft = 0.10
+            case clear = 0.13
+            case strong = 0.20
+        }
+
+        /// A surface pushed behind. `page` at an alpha.
+        public enum Recess: Double, Sendable, CaseIterable {
+            case light = 0.34
+            case deep = 0.70
+        }
+
+        /// Selection and focus on a working surface. `raised` at an alpha — **never gold and never
+        /// the club accent**. Gold means the committing action; a club accent means a different
+        /// thing per save, and a generated secondary can itself be gold-adjacent (the placeholder
+        /// club's is `#F2D864`), which is why position in a table is marked in ink.
+        public enum Select: Double, Sendable, CaseIterable {
+            case faint = 0.30
+            case soft = 0.72
+            case strong = 0.82
+        }
+
+        /// An opaque-enough working plate. Deliberately `0.96` and not `1.0`: it is what lets a
+        /// plate read as solid while a trace of the world still reaches through it, which is the
+        /// rule that every screen still happens somewhere.
+        public static let plateAlpha = 0.96
+
+        public static func wash(_ step: Wash, palette: Palette) -> Color {
+            palette.contentPrimary.color.opacity(step.rawValue)
+        }
+
+        public static func recess(_ step: Recess, palette: Palette) -> Color {
+            palette.page.color.opacity(step.rawValue)
+        }
+
+        public static func select(_ step: Select, palette: Palette) -> Color {
+            palette.raised.color.opacity(step.rawValue)
+        }
+
+        public static func plate(deep: Bool = false) -> Color {
+            (deep ? Floodlit.glassFlatDeep : Floodlit.glassFlat).color.opacity(plateAlpha)
+        }
+    }
+
+    /// The hairline family (`04` section 6.1a, added 2026-08-23).
+    ///
+    /// Two jobs, five values. A **structural** rule groups and is nearly invisible; a **legible**
+    /// seam is meant to be seen. Neither carries meaning on its own — a hairline that encodes a
+    /// value is a datum drawn as furniture.
+    ///
+    /// **The Increase Contrast branch lives here rather than in a paragraph.** `04` section 7: the
+    /// hairlines step up and the material drops, and the inks deliberately do not move, because
+    /// every ink already clears 4.5:1 on all four grounds and lightening passing ink only flattens
+    /// the three-step hierarchy that tells a reader what is a figure and what is a label.
+    public enum Rule: Sendable, CaseIterable {
+        case structural
+        case legible
+        case strong
+        /// The seam on a glass panel. Under Reduce Transparency it becomes `legible`: the world is
+        /// what the glass was floating above, and with no blur to separate them a near-invisible
+        /// seam leaves the panel with no edge at all.
+        case glass
+        case row
+
+        /// `contentPrimary` for the two that sit on glass, `contentQuiet` for the three that group.
+        var base: KeyPath<Palette, ColorValue> {
+            switch self {
+            case .structural, .legible, .strong: \Palette.contentQuiet
+            case .glass, .row: \Palette.contentPrimary
+            }
+        }
+
+        var standardAlpha: Double {
+            switch self {
+            case .structural: 0.20
+            case .legible: 0.38
+            case .strong: 0.42
+            case .glass: 0.13
+            case .row: 0.14
+            }
+        }
+
+        var increasedAlpha: Double {
+            switch self {
+            case .structural: 0.38
+            case .legible: 0.62
+            case .strong: 0.72
+            case .glass: 0.62   // = legible, stepped up
+            case .row: 0.26
+            }
+        }
+
+        public func color(
+            palette: Palette,
+            contrast: ColorSchemeContrast = .standard,
+            reduceTransparency: Bool = false
+        ) -> Color {
+            if self == .glass && reduceTransparency && contrast != .increased {
+                return Rule.legible.color(palette: palette, contrast: contrast)
+            }
+            let alpha = contrast == .increased ? increasedAlpha : standardAlpha
+            return palette[keyPath: base].color.opacity(alpha)
+        }
+    }
+
+    /// Banner grounds (`04` section 6.1a, added 2026-08-23) — three grounds the four-ground palette
+    /// does not cover.
+    ///
+    /// **Kept as measured values rather than derived from the state roles**, which is the one place
+    /// the read-a-role rule is broken on purpose. The only contrast figures anyone has for a banner
+    /// were measured on *these* stops: `contentSecondary` at 8.49 / 5.71 / 7.56, `contentQuiet` at
+    /// 4.77 / **3.21** / 4.25. A ground mixed from `statePositive` would be a different green and
+    /// would invalidate them with nothing saying so — so moving a stop forces a re-measure.
+    ///
+    /// **Only `contentPrimary` and `contentSecondary` are legal on any of them.** `contentQuiet`
+    /// fails on two of the three.
+    public enum Banner: Sendable, CaseIterable {
+        case info
+        case good
+        case bad
+
+        public var from: Color { Self.stop(fromHex, alpha: 0.97) }
+        public var to: Color { Self.stop(toHex, alpha: 0.97) }
+        public var edge: Color { Self.stop(edgeHex, alpha: edgeAlpha) }
+
+        private var fromHex: UInt32 {
+            switch self {
+            case .info: 0x12203A
+            case .good: 0x0F5637
+            case .bad: 0x4A1420
+            }
+        }
+
+        private var toHex: UInt32 {
+            switch self {
+            case .info: 0x0B0D14
+            case .good: 0x091410
+            case .bad: 0x110A0E
+            }
+        }
+
+        private var edgeHex: UInt32 {
+            switch self {
+            case .info: 0x7A8A9E
+            case .good: 0x4FD08C
+            case .bad: 0xFF3B54
+            }
+        }
+
+        private var edgeAlpha: Double {
+            switch self {
+            case .info: 0.42
+            case .good: 0.50
+            case .bad: 0.45
+            }
+        }
+
+        private static func stop(_ hex: UInt32, alpha: Double) -> Color {
+            ColorValue(hex: hex).color.opacity(alpha)
+        }
+    }
+
+    /// The singletons that had no home (`04` section 6.1a, added 2026-08-23).
+    public enum Ink {
+        /// Ink on any filled control is the ground, never white. Measured on each fill: gold 12.55,
+        /// live 11.50, positive 10.13, warning 10.87, info 7.84, negative 5.67. **One token, no
+        /// per-fill exceptions** — a per-fill ink is how one control ends up unreadable.
+        public static func onFill(palette: Palette) -> Color { palette.page.color }
+        /// The verb on a commit.
+        public static var onGold: Color { Floodlit.goldInk.color }
+        /// The sub-label naming where the commit goes. Same ink, stepped back.
+        public static var onGoldQuiet: Color { Floodlit.goldInk.color.opacity(0.74) }
+        /// An unobserved rating, printed as the word `Unseen` — never a blank, a dash or a zero.
+        /// **Not a range**: uncertainty in this product is stated in words, per `04` section 6.4.
+        public static func unseen(palette: Palette) -> Color {
+            palette.contentQuiet.color.opacity(0.62)
+        }
+    }
+
+    /// The fade on a strip with more content than room — the band's sibling tabs.
+    ///
+    /// **Applied only when the strip actually overruns.** An always-on fade claims a truncation that
+    /// is not happening, which is the same defect as a caret that opens nothing.
+    public enum Mask {
+        public static let trailingInset: CGFloat = 16
+        public static func trailing(width: CGFloat) -> LinearGradient {
+            let stop = width > trailingInset ? (width - trailingInset) / width : 0
+            return LinearGradient(
+                stops: [
+                    .init(color: .black, location: 0),
+                    .init(color: .black, location: stop),
+                    .init(color: .clear, location: 1),
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+    }
+
     public enum Glass {
         public static let fill = 0.055
         public static let deep = 0.70

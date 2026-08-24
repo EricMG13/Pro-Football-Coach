@@ -131,7 +131,23 @@ canon amendment. This file did not follow.
 Note the same file already refuses `#65788F` for `contentQuiet` and says so in a comment — the
 identical reasoning, applied to one value and not the other.
 
-### A4 · `DesignTokens.swift` — the translucent-surfacing scales are missing
+### A4 · `DesignTokens.swift` — the translucent-surfacing scales are missing — LANDED
+
+**DONE 2026-08-23**, and the values stay written out below because this document has to be
+buildable from without opening the design tool.
+
+Shipped as `CoachWorldTokens.Surfacing` (`Wash`, `Recess`, `Select`, `plate`), `Rule`, `Banner`,
+`Ink` and `Mask`. Two things came out of building it that the entry had not anticipated:
+
+- **The Increase Contrast branch lives in `Rule.color(palette:contrast:reduceTransparency:)`**, not
+  in a view. That is A5's design point made concrete: a view that reads the token gets the branch
+  whether or not its author remembered, and a view that inlines an alpha is a scannable defect.
+- **The banner grounds had to be written into `04` §6.1a before they would compile past the colour
+  scan**, which reads canon as a whitelist. That is the scan working, and it is the doc-first rule
+  enforced by a test rather than by discipline. Their measured ink figures are now in canon, and one
+  of them matters: **`content.secondary` clears the `good` banner by 0.03**, so `content.primary` is
+  the default on a banner and secondary is for supporting text only. `content.quiet` is illegal on
+  all three.
 
 **ADD. Every value is written out below**, so this can be built without opening the design tool.
 Without them each view writes its own opacity, which is how the standard's own components
@@ -806,7 +822,9 @@ weighting one would be the interface recommending; a comparison exists *to* show
 Same geometry, opposite obligation.
 
 **And it must decline to mark a lead where either side is unobserved.** A comparison against an
-unobserved value is not a narrow win — it is not a comparison. Depends on **ASK D1**.
+unobserved value is not a narrow win — it is not a comparison. **This is no longer blocked:** D1 was
+withdrawn, and what it depends on is `Unseen`, which is a state the model already has. Where either
+side is `Unseen` the wedge is not drawn and the row says so.
 
 Compare is a core verb of the genre and **no registry screen performs it** — see D5.
 
@@ -814,16 +832,27 @@ Compare is a core verb of the genre and **no registry screen performs it** — s
 
 **ADD.** Specified in A6.
 
-### C3 · League table shapes — expect two or three more
+### C3 · ~~League table shapes — expect two or three more~~ — RESOLVED: none needed
 
-**ASK / ADD.** Ten of League's eleven are shapes nothing in the system has drawn: a map, a bracket, a
-standings grid, a statistics leaderboard. `WorkPlate` is built for a roster — eight spans, six rows —
-and a twelve-team standings table with nine numeric columns plus a prose "what is left" column does
-not fit it.
+**No component required.** This predicted that ten of League's eleven surfaces would force new
+shapes, and that a twelve-team standings table with nine numeric columns would not fit `WorkPlate`.
 
-Do not force them into the plate. Draw the family first, let the shapes declare themselves, then
-build against ten known cases rather than one guessed one. This is how `Versus` arrived, and how
-`ForkPanel`'s ledger got generalised.
+**Measured, it is six columns in 737 pt with 211 left for the team name.** `WorkPlate` was built for
+a roster, and a roster is the harder case. The prediction was wrong, and the method that produced
+the wrong answer is worth naming: it counted the columns a standings table *conventionally* has
+rather than the columns this product's read model *holds*, and the contract had already removed
+probability, cross-tier scope and the national ranking.
+
+**Draw the family first, let the shapes declare themselves.** That advice stands — it is how the
+prediction got falsified rather than built against.
+
+What League did force was two redefinitions, both in B1f: the map became structural, and the playoff
+picture lost its odds. Neither is a component.
+
+**Four genuinely new shapes exist across the system** — a career line, a schedule, a news feed, a
+coaching tree, a league map, a bracket — and they are deliberately **not extracted into components**.
+The timelines disagree on direction: a season runs left-to-right because it ends, a feed runs down
+from now because it does not. That is the joint a premature component would have fixed wrongly.
 
 ### C4 · `ForkPanel`'s ledger must be per-fork
 
@@ -1010,6 +1039,78 @@ re-litigates it. It now says what it is — the reasoning, not the rule.
 `04` now describes the system; `DesignTokens.swift`, `FloodlitChrome.swift` and the stage do not yet
 match it, and Parts A to C of this ledger are that gap. Amending canon before implementation is the
 order `CLAUDE.md` requires, not evidence that the implementation exists.
+
+---
+
+## What is left to build, in order
+
+**The order is not a preference.** Each step removes a defect from every surface downstream of it,
+and doing them out of order means drawing 47 surfaces against geometry that then moves.
+
+### Step 1 — finish the shared layer (A6, A6b, A7)
+
+**A6 is the only remaining blocker on Part B.** The band is the whole of navigation now, and three
+of its controls do not exist: the family switcher, the back control with its three exclusive states,
+and the alias host panel. Until the host panel exists, **15 of the 62 registry identities are
+reachable by saved route and by nothing on screen** — a routing table that resolves to a surface no
+control can reach.
+
+The back control's dead state is the one most likely to be skipped and the one that matters: it is
+**drawn, not omitted**, or the leading edge of every surface moves 25 pt depending on where you came
+from.
+
+A6's yielding rule needs `contextShort` — **D4**, one field on a read model the UI layer owns. It is
+filed as an ask because it is a model change, not because it is hard.
+
+A7 is an audit rather than a build: every view, checked for gold on a family chip, a sorted column, a
+selected row or a possession marker. All four are position, not commitment.
+
+### Step 2 — the 47 surfaces (Part B)
+
+Every one has its entry above, with what to remove and why. **The omissions are the hard part and
+they are not negotiable**, because they are what the read models do and do not hold. The three rules
+the families produced (C5, C6, C7) apply across all of them:
+
+- **C5** — a surface offering several equal actions has a gold budget of **zero**, by construction.
+- **C6** — an unavailable action **stays drawn and prints its reason**. Now `04` §4.4.
+- **C7** — a destructive action takes `state.negative`, not an equal option's neutral.
+
+### Step 3 — the components (Part C)
+
+`Versus` is the only one that is genuinely new and unblocked. `FamilySwitcher`, `BackControl` and
+`HostPanel` are Step 1. `ForkPanel`'s ledger generalisation is a small change. **C3 turned out to
+need nothing**, which is recorded above because a falsified prediction is worth more than a
+component would have been.
+
+### Step 4 — what cannot be built without a decision
+
+Four items, and only two are decisions:
+
+| | What it needs |
+|---|---|
+| **D3** — commits do not propagate | Simulation work. It decides whether a commit's sub-label — the line naming where it goes — is **true**. A commit that names a consequence which does not happen is worse than one that names nothing. |
+| **D4** — `contextShort` | One field. Small, and Step 1 needs it. |
+| **D5** — five drawn surfaces with no registry entry | **Owner decision.** Adding any forces a family assignment at compile time, which is the registry working as designed. |
+| **D7** — no delegation state anywhere | **Owner decision, and the largest.** Two drawn surfaces depend on it and neither can ship. Build the ownership model, or drop Responsibilities and While You Were Away *and the argument with them* — the system has been arguing that invisible delegation is indistinguishable from a bug, and that only pays off if delegation is a thing the simulation models. Do not draw around it. |
+
+---
+
+## What is true about the state of this work
+
+**Built and compiled:** A1, A2, A3, A4 — the shared layer's tokens and the stage. `swift build` green
+across all targets. `SimTests --design-contracts` was green at 53 tests / 927 checks before the
+banner grounds were added to canon; **that last change has not been re-run**, and the reason it was
+made is that the scan caught the three missing hexes, so the expectation is that it passes and the
+expectation is not the same as a result.
+
+**Not run:** the full `SimTests` lane. It was started twice and stopped both times — once by a build
+change and once deliberately. **Nothing in this document claims the full suite is green.**
+
+**Not built:** A6, A6b, A7 and the whole of Parts B and C. The 47 surfaces exist as drawings in the
+design standard and as entries here; **no Swift view has been written against them.**
+
+**Not demonstrated:** nothing has been seen running on a simulator. Under `CLAUDE.md` that is an
+owner action, and this document is the walkthrough's source, not a substitute for it.
 
 ---
 

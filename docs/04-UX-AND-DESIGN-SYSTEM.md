@@ -459,6 +459,12 @@ is deleted. Ratios below are the same WCAG 2.2 relative-luminance method as §6.
 | `state.positive` | `#4FD08C` | 10.13 / 9.79 / 8.30 |
 | `state.warning` | `#C9704A` | 5.57 / 5.38 / 4.56 |
 | `state.positive.light` | `#7FCB9E` | 10.32 / 9.98 / 8.46 |
+| `banner.info.from` | `#12203A` | ground — inks measured below |
+| `banner.info.to` | `#0B0D14` | ground — inks measured below |
+| `banner.good.from` | `#0F5637` | ground — inks measured below |
+| `banner.good.to` | `#091410` | ground — inks measured below |
+| `banner.bad.from` | `#4A1420` | ground — inks measured below |
+| `banner.bad.to` | `#110A0E` | ground — inks measured below |
 | `state.negative` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
 | `state.info` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
 | `college.identity` | `#B07BD6` | 6.27 / 6.07 / 5.14 |
@@ -476,6 +482,27 @@ this document already states, which is what makes them checkable rather than ass
 `state.positive.light` is **new**: §6.4's five-band heat scale calls its fourth band
 *"`state.positive`, lightened"*, and a lightening nothing states is a colour a view has to invent.
 It is stated here so it can be a token instead.
+
+**The three banner grounds are also new (2026-08-23).** A banner is a fourth kind of ground the four
+above do not cover, and it is a *gradient*, so the binding measurement is on its **lightest stop** —
+the `from` end, where light ink has least to work with. Each is drawn at 0.97 over `world.page`;
+these are the composited figures:
+
+| Ink | on info | on good | on bad |
+|---|---:|---:|---:|
+| `content.primary` | 15.64 | 8.56 | 14.35 |
+| `content.secondary` | 8.28 | **4.53** | 7.59 |
+| `content.quiet` | 4.65 | **2.54** | 4.27 |
+
+**`content.quiet` is illegal on a banner** — it fails on all three and is not close on `good`.
+`content.secondary` is legal but clears `good` by 0.03, so **`content.primary` is the default on a
+banner and `content.secondary` is for supporting text only.** Edges: info `#7A8A9E` at 0.42, good
+`#4FD08C` at 0.50, bad `#FF3B54` at 0.45.
+
+These are stated as **measured values rather than derived from the state roles**, which is the one
+place this section breaks its own read-a-role rule and does so deliberately: the figures above were
+measured on *these* stops, and a ground mixed from `state.positive` would be a different green and
+would invalidate them with nothing saying so. Moving a stop forces a re-measure.
 
 Measured constraints, binding on every consumer:
 
