@@ -63,7 +63,16 @@ substitute. Flag anything borderline for the owner to take to counsel; never res
    sweeps must partition every generated name between them: a name that belongs to neither kind is
    a name nothing checks, and the suite asserts the partition.
 2. **Trade dress test** — no generated primary/secondary colour pair falls within the stated ΔE of a
-   real programme's known pair.
+   real programme's known pair. The sweep is 200 synthetic leagues **plus the canonical world**,
+   which it did not read until 2026-08-23: the one league every tester sees was the one league no
+   legal test covered. Reading it found that the hand-authored `CanonicalTeamBranding` table never
+   passed through `ColourGenerator`'s reject-and-retry filter, so **148 of its 166 marks collide at
+   ΔE < 25, and 36 fail the contrast floor**. Owner decision 2026-08-23 books both as approved
+   exceptions to be closed near the end of development, pinned by team id in
+   `ownerApprovedTradeDressExceptions` and `ownerApprovedContrastExceptions` in `LegalTests.swift`
+   and applied to the canonical world alone. The suite is green because each exception count must
+   equal the live offender count exactly — not because the shipped world satisfies the rule. Do not
+   read it as the latter, and do not cite this test as evidence the shipped identities are clear.
 
 Everything else in this guardrail is a review checklist item, not an assertion. Do not describe
 prose as if it were a test.
