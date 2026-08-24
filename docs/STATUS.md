@@ -4,6 +4,71 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-24, later — the trade-dress guardrail reads as a compliance statement and is an
+> exception list.** This pass reconciled `docs/pass-2026-08-23` with `main` and then swept the
+> merged tree. The merge produced one conflict, in this file, where both sides had prepended a dated
+> entry; both were kept in order rather than one side chosen. Everything the sweep found has a
+> single root: `ca1401ca` and `039a737e` (both 2026-08-23) added the canonical world to the legal
+> sweep and encoded what it found as owner-approved exceptions, and three documents still describe
+> the guardrail as though the sweep were synthetic-only.
+>
+> - **`CLAUDE.md`'s legal guardrail states limb 2 as an absolute, under a heading reading "they must
+>   stay green".** Both halves mislead about what green means. `LegalTests.swift` appends
+>   `LeagueGenerator.generate(seed: CanonicalTeamBranding.worldSeed)` to the 200 synthetic leagues,
+>   and holds `ownerApprovedTradeDressExceptions` (148 team ids, counted from the source) and
+>   `ownerApprovedContrastExceptions` (36), applied only at `index == LEGAL_SWEEP_LEAGUES`. So the
+>   shipped world — the only one a tester sees — violates the guardrail at 148 of its 166 marks.
+>   That is a dated, visible, owner-approved gap rather than a defect, and the exact-count
+>   assertion keeps a new violation red; it is still the opposite of what the sentence conveys, in
+>   the one place a reader looks before shipping an identity. Corrected, with the counts named.
+> - **`02` §11.3.5's constants table said the sweep is 200 leagues, and explained the contrast
+>   floors as checked at generation time "so a pair that cannot carry legible text is regenerated
+>   rather than shipped".** Both rows describe generated colour, and the shipped world is not
+>   generated colour: `CanonicalTeamBranding.apply` returns at `guard seed == worldSeed else
+>   { return }` and otherwise overwrites every pair from a hand-authored table of 166 that never
+>   passes through `ColourGenerator`'s reject-and-retry. Both rows now say which population they
+>   govern; the sweep row reads 201 worlds.
+> - **`docs/PRE-DEPLOYMENT-CHECKLIST.md` §2's trade-dress item can be ticked today and should not
+>   be.** The exception lists are booked for "near the end of development", which is when that
+>   checklist is read, so the deferral had to be visible there or it expires unnoticed. Added as its
+>   own item. The suite is strict in both directions — a new offender fails, and a repaired mark
+>   whose id was left in the list also fails — and simply has no opinion on whether the list should
+>   still exist at release, which is the thing the checklist has to decide.
+>
+> **Recorded and not fixed: one raw colour literal ships outside the token layer, exempted by
+> name.** `Sources/ProFootballCoachUI/MatchDayScoreBug.swift:212` constructs
+> `Color(red: 14 / 255, green: 10 / 255, blue: 6 / 255)` for the `.bowl` kind's ground.
+> `DesignContractTests.swift`'s `pendingCanonAmendment` table permits exactly one hit in that file,
+> so the scan is green; `04` §6.1 does not hold `#0E0A06`, and until this entry no document did.
+> `CLAUDE.md` calls a design-token literal in a view a defect and the doc-first rule puts the value
+> in canon before the code. Promoting it means naming a token and stating its measured ratios,
+> which is a design decision with the owner's name on it, so it is recorded here rather than taken.
+>
+> **Swept and clean, so the next pass need not repeat them:** every markdown link and backticked
+> repo path in `README.md`, `CLAUDE.md`, `PRODUCT.md` and `docs/*.md` resolves or is a deliberate
+> citation of a deleted prior-build file (`AUDIT.md`, `PORT-LOG.md`, `DOC-MANIFEST.md`'s own
+> deleted-document table, `README.md`:38's note on `HANDOFF-2026-08-10.md`); the backticked-
+> identifier sweep over the canon documents, run against comment-stripped sources **and file
+> paths**, surfaced nothing not already recorded — `DynastyTests`, `SnapKernel`, `DesignSystem/`
+> and `Features/` are each explicitly named as prior-build or never-shipped in the sentence that
+> uses them; `Blocklist.tradeDressHex` holds exactly the 71 pairs `05` L-06 claims;
+> `CoachWorldScreenID` holds exactly the 62 families `04` §8 tabulates, and the run's own lines
+> agree (`47 landed, 0 pending, 15 aliased`, `62 converted, 0 pending`); `CollegeRules.programmeCount`
+> is the 134 `02` §11.1 states; `docs/loops/`'s `catalog.json`, `aspects.json` and root `LOOPS.md`
+> agree with each other and with `docs/DOC-MANIFEST.md` §8, self-checked by `scripts/check-loops.mjs`
+> (`25 loops, 28 aspects, 6 with a companion run`); every lane named in a documented `verify.sh`
+> invocation is one the script accepts.
+>
+> Verification: `./scripts/verify.sh --lane core` (Swift 6.3.3, arm64-apple-macosx26.0), run on the
+> merged tree. Ended at TestKit's summary line: `235 tests, 3448 checks`, all passed, `PASS
+> core-contracts`, exit 0 — the same counts as the entry below, which is what a pass touching only
+> prose should produce. **A second session committed `f0f46855` into this worktree while that build
+> was running**, classifying `docs/loops/` after the merge brought it in unclassified; the
+> `Document manifest` suite reads `docs/DOC-MANIFEST.md` at run time and passed, so the run read the
+> corrected file, but it is a run over a tree that changed under it and is reported as such. No
+> other lane was run and no claim is made about any of them. `main`'s required `full` check remains
+> red on `Lifecycle distributions hold their bands`, which this pass neither caused nor fixed.
+
 > **2026-08-24 — a fourth documentation pass, and the finding class the first three could not
 > see.** The earlier passes swept canon for test names with nothing behind them and found several.
 > This one swept for the opposite: a named instrument that *does* exist, and still cannot fail.
