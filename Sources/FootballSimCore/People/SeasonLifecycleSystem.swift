@@ -29,6 +29,8 @@ public enum PlayerIntakeSource: String, Codable, Sendable, CaseIterable, Hashabl
     case provisionalReplacement
     case recruitedScholarship
     case walkOn
+    /// A professional the league already had, signed into a seat rather than replaced by a new one.
+    case returningProfessional
 }
 
 public struct PeopleSeasonTransition: Sendable, Equatable {
@@ -355,6 +357,12 @@ public enum SeasonLifecycleSystem {
         people: inout PeopleState,
         payloads: inout [DomainEventPayload]
     ) {
+        // Seats a retirement vacates are offered to the professionals the league already has
+        // before a new one is generated for them. Without this the tier had two intakes -- the
+        // draft and this backfill -- and both minted 22-year-olds, so `--pro-movement-probe`
+        // measured two returns a season against 200-plus expiries while the unattached population
+        // grew past 1,100 and the league could not age.
+        var available = unattachedProfessionals(in: state, players: players)
         for team in state.proTeams.values {
             var retained: [UUID] = []
             var departures: [Player] = []
@@ -393,6 +401,7 @@ public enum SeasonLifecycleSystem {
                 tier: .pro,
                 season: completed.season + 1,
                 rootSeed: state.league.seed,
+                available: &available,
                 players: &players,
                 people: &people,
                 payloads: &payloads
@@ -424,6 +433,32 @@ public enum SeasonLifecycleSystem {
         }
     }
 
+    /// Every professional the league is not using: no contract, no eligibility, on nobody's roster.
+    ///
+    /// Bucketed by position and ranked best first, ties on identifier, so a club takes the same
+    /// player on every run. `EntityStore.values` is already ordered by identifier, so the clubs
+    /// consume the buckets in a fixed order too and no extra sort is needed to make the draw
+    /// reproducible across processes.
+    private static func unattachedProfessionals(
+        in state: GameState,
+        players: EntityStore<Player>
+    ) -> [Position: [UUID]] {
+        let owned = Set(state.programmes.values.flatMap(\.rosterIDs))
+            .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        var byPosition: [Position: [Player]] = [:]
+        for player in players.values
+        where player.contract == nil && player.eligibility == nil && !owned.contains(player.id) {
+            byPosition[player.position, default: []].append(player)
+        }
+        return byPosition.mapValues { candidates in
+            candidates.sorted {
+                $0.overall.value == $1.overall.value
+                    ? $0.id.uuidString < $1.id.uuidString
+                    : $0.overall.value > $1.overall.value
+            }.map(\.id)
+        }
+    }
+
     private static func makeReplacements(
         departures: [Player],
         organisationID: UUID,
@@ -431,11 +466,30 @@ public enum SeasonLifecycleSystem {
         tier: Tier,
         season: Int,
         rootSeed: UInt64,
+        available: inout [Position: [UUID]],
         players: inout EntityStore<Player>,
         people: inout PeopleState,
         payloads: inout [DomainEventPayload]
     ) -> [UUID] {
-        departures.enumerated().map { ordinal, departed in
+        var filled: [UUID] = []
+        filled.reserveCapacity(departures.count)
+        for (ordinal, departed) in departures.enumerated() {
+            // A professional already in the league takes the seat first. College intake is
+            // recruiting's business and never draws from here.
+            if tier == .pro, var pool = available[departed.position], !pool.isEmpty {
+                let signedID = pool.removeFirst()
+                available[departed.position] = pool
+                payloads.append(.playerJoined(
+                    playerID: signedID,
+                    organisationID: organisationID,
+                    source: .returningProfessional
+                ))
+                filled.append(signedID)
+                continue
+            }
+            // `ordinal` still indexes the departure rather than the seats left over, so a player
+            // that is generated keeps the identity it would have had before signings existed and
+            // the derived stream does not move under a club that signed somebody.
             let replacement = RosterPopulationGenerator.replacement(
                 rootSeed: rootSeed,
                 season: season,
@@ -452,8 +506,9 @@ public enum SeasonLifecycleSystem {
                 organisationID: organisationID,
                 source: .provisionalReplacement
             ))
-            return replacement.id
+            filled.append(replacement.id)
         }
+        return filled
     }
 
     private static func retires(_ player: Player, season: Int, rootSeed: UInt64) -> Bool {

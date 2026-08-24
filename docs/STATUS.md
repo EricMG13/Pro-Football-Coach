@@ -84,6 +84,137 @@ The honest picture: what exists, what is verified, what is not.
 > target moves the yardage distribution and the calibration bands with it. That is its own task with
 > its own gate and needs an owner decision; the defect is written down at the line that causes it.
 
+> **2026-08-23 — live portal capacity reads the active limits, and one of the two frozen copies of
+> them is gone.** `CollegePortalMatchingV1.makeMarketSnapshot` measured every destination's
+> `rosterOpenings` and `scholarshipOpenings` against `CollegePortalPolicyV1`'s own frozen
+> `rosterLimit` (105) and `scholarshipLimit` (85) rather than `CollegeRules`'. **There was no live
+> bug and there is no behaviour change**: the copies were still equal to the rules. What there was
+> is the condition that produced one: two numbers that must agree, nothing comparing them, and no
+> way for a test to notice when they stop — the state `minimumPlayableRosterByPosition` was in
+> before it fell a man below `SharedRules` at `.runningBack` and `.linebacker` (`d5400e1`, on its
+> own branch). The two guards that reject an over-limit programme before a window opens read the
+> frozen copies too, so a raised limit would not merely have mis-sized capacity: a legal roster
+> would have failed `makeMarketSnapshot` and the entire window would have returned nil.
+>
+> **The decode-side ceiling is the harder half, and it is split rather than deleted.**
+> `CollegePortalCapacitySnapshot.isValid` is shared between the memberwise initializer and
+> `init(from:)`, and a limit-sized ceiling there fails in one direction whichever copy it reads: a
+> frozen ceiling traps the initializer's `precondition` on a *live* snapshot once the live limit is
+> raised, and a live ceiling makes *archived* snapshots undecodable once the live limit is
+> lowered — which is the undecodable career record the freeze exists to prevent. So the ceiling
+> moved to the live path alone, as two `precondition`s on the memberwise initializer, and the shared
+> predicate keeps a bound too slack for any balance pass to make it bind: one programme's openings
+> cannot exceed every roster slot in the college world (`programmeCount * rosterLimit`, 14,070
+> today). That survives a raise, because the bound rises with the limit; it survives a lowering,
+> because an archived 105 clears 134 × any limit down to 1. It is not a no-op — a decoded opening
+> count feeds a multiplication in `WorldIntegrity`, and refusing the save is the graceful failure.
+>
+> **`CollegePortalPolicyV1.scholarshipLimit` is deleted; `rosterLimit` is renamed, not kept.** With
+> openings on `CollegeRules`, `scholarshipLimit` had no readers left. `rosterLimit` still had three,
+> all of them coarse ceilings on an *archived position-room count* rather than readings of the
+> roster rule, so it is now `maximumPositionRoomSize`. The rename is the point: a constant named
+> `rosterLimit` sitting one scope from `CollegeRules.rosterLimit` is what a careful person reaches
+> for, and it is the reach that caused this twice. Because both constants are `internal` to
+> `FootballSimCore` and `SimTests` imports it without `@testable`, a cross-check could not have been
+> asserted from the suite at all — the duplication had to go, and where it could not go it had to
+> stop looking like a duplicate.
+>
+> **Two new tests, and both were proved able to fail before being trusted.** *Capacity openings are
+> measured against the active limits* compares an opening read off a real offer to `CollegeRules`
+> rather than to 105 and 85; it cannot fail today, because the two agree today, so it was made to
+> fail by simulating the drift it exists to catch — `CollegeRules.rosterLimit` raised to 106 with
+> matching pointed back at a frozen 105 gives `expected 3, got 2`. *An archived capacity above the
+> live limits still decodes* is a real regression test that fails on the unfixed code: restoring the
+> frozen ceiling to `isValid` gives `expected Optional(112), got nil`.
+>
+> **Verified on the merged tree, release mode, from one build.** `--portal-contracts`
+> **28 tests / 138 checks**, `--portal-policy` **13 / 716** (the cross-check included),
+> `--portal-matching` **19 / 145** (both capacity tests included), `--portal-transaction`
+> **17 / 133**, `--architecture-only` **29 / 245** — so every pinned cross-process fingerprint still
+> holds and none needed re-deriving, which is the number to read twice, because the merge brought in
+> `56d2911`'s re-brief of the 52 marks the earlier re-key stranded — and `--portal-scheduler`
+> **13 / 27,861**. That last lane prints the portal characterization, and on the merged tree it is
+> byte-identical to the pre-merge build, to the run before these changes, and to the figure
+> `d5400e1` recorded for a detached build at `2de6268`: `entrantWindows=431 retained=99
+> transferred=224 returned=108 transferNILTotal=6400 transferNILMin=0 transferNILMax=500`. So
+> neither change nor the merge moved portal behaviour on the covered seeds. Behaviour neutrality is
+> otherwise argued from numeric identity — 105 is 105, 85 is 85, 134 is 134 — rather than from a
+> fresh detached baseline, which is a weaker claim than `d5400e1`'s and is stated as such.
+>
+> **The one failure was pre-existing, and it is now gone — the branch was simply based too far
+> back.** `--portal-contracts` trapped here with exit 133, zero bytes on stdout and stderr and no
+> summary, at `PortalContractTests.swift:869` ("policy-v1 admission components rederive from compact
+> immutable evidence"). A detached worktree at `b25a60d` — this branch's original base — trapped
+> identically, with `TRACE_TESTS=1` naming the same last-entered test on both binaries, so it was
+> never this change's doing. But proving it against `b25a60d` proved it against a baseline `main`
+> had already moved past: `8900f40` fixes exactly that trap, rebuilding the `wideReceiverKnowledge`
+> probe from the frozen v1 attribute list instead of `Position.ratedAttributes`, which
+> `CollegePortalKnowledgeSnapshot`'s own precondition had started refusing after `3bba7c9` gave
+> receivers `.vision` and `.elusiveness`. A detached build at `6610a8c` runs the lane green at
+> **28 tests / 138 checks**. So `origin/main` was merged into this branch at `2700515` — cleanly,
+> no conflicts — and the lane is green here too. **Reporting it as "pre-existing, not mine" and
+> stopping would have been true and useless**; the lane was red because the branch was stale, and
+> the fix was to stop being stale.
+>
+> **Residual hazard, named and not fixed here.** The three `maximumPositionRoomSize` checks are
+> still shared between decode and live construction — `CollegePortalIntentEvidence.init` and its
+> two siblings `precondition` on the same predicate `init(from:)` uses. Raising
+> `CollegeRules.rosterLimit` past 105 would let a live position room exceed the frozen ceiling and
+> trap. It is a different surface from the one this change was scoped to, the ceiling is roughly an
+> order of magnitude above any real room, and the fix when it is needed is the split
+> `CollegePortalCapacitySnapshot` just received.
+>
+> **The second frozen copy was taken to the owner and came back as "fix it the same way" — and
+> reading every site changed the finding.** `CollegePortalPolicyV1.programmeCount` is a frozen 134
+> beside `CollegeRules.programmeCount`, and the earlier revision of this entry guessed it was a real
+> policy bound. It is, and for a stronger reason than was guessed: it is the divisor in the
+> `.teamSuccess` component formulas at `CollegePortalPolicyV1.swift:306` and `:341`, and
+> `CollegePortalIntentExplanation.isValid` requires an archived explanation's stored components to
+> equal what the policy recomputes today. Point that divisor at `CollegeRules` and every career
+> record archived under the old ladder stops rederiving. **This is the freeze rationale actually
+> reaching a live computation** — which is exactly what it did not do for `rosterLimit` and
+> `scholarshipLimit`, and why those two could be deleted and this one cannot.
+>
+> **So the live readings were moved and the constant was not.** Two sites had no business on the
+> frozen copy: `makeSnapshot`'s `state.programmes.count <= maximumKnowledgeObservers` and
+> `makeMarketSnapshot`'s `state.programmes.count == programmeCount` are readings of how big the
+> world is, and now read `CollegeRules.programmeCount`. `makeSnapshot` additionally carries
+> `CollegeRules.programmeCount == frozenProgrammeCount` as an explicit version gate, so the two
+> numbers are compared rather than silently substituted: a world this policy was not frozen against
+> needs a policy v2, and refusing the window is the honest answer. The constant is renamed
+> `frozenProgrammeCount` for the same reason `rosterLimit` was renamed — a frozen copy wearing the
+> live rule's name is what a careful person reaches for.
+>
+> **Two sites deliberately keep the frozen ladder.** `uniqueRank`'s `(1...frozenProgrammeCount)`
+> bound stays frozen because the rank it returns is archived on evidence whose decode bound is the
+> same frozen number; a rank the live world allows and the archive refuses would trap rather than
+> return nil. `ScoutingState`'s three `maximumKnowledgeObservers` bounds stay because they bound the
+> observer table's capacity, not the world's size.
+>
+> **This time the cross-check could be asserted, and that is the whole difference.**
+> `maximumKnowledgeObservers` and `CollegeRules.programmeCount` are both `public`, so
+> `PortalPolicyTests` compares them without `@testable` — the assertion the `internal`
+> roster and scholarship limits made impossible.
+>
+> **How far that test was proved, exactly.** It was made to fail by comparing
+> `maximumKnowledgeObservers` against `CollegeRules.programmeCount + 1`, which gives a clean
+> `expected 135, got 134` at `PortalPolicyTests.swift:154` with the suite completing and exiting 1.
+> That proves the assertion reads both real constants and goes red when they differ. It is a weaker
+> proof than the two capacity tests got, and the reason is worth recording on its own: setting
+> `CollegeRules.programmeCount` to 135 for real does **not** produce a clean red. `--portal-policy`
+> then exits **133** with zero bytes on stdout and no summary, having entered "intent evidence
+> rederives the frozen six-component v1 explanation" last — so a genuine ladder change takes the
+> buffered result of every earlier test in the lane with it, including this one's. The run-time
+> version gate in `makeSnapshot` cannot be falsified from inside one process at all, because
+> `CollegeRules.programmeCount` is a compile-time constant.
+>
+> **This conflicts with `d5400e1` on merge, and should.** Both changes edit
+> `CollegePortalCapacitySnapshot.isValid`, the same constant block in `CollegePortalPolicyV1`, the
+> same capacity literal in `makeMarketSnapshot`, and the same insertion point in
+> `PortalMatchingTests`. Resolve by keeping both: deficits on `SharedRules`, openings on
+> `CollegeRules`, no per-position ceiling, and the openings bound at `programmeCount * rosterLimit`
+> with the limit-sized ceiling on the initializer.
+
 > **2026-08-22 — `main` was red for eight suites, and seven of them were a merge, not a defect.**
 > CI run `32558005794` on `da0eb73` failed `Legal: shipped copy`, `League generation`, `Game loop`,
 > `Authoritative game state`, `College portal scheduler lifecycle`, `M5 career arc`, `M4 tactical
@@ -231,6 +362,139 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > The local release `--season-rollover` attempt ended without a result, so it is not claimed here.
 
 ## Where the project actually is
+
+> **2026-08-24 — the professional age band holds, and the cause was an intake that invented
+> players.** `Lifecycle distributions hold their bands` had been red since 2026-08-22 on one check:
+> the past-decline share read **0.067** at season 6 against a band of 0.08…0.30. The draft stall,
+> the sample point, the roster shortfall and the free-agent pool's coin-toss cut were each
+> investigated and each ruled out; the pool fix in particular was re-measured and moved nothing
+> (0.161 → 0.162 at season 10, every other figure identical to three decimals).
+>
+> `--pro-movement-probe` named it: `expired=257 returned=2` in season 2 and `expired=200 returned=2`
+> in season 3. **Two players a season came back to a professional roster** while 223 were drafted and
+> the unattached population grew past 1,100. The tier had two intakes — `makeDraftClass` and
+> `SeasonLifecycleSystem`'s retirement backfill — and both minted 22-year-olds, so the league
+> refreshed itself almost entirely with rookies and could not age. The trough was never veterans
+> leaving too fast; it was a seat being filled by a new player while the man who used to hold one
+> sat unsignable.
+>
+> `46b96bb8` offers a vacated seat to the professionals the league already has before generating
+> one. Measured at seed 84,010, seasons 0/1/3/6/10:
+>
+> | | 0 | 1 | 3 | 6 | 10 |
+> |---|---|---|---|---|---|
+> | before | 0.228 | 0.196 | 0.134 | **0.067** | 0.162 |
+> | after | 0.228 | 0.196 | 0.183 | **0.203** | 0.218 |
+>
+> Mean age holds at 27.07, 26.81, 26.56, 26.80, 26.70 instead of sagging to 25.59. The trough is
+> gone rather than lifted over the floor, and season 10 at 0.218 against season 0's 0.228 says the
+> process now sustains what the bootstrap seeds — there is no demographic echo left to damp. **No
+> band was widened, no retirement constant moved, and the draft reserve is untouched**, so `02`
+> §4.2 needs no amendment. `--architecture-only` passes at 29 tests / 245 checks with no pin moved,
+> because the generator's `ordinal` still indexes the departure rather than the unfilled seats.
+> `docs/HANDOFF-CLAUDE.md` carries the full account, including the two suspects it rules out.
+
+> **2026-08-23 — the legal sweep never read the shipped world, and now that it does, 155 of the 166
+> canonical teams fail one of the two colour guardrails.** `sweptWorlds` (`LegalTests.swift`) fed
+> both Tier A tests 200 synthetic leagues and never the canonical one:
+> `CanonicalTeamBranding.apply` only fires at `worldSeed = 20_260_812`, so every other seed reaches
+> the generator's own colours and the one league every tester actually sees was the one league no
+> legal test read. The earlier claim a few paragraphs below — "`Legal: trade dress` (7) ... pass" —
+> was true of the 200 synthetic leagues and blind to the shipped one; it was never a measurement of
+> what ships.
+>
+> `sweptWorlds` now appends `LeagueGenerator.generate(seed: CanonicalTeamBranding.worldSeed)` as a
+> 201st member, so `Legal: trade dress` reads the actual shipped roster for the first time.
+> `Legal: name collision` and `Legal: shipped copy` stay green; `Legal: trade dress` was red on two
+> counts, corrected below after an undercount in the first pass:
+>
+> - **148 of 166 canonical teams (89%) collide with `Blocklist.tradeDress` under
+>   `ColourGenerator.collidesWithTradeDress`** — ΔE < 25 in CIE76 Lab against all 71 real pairs, in
+>   both orderings, per `02` section 11.3.5. **A first pass counted only literal hex duplicates
+>   (ΔE = 0) and found 36; that undercounted the actual predicate, which is the near-miss ΔE < 25
+>   standard, not exact equality.** The 200 synthetic leagues never produce a single offender —
+>   `ColourGenerator.next` rejects and retries any colliding pair before returning it — so this is
+>   not chance: the canonical table is hand-authored, was never run through that same filter, and
+>   drew from the same general "bold sports colour" palette real programmes draw from, which lands
+>   near one of 71 real pairs at a very high rate once both colours and both orderings are checked.
+>   Examples: `Carlin A&M Founders` ships `#002244/#69BE28`, an exact copy of a real pair;
+>   `Mesquite Comets` ships `#007BC7/#FFC20E` against a real `#0080C6/#FFC20E`, a near miss under
+>   the same threshold. The full 148-name list is `ownerApprovedTradeDressExceptions` in
+>   `LegalTests.swift`.
+> - **36 of 166 (29 overlapping the 148 above) fail `04` section 2.1's 3.0:1 secondary-on-primary
+>   legibility floor** — this count did not change; it is a plain WCAG contrast check, not a ΔE
+>   match. Worst: `Nacogdoches Poly Planters` and `Webster City Coastal Tornadoes`, both
+>   `#008E97/#F58220`, at 1.523:1.
+> - **155 distinct teams (93.4% of the roster) fail at least one of the two.**
+>
+> This is the guardrail CLAUDE.md calls absolute, failing on the table `STATUS.md` and the owner
+> both treated as approved and shipped. **No colour was changed to produce or investigate this
+> finding** — recolouring an owner-approved identity is a design decision for the owner, per
+> CLAUDE.md's "flag anything borderline for the owner to take to counsel; never resolve it
+> yourself."
+>
+> **Owner decision, same day: approved as exceptions, addressed near the end of development.**
+> Beta-level implementation is the priority; these 155 teams' colours are not being chased now.
+> `LegalTests.swift` encodes that as two `Set<UUID>` exception lists — `ownerApprovedTradeDressExceptions`
+> (148) and `ownerApprovedContrastExceptions` (36), 29 overlapping — named by team id and applied
+> only to the canonical world, not a blanket allowance. Both tests still assert the exception count
+> matches the live offender count exactly, so `Legal: trade dress` is green again but not blind: a
+> new violation beyond these 155, or the canonical table changing under an exception that no longer
+> collides, still fails and demands the list be updated deliberately. This is the same idiom as
+> `pendingCanonAmendment` in `DesignContractTests.swift` and the pinned 52-mark count during the
+> logo re-key — an owner-approved gap stays visible and exact rather than silently passing or
+> silently blocking. At this scale the check now exercises the 11 canonical teams outside both
+> lists, plus every synthetic league in full; it is not a strong guarantee about the shipped roster
+> any more, and re-running the canonical colours through `ColourGenerator`'s own avoidance logic is
+> the standing option when the owner wants that guarantee back before release. Verified with
+> `--legal-only`: 30 tests, 195 checks, all green.
+> **2026-08-23 — the heat scale caught up with canon, and the parser that hid the gap was the
+> reason it could.** `--core-contracts` was red on `main` for one check:
+> `Design token sync / Heat.color's banding matches 04 section 6.4's stated heat scale`, failing in
+> its own guard with "the parser, not the tokens, is what failed". That was accurate and it
+> understated the position. `60f0c2d` amended `04` §6.4 on 2026-08-22 from a three-band
+> red/amber/green scale to a **five-band table** diverging around a neutral centre, so that an
+> average starter stops reading as a caution. Nothing downstream followed: `CoachWorldTokens.Heat`
+> still held a three-case switch, and the test read canon with `matches(of: "red below (\d+)")`, so
+> the moment canon became a table the check stopped examining the tokens at all. **A test that
+> reads canon in one syntax is a test canon can silently outrun.**
+>
+> **Now implemented.** `Heat` carries the five bands — 40-59 `state.negative`, 60-69
+> `state.warning`, 70-79 `content.secondary`, 80-84 `state.positive` lightened, 85-99
+> `state.positive` — and is the single definition every surface that colours a rating already
+> resolved through (nine files, `CoachWorldRatingRing` among them), so all nine moved together. The Above band is **derived, not a new hex**:
+> `state.positive` mixed 30% toward `content.primary` (`#81DDAE` as it resolves today), so
+> re-valuing the positive role moves the band with it rather than leaving it behind, which is the
+> failure this whole entry is about.
+>
+> **`state.warning` moved with it, because §6.4 names "the amended `state.warning`".** §6.1a(ii)
+> derived `#C9704A` on 2026-08-22 — 24.1° off gold, 5.57:1 on `world.page` — and the palette still
+> shipped `#FFB03A` at 6.1° off gold. Gold marks the committing action and carries no other
+> meaning; a caution that close to it is the collision the amendment calls "the serious one". `04`
+> §6.1a's table and its filled-ink measurements now state the shipped value.
+>
+> **The test now reads the table.** `canonHeatBands` parses §6.4's rows, asserts the five bands
+> partition `scaleFloor...scaleCeiling` with no gap or overlap, and checks every rating from 40 to
+> 99 against the role its band names — plus §6.4's two stated constraints, 4.5:1 on `world.page`
+> and 24° off gold, at every rating. It ships the planted-offender self-test the other scans do:
+> the superseded prose sentence must **not** parse as bands.
+>
+> **The other three collisions are closed too, as declared aliases** — the resolution §6.1a(ii)
+> itself names. Each shared value is declared once in the token layer and referenced by every role
+> that takes it, so `state.negative`/`action.destructive` and `state.info`/`pro.identity` are one
+> declaration apiece instead of a literal typed twice, and **`state.live` now resolves to
+> `state.positive`'s `#4FD08C`** in place of `#37E08A`. That is a visible change — the live
+> indicator is very slightly duller green — and it removes a second-order incoherence the collision
+> table never reached: `field.live` already shipped `#4FD08C` while `state.live` shipped `#37E08A`,
+> so the two roles that both mean *in play* did not agree with each other.
+>
+> **Enforcing it by construction found two more pairs than canon's table listed:**
+> `content.primary`/`field.line` and `content.secondary`/`action.secondary`. The table was measured
+> over state and action roles, so it could not see a pair spanning content and field — the coverage
+> boundary again. `DesignContractTests` now asserts **no colour literal appears twice** in
+> `DesignTokens.swift`, with a planted-duplicate self-test, and deliberately does *not* pin which
+> roles are equal: canon wants diverging a pair on purpose to stay possible, and a pinned equality
+> would forbid it.
 
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
@@ -3562,6 +3826,20 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 | `PRODUCT.md` | Rewritten from the §6.3 gap argument | — |
 
 **Nothing in this table has been compiled, because there is nothing to compile yet.**
+
+> **Superseded 2026-08-23.** That sentence is true of the *table*, which lists documents only, and
+> false of the repository it now reads as describing. `Sources/` holds three targets and 317 Swift
+> files; `Tests/SimTests` is a running suite. What is compiled, and what each run actually covered,
+> is the dated evidence above this section — not this table, which was never extended past the
+> document package and is kept for that record.
+>
+> The same pass corrected the structural documents that had drifted from the tree: `03b` §1 (the
+> module layout, and `CoachWorldApp`, which it never mentioned), `03b` §2–§3 (three type names that
+> were never built), `03b` §4 (the save is zlib-compressed and shipping, not gzip-and-pending),
+> `03b` §5 (the test layout and the `-Xswiftc -enable-testing` flag a release run cannot omit),
+> `DOC-MANIFEST` §7 (it still described the pre-P0 tree as prior art), and `06` (two of its fifteen
+> named tests do not exist). `README.md` pointed at a deleted handoff and at an Xcode project path
+> `xcodegen` does not write.
 
 ---
 

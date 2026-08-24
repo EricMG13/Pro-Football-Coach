@@ -15,29 +15,56 @@ Sources/
     Rules/                per-tier rules modules. Every constant lives here.
       CollegeRules/       calendar, eligibility, scholarships, NIL, portal, bracket
       ProRules/           calendar, cap, draft order, free agency, bracket
+      (shared)            ClockRules, CompetitionRules, MatchupRules, PeopleRules, SharedRules
     Engine/               snap resolution, drive, game, clock, situation
     Abstracted/           the off-screen model (D3)
     Generation/           league, programme identity, names, map, traditions (D6)
     AI/                   coordinator, roster, opponent game-plan (D10)
     Calibration/          harness, bands, TOST
-    Persistence/          codable save, migrations, bounds
+    Persistence/          the save envelope: header, version, compression, bounds
     Support/              seeded RNG, math, collections
-  ProFootballCoachUI/     SwiftUI. Views + view models only. No simulation logic.
-    DesignSystem/         tokens, components, accessibility contract surface
-    Features/             one directory per feature area
+    World/                the authoritative root and its scheduler
+    Intent/               the intent and projection boundary (§2)
+    Integrity/            the invariants the root is checked against
+    Competition/          schedules, standings, brackets, statistics, honours
+    People/               M2: development, morale, discipline, season lifecycle, and the
+                          professional contract and roster systems
+    College/              M3: recruiting, portal, NIL, scouting, redshirts, signing
+    Pro/                  M6: the professional market and its roster AI
+    Tactical/             M4: game plan, practice, call-in, tactical state
+    Career/               M5: the career arc, its controls, and mandatory decisions
+    History/              M7: domain events, season digests, rivalries, coaching tree, news feed
+    Scheduling/           the world calendar and its weekly steps
+  ProFootballCoachUI/     SwiftUI. Views, design tokens, screen registry. No simulation logic.
+                          Flat, one file per surface or component; Resources/ carries the
+                          packaged team marks.
+  CoachWorldApp/          the composition layer, and the only module allowed to see both
+                          GameState and the screen read models (§2). Read-model providers,
+                          the store, and the save document/store.
 App/                      thin @main shell + project.yml
 Tests/                    see §5
 ```
 
-**The boundary is enforced by test, not by convention.** **Four** source-scanning tests fail the
-build:
+`ProFootballCoachUI` has no `DesignSystem/` or `Features/` subdirectory: the design tokens are one
+file (`DesignTokens.swift`) and the surfaces are flat, named for the `CoachWorldScreenID` family
+they render, which is the convention `04` §7.1's enumeration resolves against. A directory layer
+between the two would break that convention for nothing.
+
+**The boundary is enforced by test, not by convention.** **Five** source-scanning tests in
+`Tests/SimTests/Suites/ContractTests.swift` fail the build:
 
 | Scan | Rule | Root |
 |---|---|---|
 | Engine boundary | no `import SwiftUI` / `UIKit` / `AppKit`, no UI type | `FootballSimCore/` |
-| Seeding | no `hashValue` | `FootballSimCore/` |
-| Ambient randomness | no `UUID()` or `Date()` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3.5) | `Engine/`, `Generation/`, `AI/`, `Abstracted/` |
-| Design tokens | no literal spacing, radius, colour or font size | `ProFootballCoachUI/` |
+| Authoritative root | no file that imports a UI framework may name `GameState` | `ProFootballCoachUI/`, `CoachWorldApp/` |
+| Seeding | no `hashValue`, `Hasher(`, `hash(into:)` — every per-launch-salted hash, not one spelling | `FootballSimCore/` |
+| Ambient randomness | no `UUID()`, `Date()`, `Date.now` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3.5) | `Engine/`, `Generation/`, `AI/`, `Abstracted/` |
+| Design tokens | no literal spacing, radius, colour, font size or animation duration | `ProFootballCoachUI/` |
+
+The authoritative-root scan is what makes `CoachWorldApp` a module rather than a convention. It runs
+**file by file, not module by module**: inside the composition layer a file that imports SwiftUI
+still may not name `GameState`, so the composition boundary holds within the one target that is
+allowed to straddle it.
 
 **Every scan strips comments properly and ships a self-test that fails on a planted offender.** The
 prior build's scan exempted any offending line carrying a trailing comment, and never looked for
@@ -55,20 +82,32 @@ rule that "a literal in a view is a defect". A rule nothing enforces is a wish.
 The UI never computes a simulation result. It reads value types the engine produced and renders
 them. Specifically:
 
-- The engine exposes **immutable snapshots**: `WeekState`, `MatchFrame`, `SnapOutcome`,
-  `LeagueView`. All `Sendable` value types.
+- The UI reads **immutable read models** — one `…ReadModel` per screen family, all `Sendable`
+  `Equatable` value types, declared in `ProFootballCoachUI` and built in `CoachWorldApp` by a
+  `CoachWorld…Provider` from the authoritative `GameState`. The provider is the only thing that
+  sees both sides, which is what §1's authoritative-root scan enforces.
 - Mutation goes one way, through intents: the UI submits a `CoachIntent` (a call-in choice, a game
-  plan, a roster change), the engine returns a new state.
-- The match view consumes a **stream of `MatchFrame`** produced ahead of rendering. The snap is
+  plan, a roster change) to `CareerSession.resolve`, `IntentResolver` applies it, and the session
+  returns a receipt and a new snapshot. The store then re-adopts that snapshot wholesale.
+- The match view consumes a **recorded** playback, not a live simulation:
+  `SnapAnchors.choreograph(play:offense:defense:)` turns an already-resolved `PlayRecord` into a
+  sparse `SnapAnchorSet`, which the provider projects into `MatchDayReadModel.Playback`. The snap is
   resolved first, the animation is choreographed to the recorded outcome second. Rendering cannot
-  change a result, and a test asserts it.
+  change a result, and `03` §9.3's five legality clauses are tests.
+
+Names to expect, since an earlier draft of this section named types that were never built: there is
+no `MatchFrame`, no `LeagueView` and no `WeekState`. The read models above are what replaced them.
 
 ---
 
 ## 3. Concurrency
 
 - The engine is synchronous and pure. It does not know about actors.
-- A `SimulationActor` owns long-running work (week advance, season sim, soak) off the main actor.
+- `CareerSession` — a `public actor` — owns long-running work (week advance, season sim, soak) off
+  the main actor. `CoachWorldStore` is the `@MainActor` face of it, and hops off with
+  `Task.detached` for the work that is seconds long on a full world: new-career generation, save
+  decode, and snapshotting. (An earlier draft called this actor `SimulationActor`; the type is
+  `CareerSession`.)
 - **Saves are written off the main actor, always.** The prior build's only P0 was a 2.4–3.3 MB
   synchronous main-actor save at 11 call sites, paid on every league mutation and twice per action
   on the draft board. A test asserts no save path is reachable from the main actor.
@@ -78,25 +117,60 @@ them. Specifically:
 
 ## 4. Save architecture (D7)
 
-Single versioned JSON document per save, gzip-compressed, atomic replace, one backup generation,
+Single versioned JSON document per save, compressed, atomic replace, one backup generation,
 unknown-field defaults for forward compatibility.
 
-- `schemaVersion` on the envelope, readable **without parsing the whole file** (the prior build
-  learned this one the hard way).
-- Migrations are forward-only, one version step each, each a pure function with a fixture test at
-  every boundary.
+**As built** (`Sources/FootballSimCore/Persistence/SaveEnvelope.swift`,
+`Sources/CoachWorldApp/CoachWorldSaveStore.swift`):
+
+- A fixed 16-byte header in front of the body: magic `PFC1`, `schemaVersion` as little-endian
+  `UInt32`, a flags byte, then seven reserved zero bytes. Reading the version is a 16-byte read —
+  **without parsing the whole file** (the prior build learned this one the hard way).
+- The body is **zlib**-compressed, not gzip: flags bit 0 says so, and it is set on every save this
+  build writes. The reader branches on the bit, so a pre-flag uncompressed save still opens — which
+  is the compatibility the byte was reserved for. Two ceilings guard the read: 64 MB stored and
+  512 MB decompressed, both defensive parser bounds well above the 8 MB production target.
+- The store writes through a sibling temporary file and replaces atomically, keeps one backup
+  generation, and quarantines a file it cannot decode rather than deleting it.
 - A newer-version save is refused with a plain message, never partially opened.
-- Every collection that can grow across seasons carries a bound, enumerated in D7 and verified by
-  the soak's growth check rather than by inspection.
+
+**Specified, not yet built.** Migrations are forward-only, one version step each, each a pure
+function with a fixture test at every boundary. The envelope header is still at v1 and no envelope
+migration table exists, so an *older* envelope version is refused
+(`SaveEnvelopeError.unmigratableVersion`) rather than fed to the current decoder — a refusal being
+strictly better than a decode that succeeds with wrong data. Application-document migration is a
+separate seam and does exist: the document decoder owns the root schema-version defaults.
+
+Every collection that can grow across seasons carries a bound, enumerated in D7 and verified by the
+soak's growth check rather than by inspection. The 8 MB ceiling itself is **not currently met** —
+`docs/STATUS.md` carries the measurement and the compaction work it implies.
 
 ---
 
 ## 5. Test architecture (D11) — **decided 2026-08-09**
 
-**The runner:** the ported `TestKit` harness, run as an executable target —
-`swift build && swift run -c release SimTests`, wrapped by `./scripts/verify.sh`. Neither XCTest nor
-swift-testing ships with the Swift Command Line Tools; both live inside Xcode. The harness needs
-neither.
+**The runner:** the ported `TestKit` harness, run as an executable target, wrapped by
+`./scripts/verify.sh`. Neither XCTest nor swift-testing ships with the Swift Command Line Tools;
+both live inside Xcode. The harness needs neither.
+
+The command underneath is:
+
+```bash
+swift run -c release -Xswiftc -enable-testing SimTests
+```
+
+`-Xswiftc -enable-testing` is load-bearing. `SimTests` is a plain executable target, not a
+`.testTarget`, so SwiftPM has no reason to infer testability for it the way `swift test` would — and
+it `@testable import`s `ProFootballCoachUI`. A release run without the flag fails every target that
+`@testable` imports anything, with "module ... was not compiled for testing". Debug builds happen to
+enable it; release does not.
+
+**A run is complete only if it ends with TestKit's `N tests, M checks` summary.** `TestKit.test`
+records a thrown error as a failed check, but a Swift `precondition` is SIGTRAP: it kills the
+process mid-run, prints nothing, and leaves an ordinary non-zero status, so every suite after it
+never runs and says nothing. `verify.sh` greps for that summary line and fails a lane without it;
+40 of 143 suites went unexercised between 2026-08-20 and 2026-08-23 while release claims quoted the
+full run.
 
 **Who runs it:** the session does. The machine hosting this work has Swift 6.3.3 and Xcode 26.6, and
 the gates were run rather than reasoned about. See `docs/OPEN-DECISIONS.md` D11 for the full closure.
@@ -105,11 +179,24 @@ the gates were run rather than reasoned about. See `docs/OPEN-DECISIONS.md` D11 
 
 ```
 Tests/
-  EngineTests/        unit, property, determinism, source-scanning
-  CalibrationTests/   bands + TOST, both models
-  SoakTests/          20-season soak
-  ContractTests/      accessibility contract, design tokens, legal tests
+  SimTests/                     the executable target — the whole command-line suite
+    main.swift                  argument dispatch: the default run, and one flag per lane
+    TestKit.swift               the harness: suite/test/expect, counts, exit code
+    SuiteCatalog.swift          the release gates as data — id, lane, default-run, runner
+    TestRoots.swift             shared deterministic roots
+    Suites/                     one file per subject area
+  ProFootballCoachTests/        XCTest, Xcode only — declared in App/project.yml, not in Package.swift
+  ProFootballCoachUITests/      XCUITest, Xcode only — same
 ```
+
+`SuiteCatalog` is why the gate list does not drift: every release gate is an enumerated case with a
+lane and a runner command, `--catalog` prints the table, and `--commitment-coverage` asserts that
+every commitment named in `PRODUCT.md` resolves to a gate whose command is actually dispatched in
+`main.swift`. A gate that exists as a name with nothing behind it fails that test.
+
+`verify.sh` groups those flags into named lanes — `core`, `determinism`, `calibration`, `soaks`,
+`accessibility`, `archive`, `release`, `app` and the default `full` — each with its own scratch
+directory and logs, so a failed run in one cannot contaminate another.
 
 **The condition, which outlives the closure.** Agent environments *have* had no `swift`, no
 `swiftc`, no `xcodebuild`, no `xcrun` and no `simctl`, with `download.swift.org` refused by egress
