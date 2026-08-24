@@ -635,7 +635,8 @@ func runPeopleLifecycleTests() {
             var previousRosters = rosterSnapshot(state)
             var suspensionsThisSeason = 0
             var playerWeeksThisSeason = 0
-            checkProAgeCurve(state, season: 0)
+            // Settled: this is the generator's own distribution, before a season has moved it.
+            checkProAgeCurve(state, season: 0, settled: true)
             checkRatingSpread(state, season: 0, assertTierGap: false)
             for season in 1...(measured.max() ?? 1) {
                 for _ in 0..<SharedRules.inSeasonWeeks {
@@ -672,8 +673,16 @@ func runPeopleLifecycleTests() {
                 let seasonPlayerWeeks = playerWeeksThisSeason
                 suspensionsThisSeason = 0
                 playerWeeksThisSeason = 0
+                // Every season, ahead of the `measured` gate. The age curve's own minimum falls at
+                // season 5, which `measured` does not contain, so gating this on `measured` left the
+                // floor never once evaluated at the trough it exists to catch. The other checks stay
+                // gated: they are sampled distributions, and sampling them is the point.
+                //
+                // Settled at the last measured season: by then the cohorts that replaced the
+                // bootstrap population have reached their positions' decline ages, so the share is
+                // required back inside the band rather than merely above the floor.
+                checkProAgeCurve(state, season: season, settled: season == measured.max())
                 guard measured.contains(season) else { continue }
-                checkProAgeCurve(state, season: season)
                 checkRatingSpread(state, season: season, assertTierGap: false)
                 checkDisciplineFrequency(
                     incidents: seasonSuspensions,
@@ -709,20 +718,83 @@ func runPeopleLifecycleTests() {
 // pre-decline span of `D - 22` ≈ 8.4 seasons at the playable-minimum-weighted decline age of ≈ 30.4.
 // That gives a ceiling share of 3.04 / 11.44 ≈ 0.27 and a ceiling mean age of ≈ 27.3. Every other
 // exit the professional market owns — cuts, contract expiry, the draft — removes veterans faster
-// than rookies, so the realised figures must sit below those ceilings. The floor is the point at
-// which the veteran tail has effectively stopped existing.
+// than rookies, so the realised figures must sit below those ceilings.
+//
+// **Amended 2026-08-24: the share band describes a population at rest, and for most of a save the
+// professional population is not at rest.** As first written the band was flat across every measured
+// season and its floor was not derived at all — the sentence here read "the floor is the point at
+// which the veteran tail has effectively stopped existing", which is a judgement, not an arithmetic.
+// It was merged without a green run: across the most recent 200 CI runs the newest success is
+// 2026-08-20T09:31Z and this suite landed 2026-08-21T11:00, so no run that included it has ever
+// passed. Measured since, at seed 84_010, the share runs 0.228, 0.196, 0.166, 0.134 … 0.067 at
+// season 6 … 0.162 at season 10 — a trough that recovers, not a collapse.
+//
+// It is a cohort transient, and it is a property of the intake, not a defect in retirement.
+// Instrumented at the same seed, retirement takes almost only veterans (season 1: 209 retirees, mean
+// age 30.68, 87.6% past decline; season 2: 146 at 30.53, 86.3%) while every route that puts a player
+// on a professional roster puts them there young — `makeReplacements` and every one of
+// `ProRules.draftPickCount` picks call `RosterPopulationGenerator.replacement`, which sets
+// `22 + ordinal % 2` (season 1: 209 joiners at mean 22.46, none declining; season 2: 431 at 23.66).
+// `GameState.bootstrap` seeds the professional population from `gaussian(mean: 27, sd: 3)` clamped
+// to 22…34, whose veteran hump drains over roughly five seasons. The cohorts replacing it cross
+// their thresholds one room at a time — a player entering at 22 in season 1 is 27 at season 6
+// (`runningBack`), 29 at season 8, 30 at season 9 and 31 at season 10 — and that staircase is the
+// shape of the recovery, which is why the share climbs from season 6 rather than snapping back.
+//
+// **The trough is deeper than the four sampled seasons showed.** `measured` is [1, 3, 6, 10] and
+// never looks at season 5, so the failure reported 0.067. Sweeping every season to 12 at the same
+// seed puts the real minimum at **0.035, at season 5** — half the figure the suite could see. That
+// is the reason the floor below is asserted at every season and not only at a measured one: a floor
+// that never fires at the minimum is not a floor. It is the same defect `CLAUDE.md` names, where a
+// test's coverage boundary quietly becomes its quality boundary.
+//
+// Two candidate explanations were measured and rejected before the transient was accepted:
+//
+// 1. *Retirement outruns the intake.* A closed-form model of the retirement ladder against 22/23
+//    intake holds a flat 0.21…0.23 for twelve seasons and never troughs, while matching season 0 to
+//    three decimals. Retirement is not what empties the tail.
+// 2. *The check reads at the wrong instant.* It samples at the season boundary, after
+//    `ProMarketSystem.expireContracts` has emptied seats and before the market refills them — the
+//    roster runs 1327…1525 against 32x53. Sampling week 12 instead, where the league is fully seated
+//    at 1696, moves the share by about 0.006 (season 2: 0.166 at the boundary, 0.172 in-season).
+//    The gap is small because the seats refill with draft picks and young free agents rather than
+//    with the veterans who just expired — adding 285 players between season 1's boundary and season
+//    2's week 12 *lowered* the share, from 0.196 to 0.172. So the instant is not the cause either,
+//    and the check stays at the boundary rather than churning three call sites for 0.006.
+//
+// Hence two limbs rather than one, so the transient is described without the check losing its teeth:
+//
+// - `proPastDeclineFloor` holds at **every** season, transient or not. It is still a judgement about
+//   what "a veteran tail exists" means — the original floor's judgement, kept — but it is pinned to
+//   an arithmetic rather than left to taste: at 32 clubs and 53 seats, 32/1696 ≈ 0.019 is one
+//   past-decline player per club, so 0.02 is roughly "fewer than one veteran per club". The measured
+//   minimum of 0.035 clears it by 1.75x. Note the direction of the evidence, because it is the
+//   reason this is not simply the old floor moved down to fit: an estimate from
+//   `ProRules.initialRosterByPosition` against the decline thresholds predicted a 0.05…0.10 trough,
+//   and the measurement came in *under* that estimate, so the estimate is not load-bearing and the
+//   floor is set from what the model demonstrably does.
+// - `proPastDeclineShareBand` holds where the population **is** at rest: at bootstrap, which is the
+//   generator's own distribution, and again at the end of a long enough run, once the intake cohorts
+//   have matured. A transient that never recovered would fail there.
 //
 // Asserted at several season indices rather than once at the end, for the reason `ProSoakTests`
 // gives: a check that fires only at the finish says something drifted without saying when.
 
 private let proMeanAgeBand: ClosedRange<Double> = 25.0...27.5
 private let proPastDeclineShareBand: ClosedRange<Double> = 0.08...0.30
+private let proPastDeclineFloor = 0.02
 
 /// Both limbs of the age-curve band, over the active professional rosters.
 ///
 /// Practice squads are excluded on purpose: the anchor is a 53-man mean, and folding in a
 /// developmental pool of rookies would move the measured number for a reason the band is not about.
-func checkProAgeCurve(_ state: GameState, season: Int) {
+///
+/// - Parameter settled: whether the professional population is at rest at this season, and so
+///   whether `proPastDeclineShareBand` applies on top of `proPastDeclineFloor`. True at bootstrap
+///   and at the end of a run long enough for the intake cohorts to have matured; false inside the
+///   transient. Passed explicitly at every call site rather than defaulted, because assuming a
+///   population was at rest when it was not is the mistake this parameter exists to name.
+func checkProAgeCurve(_ state: GameState, season: Int, settled: Bool) {
     let players = state.proTeams.values.flatMap(\.rosterIDs).compactMap { state.players[$0] }
     guard !players.isEmpty else {
         expect(false, "season \(season): no professional players to measure an age curve over")
@@ -738,9 +810,25 @@ func checkProAgeCurve(_ state: GameState, season: Int) {
         format: "season %d: professional mean age %.2f is outside the band %.1f…%.1f",
         season, mean, proMeanAgeBand.lowerBound, proMeanAgeBand.upperBound
     ))
+    // Holds at every season, transient or not: below this the veteran tail has stopped existing.
+    expect(pastDeclineShare >= proPastDeclineFloor, String(
+        format: "season %d: %.3f of professionals are at or past their decline age, under the "
+            + "floor %.2f — the veteran tail has stopped existing, which no cohort transient "
+            + "explains",
+        season, pastDeclineShare, proPastDeclineFloor
+    ))
+    // The ceiling is derived and holds everywhere; the band's floor only describes a population at
+    // rest, so it is asserted where the population is one.
+    expect(pastDeclineShare <= proPastDeclineShareBand.upperBound, String(
+        format: "season %d: %.3f of professionals are at or past their decline age, over the "
+            + "derived ceiling %.2f",
+        season, pastDeclineShare, proPastDeclineShareBand.upperBound
+    ))
+    guard settled else { return }
     expect(proPastDeclineShareBand.contains(pastDeclineShare), String(
-        format: "season %d: %.3f of professionals are at or past their decline age, "
-            + "outside the band %.2f…%.2f",
+        format: "season %d: %.3f of professionals are at or past their decline age, outside the "
+            + "band %.2f…%.2f — and this season the population is settled, so the cohort "
+            + "transient does not account for it",
         season, pastDeclineShare,
         proPastDeclineShareBand.lowerBound, proPastDeclineShareBand.upperBound
     ))
@@ -1275,7 +1363,12 @@ func runM2SoakTests(seasons: Int) {
                 }
                 expect((45...85).contains(collegeOverall.reduce(0, +) / collegeOverall.count))
                 expect((55...90).contains(proOverall.reduce(0, +) / proOverall.count))
-                checkProAgeCurve(state, season: season)
+                // Settled at the final season: a 20-season run clears even the 31-year thresholds
+                // for cohorts that entered in season 1, so the population is at rest well before
+                // the end. Not verified at that horizon in the session that introduced this — the
+                // longest run measured was twelve seasons — so a failure here is a finding about
+                // the model rather than a mis-set flag.
+                checkProAgeCurve(state, season: season, settled: season == seasons)
                 checkRatingSpread(state, season: season, assertTierGap: true)
                 let currentRosters = rosterSnapshot(state)
                 checkChurn(from: previousRosters, to: currentRosters, season: season,
