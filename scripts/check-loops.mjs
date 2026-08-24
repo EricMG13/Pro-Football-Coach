@@ -69,7 +69,13 @@ const REQUIRED_STRINGS = {
   number: 3, slug: 80, title: 120, summary: 240, seoTitle: 160, description: 320,
   categoryLabel: 120, author: 120, published: 10, modified: 10, prompt: 5000,
   verifyTitle: 240, verifyDetail: 1000, useWhen: 1200, why: 1600, note: 1600,
+  cadence: 6,
 };
+
+// How long one widen-run-patch pass should take, so the register can render a real `/loop <cadence>`
+// command instead of leaving the reader to guess an interval. This is a pass budget, not a loop
+// lifetime: rule 5 still ends the loop after two consecutive clean passes, not the clock.
+const CADENCE = /^[1-9]\d{0,2}m$/;
 
 const ARRAYS = {
   steps: { min: 3, max: 12, itemMax: 1200 },
@@ -90,16 +96,35 @@ if (process.argv.includes("--write-register")) {
       [
         `### ${loop.number} — ${loop.title}`,
         "",
-        `\`${loop.slug}\` · ${loop.categoryLabel} · saved ${loop.modified}`,
+        `\`${loop.slug}\` · ${loop.categoryLabel} · saved ${loop.modified} · pass budget ${loop.cadence}`,
         "",
         loop.summary,
         "",
-        "Prompt:",
+        // Recurring: /loop repeats this prompt on the stated interval. Rule 5 still ends it after two
+        // consecutive clean passes -- the interval bounds one pass, not the loop's lifetime -- so stop
+        // it by hand (or let a dynamic /loop self-pace) once that condition is met.
+        `Run (repeats every ${loop.cadence} until you stop it or rule 5's clean-pass count is met):`,
         "",
-        `> ${loop.prompt}`,
+        "```",
+        `/loop ${loop.cadence} ${loop.prompt}`,
+        "```",
         "",
         ...(loop.companion
-          ? [`Companion prompt — ${loop.companion.title}:`, "", `> ${loop.companion.prompt}`, ""]
+          ? [
+              `Companion — ${loop.companion.title}` +
+                (loop.companion.expect ? ` (${loop.companion.expect})` : "") +
+                ":",
+              "",
+              // One-shot: hand this to a second agent as a single dispatch, never as /loop. The parent
+              // loop above already owns the repeat; looping the companion too would run the soak on
+              // its own independent clock and the two would drift apart.
+              "Run once, handed to a second agent -- do not `/loop` this:",
+              "",
+              "```",
+              loop.companion.prompt,
+              "```",
+              "",
+            ]
           : []),
       ].join("\n"),
     )
@@ -127,6 +152,10 @@ for (const loop of catalog) {
     } else if (value.trim().length > maxLength) {
       fail(where, `${field} is ${value.trim().length} characters, over the ${maxLength} cap`);
     }
+  }
+
+  if (!CADENCE.test(loop.cadence ?? "")) {
+    fail(where, "cadence must be whole minutes as e.g. '30m', matching the /loop command syntax");
   }
 
   if (!/^\d{3}$/.test(loop.number ?? "")) fail(where, "number must be exactly three digits");
@@ -195,8 +224,15 @@ for (const loop of catalog) {
           fail(where, `companion.${field} is ${value.trim().length} characters, over the ${maxLength} cap`);
         }
       }
+      // Optional: how long the companion's own run costs, so whoever takes the handoff knows before
+      // starting. Free text, not a cadence -- a companion is dispatched once, never looped.
+      if (c.expect !== undefined) {
+        if (typeof c.expect !== "string" || c.expect.trim() === "" || c.expect.trim().length > 200) {
+          fail(where, "companion.expect must be a non-empty string of at most 200 characters");
+        }
+      }
       for (const extra of Object.keys(c)) {
-        if (!["title", "prompt"].includes(extra)) fail(where, `companion has unknown field ${extra}`);
+        if (!["title", "prompt", "expect"].includes(extra)) fail(where, `companion has unknown field ${extra}`);
       }
     }
   }

@@ -11,7 +11,7 @@
     "categoryLabel": "Simulation determinism",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Pick one determinism surface in FootballSimCore that no current assertion pins: a store, ledger, scheduler or calendar field absent from the pinned fingerprints. Extend the --architecture-only suite to pin it by construction, then run ./scripts/verify.sh --lane determinism in two separate process invocations and compare. Fix any divergence in the engine, never by loosening a pin or re-recording a literal to match. Record each widening in docs/STATUS.md. Stop when two consecutive passes add coverage and find no divergence. Ask before changing an existing pinned fingerprint literal.",
     "verifyTitle": "Two separate process invocations of the widened determinism lane produce identical fingerprints.",
     "verifyDetail": "Run ./scripts/verify.sh --lane determinism twice as distinct processes on the same commit and seed, and compare the recorded root and one-week transition fingerprints byte for byte. The widened assertion must enumerate its field set by construction, so a field added later is covered the day it is added. A pass that only re-runs the existing pins is not evidence; the acceptance check is the widened pin holding, not the old one still passing.",
@@ -40,7 +40,8 @@
       "architecture-boundary-scan-widening",
       "save-durability-hunt",
       "season-transition-fuzz"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "number": "902",
@@ -54,7 +55,7 @@
     "categoryLabel": "Procedural world generation",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Name one property of a generated world that docs/02-GAME-DESIGN.md section 11 requires and no suite asserts: conference sizes summing to 134, division shape, roster position templates, trait distribution, jersey-number legality or rating spread. Assert it across a seed sweep, then run the --generation-only and --trait-population suites. Identity distribution has no flag of its own and is reached only by the default full run, so use that lane when the property touches names or identity. Fix the generator, not the invariant. Stop when two consecutive passes add an invariant and find no failure. Escalate any fix that would change a documented rules constant.",
     "verifyTitle": "The new invariant holds across the full seed sweep with the generator unchanged in shape.",
     "verifyDetail": "Run the generation suites over a seed sweep no smaller than the 200 leagues docs/02-GAME-DESIGN.md section 11.3.5 already uses for the legal tests, so one generation run serves both. Note that runIdentityDistributionTests is dispatched only from the default no-flag run, so a property touching names or identity is not covered by --generation-only alone. The invariant must be expressed against the rules module rather than a copied literal, so a change to the rules constant moves the assertion with it. A single-seed pass is not evidence: generation faults are seed-conditional by nature, and the seed that exposes one is exactly the seed nobody tried.",
@@ -83,7 +84,8 @@
       "legal-partition-sweep",
       "determinism-drift-hunt",
       "soak-horizon-extension"
-    ]
+    ],
+    "cadence": "60m"
   },
   {
     "number": "903",
@@ -97,7 +99,7 @@
     "categoryLabel": "Intellectual-property guardrail",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Enumerate every kind of name a generated world produces and check that each is swept by either the institution-kind check or the place-kind check, never neither. Extend the partition assertion by construction, then run the --legal-only suite across at least 200 leagues along with the trade-dress delta-E check on both members of each colour pair in both orientations. Fix generation, never the threshold. Stop when two consecutive passes add coverage and find nothing. Escalate every borderline identity to the owner; resolve none yourself.",
     "verifyTitle": "Every generated name is swept by exactly one limb, and no colour pair falls inside delta-E 25 on both members.",
     "verifyDetail": "Run --legal-only across at least 200 generated leagues, matching the sample docs/02-GAME-DESIGN.md section 11.3.5 fixes. The partition assertion must fail if a name kind is added that neither Blocklist.blocks nor Blocklist.blocksPlaceName is asked about, because a name that belongs to neither kind is a name nothing checks. Trade dress is CIE L*a*b* CIE76 delta-E 25 on both primary and secondary, checked in both orientations, since swapping the pair does not make it original.",
@@ -126,7 +128,8 @@
       "generation-invariant-widening",
       "surface-truthfulness-audit",
       "release-gate-traceability-loop"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "number": "904",
@@ -169,7 +172,8 @@
       "calibration-band-tightening",
       "gate-potency-sweep",
       "performance-budget-potency"
-    ]
+    ],
+    "cadence": "45m"
   },
   {
     "number": "905",
@@ -215,8 +219,10 @@
     ],
     "companion": {
       "title": "Calibration lane run",
-      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run ./scripts/verify.sh --lane calibration, the --m3-recruiting-calibration suite and the --two-tier-consistency gate. For every band report the TOST confidence interval and the margin, not a point estimate, and say for each whether the interval sits entirely inside the margin. Name the host. Report any band whose lane passed without asserting that the band holds, since a lane can validate its own mechanics and assert nothing about the model. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked."
-    }
+      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run ./scripts/verify.sh --lane calibration, the --m3-recruiting-calibration suite and the --two-tier-consistency gate. For every band report the TOST confidence interval and the margin, not a point estimate, and say for each whether the interval sits entirely inside the margin. Name the host. Report any band whose lane passed without asserting that the band holds, since a lane can validate its own mechanics and assert nothing about the model. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked.",
+      "expect": "expect 30-60 min"
+    },
+    "cadence": "45m"
   },
   {
     "number": "907",
@@ -262,8 +268,10 @@
     ],
     "companion": {
       "title": "Season-boundary sweep run",
-      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run the season-boundary sweep at the seed count the parent loop specifies, plus the --competition-only, --season-rollover, --realignment and --rivalry-order suites. Report per-seed pass and failure, and for each failure the season index, the transition step and the first assertion that broke, so the parent loop can reproduce it at a single seed rather than re-running the sweep. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked."
-    }
+      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run the season-boundary sweep at the seed count the parent loop specifies, plus the --competition-only, --season-rollover, --realignment and --rivalry-order suites. Report per-seed pass and failure, and for each failure the season index, the transition step and the first assertion that broke, so the parent loop can reproduce it at a single seed rather than re-running the sweep. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked.",
+      "expect": "expect 30-60 min"
+    },
+    "cadence": "60m"
   },
   {
     "number": "908",
@@ -277,7 +285,7 @@
     "categoryLabel": "College football systems",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Take one college acquisition rule that the rules module fixes and the suites do not enforce end to end: scholarship count, eligibility clock, redshirt legality, commitment uniqueness or portal window. Assert it after every transaction rather than at rest, then run the --college-commitments, --college-state, --redshirt-only, --portal-policy, --portal-transaction and --portal-scheduler suites. Fix the system, not the rule. Stop when two consecutive passes add a rule and find nothing. Escalate any rule the documents leave ambiguous.",
     "verifyTitle": "The rule holds after every transaction in the sweep, not only when the world is at rest.",
     "verifyDetail": "Assert immediately after each commitment, portal move, redshirt decision and scholarship award, because a system that reaches an illegal state and repairs it before the next week boundary still corrupts anything that read the state in between. Run the six college suites as a set. Express the assertion against the rules module constants so a rule change moves the check with it.",
@@ -306,7 +314,8 @@
       "pro-front-office-legality-sweep",
       "season-transition-fuzz",
       "people-lifecycle-drift-watch"
-    ]
+    ],
+    "cadence": "45m"
   },
   {
     "number": "909",
@@ -320,7 +329,7 @@
     "categoryLabel": "Professional front office",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Take one professional rule the rules module fixes and the suites check only at rest: cap compliance including permitted dead-money overage, contract validity, roster limits, depth-chart completeness or draft order. Assert it after every transaction, then run the --cap-compliance, --pro-management, --pro-market, --pro-draft-probe and --depth-chart suites. Fix the system, never the limit. Money stays integer dollars. Stop when two consecutive passes add a rule and find nothing. Escalate any ambiguity to canon before coding it.",
     "verifyTitle": "Every professional team is legal after every transaction, with overage attributable only to dead money.",
     "verifyDetail": "Run the five professional suites as a set after each change. Cap legality must hold for every team at every point the sweep observes, and any overage must be traceable to dead money rather than tolerated as slack. Confirm no currency value is held or computed as floating point, since docs and CLAUDE.md fix money as integer dollars and a rounding fault in a cap check reads as a rules bug.",
@@ -349,7 +358,8 @@
       "college-acquisition-legality-sweep",
       "career-arc-continuity-hunt",
       "soak-horizon-extension"
-    ]
+    ],
+    "cadence": "45m"
   },
   {
     "number": "910",
@@ -395,8 +405,10 @@
     ],
     "companion": {
       "title": "Lifecycle long-run measurement",
-      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run the long lifecycle horizon and the --people-lifecycle, --discipline, --roster-tenure, --injury-evidence and --programme-evolution suites. Report each watched distribution at every season index sampled, as a distribution rather than a mean: a drift that only shows in the tail is invisible in an average. Name any distribution that has no stated band, since an unbanded distribution cannot fail and must not be counted as watched. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked."
-    }
+      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run the long lifecycle horizon and the --people-lifecycle, --discipline, --roster-tenure, --injury-evidence and --programme-evolution suites. Report each watched distribution at every season index sampled, as a distribution rather than a mean: a drift that only shows in the tail is invisible in an average. Name any distribution that has no stated band, since an unbanded distribution cannot fail and must not be counted as watched. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked.",
+      "expect": "expect 30-60 min"
+    },
+    "cadence": "60m"
   },
   {
     "number": "911",
@@ -410,7 +422,7 @@
     "categoryLabel": "Coaching career arc",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Walk one coach career across the college-to-pro promotion and assert that one carried thing survives intact: career record, coaching tree, rivalry history, job security state, staff relationships or archived seasons. Run the --career-arc, --career-control, --coaching-tree, --professional-career-session and --history-archive suites. Fix the transition where something is dropped or duplicated. Stop when two consecutive passes add a carried thing and find nothing. Ask before changing what the promotion arc carries.",
     "verifyTitle": "Every asserted carried record is present, unduplicated and correctly attributed on both sides of the promotion.",
     "verifyDetail": "Assert on both sides of the boundary and after an archive cycle, since a record can survive promotion and be lost at the next season archive. Run --history-archive and --m7-gate alongside the career suites so archive accounting is checked in the same pass. Duplication counts as a failure: a doubled career record is as wrong as a missing one and is easier to miss.",
@@ -439,7 +451,8 @@
       "people-lifecycle-drift-watch",
       "save-durability-hunt",
       "surface-truthfulness-audit"
-    ]
+    ],
+    "cadence": "45m"
   },
   {
     "number": "912",
@@ -453,7 +466,7 @@
     "categoryLabel": "Architecture enforcement",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Take one source scan in the contract suite and check whether it enumerates its class by construction or spot-checks a hand-written list. Rewrite one hand-listed scan per pass to enumerate from the file system or the type graph, then run ./scripts/verify.sh --lane core. Fix every violation the wider scan finds. Stop when two consecutive passes widen a scan and find nothing. Ask before exempting any file from a boundary rule.",
     "verifyTitle": "Each rewritten scan fails when a violating file is added, without that file being listed anywhere.",
     "verifyDetail": "Prove the widening by adding a deliberately violating file, confirming the scan fails, then removing it. A scan that passes both before and after has not been widened. Run --core-contracts after each rewrite. The rules to hold are zero SwiftUI imports under FootballSimCore, no seed derived from hashValue, no GameState named in the UI target, and inside the composition layer the same rule file by file rather than module by module.",
@@ -482,7 +495,8 @@
       "determinism-drift-hunt",
       "design-token-discipline-sweep",
       "release-gate-traceability-loop"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "number": "913",
@@ -496,7 +510,7 @@
     "categoryLabel": "Persistence and migration",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Construct one hostile save the suite does not currently cover: truncated envelope, corrupted entity key, invalid calendar, malformed history ledger, an older schema version or a newer one. Assert it is refused or migrated with a plain message and no partial open, then run the --save-document, --history-archive and --core-contracts suites. Fix the decode path, never the assertion. Stop when two consecutive passes add a hostile input and find nothing. Ask before changing the save schema version.",
     "verifyTitle": "Every hostile input is refused or migrated cleanly, with whole-root integrity re-checked on decode.",
     "verifyDetail": "A newer-schema save must be refused with a plain message rather than partially opened, and a corrupted one must reach the recovery path rather than a crash. Whole-root integrity is enforced again when a save root decodes, so assert that the integrity check actually ran rather than that the decode returned. Run --save-document with --history-archive so ledger and archive accounting are attacked in the same pass.",
@@ -525,7 +539,8 @@
       "determinism-drift-hunt",
       "soak-horizon-extension",
       "career-arc-continuity-hunt"
-    ]
+    ],
+    "cadence": "45m"
   },
   {
     "number": "914",
@@ -571,8 +586,10 @@
     ],
     "companion": {
       "title": "Soak run",
-      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run ./scripts/verify.sh --lane soaks and the --m3-soak suite at shipping league size, and the --m7-gate history lane if the request names it. Report every assertion's result, the save size at each checkpoint against the 8 MB ceiling, and the growth curve of every collection that grows across seasons. A collection reported as bounded by inspection rather than by a growth check is reported as unbounded. Do not reduce league size or shorten the horizon to make a run fit; if it will not fit, report that instead. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. The soaks run for tens of minutes and the history lane for up to about an hour and a half: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked."
-    }
+      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run ./scripts/verify.sh --lane soaks and the --m3-soak suite at shipping league size, and the --m7-gate history lane if the request names it. Report every assertion's result, the save size at each checkpoint against the 8 MB ceiling, and the growth curve of every collection that grows across seasons. A collection reported as bounded by inspection rather than by a growth check is reported as unbounded. Do not reduce league size or shorten the horizon to make a run fit; if it will not fit, report that instead. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. The soaks run for tens of minutes and the history lane for up to about an hour and a half: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked.",
+      "expect": "expect 40 min to 1.5 h; the history lane is the long end"
+    },
+    "cadence": "45m"
   },
   {
     "number": "915",
@@ -618,8 +635,10 @@
     ],
     "companion": {
       "title": "Budget measurement run",
-      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run each performance budget command on a warmed build, three times, discarding no result. Report every figure with its target and its hard ceiling, and the host: model, core count, memory and operating system. Say explicitly for each whether the command asserted the threshold or merely printed the figure, because a printed figure is evidence and an asserted threshold is a gate. Host figures are host figures and never close a device budget. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked."
-    }
+      "prompt": "Run only what this prompt names, on the commit named in the request, built with -c release. Do not widen an assertion, tighten a band, adjust a budget or fix anything: this pass reports. Run each performance budget command on a warmed build, three times, discarding no result. Report every figure with its target and its hard ceiling, and the host: model, core count, memory and operating system. Say explicitly for each whether the command asserted the threshold or merely printed the figure, because a printed figure is evidence and an asserted threshold is a gate. Host figures are host figures and never close a device budget. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort, and an abort is reported as an abort rather than as a failure. A release build plus the lane itself runs long: start it detached and never read a long silence as a hang. If there is no Swift toolchain, stop and report blocked.",
+      "expect": "expect 20-40 min, most of it the release build"
+    },
+    "cadence": "45m"
   },
   {
     "number": "916",
@@ -633,7 +652,7 @@
     "categoryLabel": "Accessibility contract",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Take one accessibility check and confirm it enumerates all 62 screen families by construction rather than a sampled list. Widen one check per pass, then run ./scripts/verify.sh --lane accessibility. Fix every surface the wider check fails, at the supported layout floor and at AX5, in both appearances and both sensor orientations. Stop when two consecutive passes widen a check and find nothing. Ask before exempting a surface from the contract.",
     "verifyTitle": "Each widened check covers every registered screen family and fails when a new non-conforming surface is added.",
     "verifyDetail": "Prove the widening by adding a non-conforming surface, confirming the check fails, then removing it. Run --design-contracts, --reduce-motion and --screen-read-models together. The matrix is the supported layout floor of 844 by 390, both appearances, default and AX5 type, and sensor-left and sensor-right safe-area ownership. A check that passes on a sampled subset is a spot check, which the project classes as a defect rather than coverage.",
@@ -663,7 +682,8 @@
       "design-token-discipline-sweep",
       "surface-truthfulness-audit",
       "architecture-boundary-scan-widening"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "number": "917",
@@ -677,7 +697,7 @@
     "categoryLabel": "Design system enforcement",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Pick one design-system rule enforced by a scan: token literals, the symbol register, or the motion register. Confirm the scan enumerates the whole view layer by construction, widen it if not, then run ./scripts/verify.sh --lane accessibility and the --core-contracts suite. Replace every literal the wider scan finds with its token; never add an exemption. Stop when two consecutive passes widen a scan and find nothing. Ask before adding a token, symbol or motion to the registry.",
     "verifyTitle": "Each scan covers every file in the view layer and fails when a literal or unregistered symbol is introduced.",
     "verifyDetail": "Prove the widening by introducing a literal and an unregistered symbol, confirming both fail, then removing them. Run --core-contracts and --design-contracts. A design-token literal in a view is a defect by project convention, so the scan finding one is the scan working, and the fix is the token rather than the exemption.",
@@ -706,7 +726,8 @@
       "accessibility-matrix-widening",
       "architecture-boundary-scan-widening",
       "surface-truthfulness-audit"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "number": "918",
@@ -720,7 +741,7 @@
     "categoryLabel": "Product UI audit",
     "author": "Pro Football Coach project",
     "published": "2026-08-19",
-    "modified": "2026-08-19",
+    "modified": "2026-08-23",
     "prompt": "Take one screen family and map every displayed fact to a named read model. Anything with no source is a truthfulness defect, not a placeholder. Score the family on all eight dimensions of docs/04b-AUDIT-RUBRIC.md and run the --screen-read-models, --history-read-model and --core-contracts suites. Fix P0 and P1 findings before anything else, and classify borderline findings upward. Stop when a family reaches 31 of 40 with no P0 or P1. Ask before inventing any figure the engine does not produce.",
     "verifyTitle": "Every displayed fact maps to a named read model and the family scores at least 31 of 40 with zero P0 or P1.",
     "verifyDetail": "The gate is 31 of 40 across eight dimensions with no P0 or P1 and no automatic design-specificity rejection. Run --screen-read-models and --core-contracts so reachability and error-surface assertions run in the same pass; an unreachable screen and a captured-but-unpresented error are both defects the suite can own. A production screen never carries a reference-data label, so a fixture left visible is itself a finding.",
@@ -749,7 +770,8 @@
       "accessibility-matrix-widening",
       "design-token-discipline-sweep",
       "legal-partition-sweep"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "number": "919",
@@ -793,7 +815,8 @@
       "performance-budget-potency",
       "architecture-boundary-scan-widening",
       "legal-partition-sweep"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "author": "Pro Football Coach project",
@@ -839,8 +862,10 @@
     ],
     "companion": {
       "title": "E2E-H durability walk",
-      "prompt": "Run only the twenty-plus season durability journey, E2E-H, on the commit named in the request, built with -c release. Expect tens of minutes; run it detached and do not read a long silence as a hang. At each season checkpoint report save size, load and write time, deterministic reload equality, bounded-collection growth and whether every screen family is still operable. Do not widen an assertion, tighten a budget or fix anything: report only. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort to be reported as an abort, not as a failure. If there is no Swift toolchain, stop and report blocked."
-    }
+      "prompt": "Run only the twenty-plus season durability journey, E2E-H, on the commit named in the request, built with -c release. Expect tens of minutes; run it detached and do not read a long silence as a hang. At each season checkpoint report save size, load and write time, deterministic reload equality, bounded-collection growth and whether every screen family is still operable. Do not widen an assertion, tighten a budget or fix anything: report only. The run counts as complete only if it ends with the suite summary line; a non-zero exit with no summary is an abort to be reported as an abort, not as a failure. If there is no Swift toolchain, stop and report blocked.",
+      "expect": "expect 1 h or more"
+    },
+    "cadence": "60m"
   },
   {
     "author": "Pro Football Coach project",
@@ -883,7 +908,8 @@
       "surface-truthfulness-audit",
       "e2e-journey-walk",
       "accessibility-matrix-widening"
-    ]
+    ],
+    "cadence": "30m"
   },
   {
     "author": "Pro Football Coach project",
@@ -926,7 +952,8 @@
       "release-gate-traceability-loop",
       "calibration-band-tightening",
       "performance-budget-potency"
-    ]
+    ],
+    "cadence": "45m"
   },
   {
     "author": "Pro Football Coach project",
@@ -969,7 +996,8 @@
       "release-gate-traceability-loop",
       "gate-potency-sweep",
       "soak-horizon-extension"
-    ]
+    ],
+    "cadence": "45m"
   },
   {
     "author": "Pro Football Coach project",
@@ -1012,7 +1040,8 @@
       "release-gate-traceability-loop",
       "ci-lane-routing-audit",
       "architecture-boundary-scan-widening"
-    ]
+    ],
+    "cadence": "60m"
   },
   {
     "author": "Pro Football Coach project",
@@ -1055,7 +1084,8 @@
       "release-gate-traceability-loop",
       "gate-potency-sweep",
       "ci-lane-routing-audit"
-    ]
+    ],
+    "cadence": "90m"
   },
   {
     "author": "Pro Football Coach project",
@@ -1098,6 +1128,7 @@
       "accessibility-matrix-widening",
       "surface-truthfulness-audit",
       "packaging-submission-readiness"
-    ]
+    ],
+    "cadence": "30m"
   }
 ]
