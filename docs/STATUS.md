@@ -206,14 +206,34 @@ The honest picture: what exists, what is verified, what is not.
 > further. It rules the draft out as the cause of the band and points at the two open items below,
 > which are the ones that decide whether a veteran comes back onto a roster at all.
 >
-> **What is still open, and it is what keeps the league short.** Free agency signs at most one
-> player per club per week and stops for a club once it reaches `activeRosterLimit - draftRounds`,
-> which is 46; across a season that is about two signings a club against seven to eleven expiries,
-> so 1,696 is never regained. And **`poolLeft` reaches 512 by season 3, which is
-> `ProMarketState.maximumFreeAgentIDs` exactly** — the pool is saturated, and the bound then refuses
-> every further release, which is where the probe's growing `unaccounted` count comes from. Both sit
-> inside the professional turnover FSC-013 defers and both would move roster composition
-> league-wide, so neither was pulled here.
+> **Free agency's throughput is not a defect, and the league is not chronically short — measured
+> 2026-08-23.** With the draft finishing, the boundary count is exactly `1,696 - expiries` in every
+> season (1,439 against 257, 1,496 against 200, 1,526 against 170, 1,341 against 355), and a
+> mid-season sample at week 12 reads **1,696 in every season**. The league is fully seated for the
+> whole year and short only in the instant between expiry and the market reopening. An earlier
+> revision of this entry said free agency's two-signings-a-season throughput kept it short; with the
+> draft stuck that was true, and with the draft fixed it is not.
+>
+> **The band is not a sampling artefact, and that was tested rather than assumed — 2026-08-23.**
+> The obvious suspicion, once the league proved to be fully seated mid-season, was that the band
+> samples at the boundary trough: `n` reads 1,411…1,496 there against 1,696 a few weeks later, and
+> the band's own anchor is "a 53-man mean". The sibling injured-share band had already moved its
+> sample in-season for a related reason. So the age-curve sample was moved to the same in-season
+> week and measured. **It reads 0.228, 0.228, 0.149, 0.056 and 0.147 at the sampled seasons, against
+> 0.228, 0.196, 0.134, 0.067 and 0.161 at the boundary — season 6 is *worse*, not better.** The full roster
+> carries the 223 rookies the draft has just seated, and that dilutes the veteran share by more than
+> the departed veterans concentrate it. The experiment was reverted. **The model genuinely does not
+> retain enough post-decline professionals, on any sample point**, which is an owner decision about
+> the model and not a test that is looking in the wrong place.
+>
+> **The free-agent pool was choosing its members by coin toss — fixed 2026-08-23.**
+> `ProMarketSystem.openOffseason` rebuilds the pool each offseason from every unattached
+> professional, and `maximumFreeAgentIDs` caps it at 512, which the unattached population passes
+> within a few seasons. It took that 512 by `sorted { $0.uuidString < $1.uuidString }.prefix(512)` —
+> an arbitrary slice, and because a UUID never changes, **the same arbitrary slice every season**.
+> Everyone outside it was unsignable for the rest of the save, whatever they could still do, and
+> free agency's "best available" was the best of a coin toss rather than the best there was. The cut
+> is now by rating, ties on identifier, with the same bound.
 
 > **2026-08-20 — Calibration continuation:** the fresh isolated
 > `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**
@@ -263,6 +283,54 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-23 — the heat scale caught up with canon, and the parser that hid the gap was the
+> reason it could.** `--core-contracts` was red on `main` for one check:
+> `Design token sync / Heat.color's banding matches 04 section 6.4's stated heat scale`, failing in
+> its own guard with "the parser, not the tokens, is what failed". That was accurate and it
+> understated the position. `60f0c2d` amended `04` §6.4 on 2026-08-22 from a three-band
+> red/amber/green scale to a **five-band table** diverging around a neutral centre, so that an
+> average starter stops reading as a caution. Nothing downstream followed: `CoachWorldTokens.Heat`
+> still held a three-case switch, and the test read canon with `matches(of: "red below (\d+)")`, so
+> the moment canon became a table the check stopped examining the tokens at all. **A test that
+> reads canon in one syntax is a test canon can silently outrun.**
+>
+> **Now implemented.** `Heat` carries the five bands — 40-59 `state.negative`, 60-69
+> `state.warning`, 70-79 `content.secondary`, 80-84 `state.positive` lightened, 85-99
+> `state.positive` — and is the single definition every surface that colours a rating already
+> resolved through (nine files, `CoachWorldRatingRing` among them), so all nine moved together. The Above band is **derived, not a new hex**:
+> `state.positive` mixed 30% toward `content.primary` (`#81DDAE` as it resolves today), so
+> re-valuing the positive role moves the band with it rather than leaving it behind, which is the
+> failure this whole entry is about.
+>
+> **`state.warning` moved with it, because §6.4 names "the amended `state.warning`".** §6.1a(ii)
+> derived `#C9704A` on 2026-08-22 — 24.1° off gold, 5.57:1 on `world.page` — and the palette still
+> shipped `#FFB03A` at 6.1° off gold. Gold marks the committing action and carries no other
+> meaning; a caution that close to it is the collision the amendment calls "the serious one". `04`
+> §6.1a's table and its filled-ink measurements now state the shipped value.
+>
+> **The test now reads the table.** `canonHeatBands` parses §6.4's rows, asserts the five bands
+> partition `scaleFloor...scaleCeiling` with no gap or overlap, and checks every rating from 40 to
+> 99 against the role its band names — plus §6.4's two stated constraints, 4.5:1 on `world.page`
+> and 24° off gold, at every rating. It ships the planted-offender self-test the other scans do:
+> the superseded prose sentence must **not** parse as bands.
+>
+> **The other three collisions are closed too, as declared aliases** — the resolution §6.1a(ii)
+> itself names. Each shared value is declared once in the token layer and referenced by every role
+> that takes it, so `state.negative`/`action.destructive` and `state.info`/`pro.identity` are one
+> declaration apiece instead of a literal typed twice, and **`state.live` now resolves to
+> `state.positive`'s `#4FD08C`** in place of `#37E08A`. That is a visible change — the live
+> indicator is very slightly duller green — and it removes a second-order incoherence the collision
+> table never reached: `field.live` already shipped `#4FD08C` while `state.live` shipped `#37E08A`,
+> so the two roles that both mean *in play* did not agree with each other.
+>
+> **Enforcing it by construction found two more pairs than canon's table listed:**
+> `content.primary`/`field.line` and `content.secondary`/`action.secondary`. The table was measured
+> over state and action roles, so it could not see a pair spanning content and field — the coverage
+> boundary again. `DesignContractTests` now asserts **no colour literal appears twice** in
+> `DesignTokens.swift`, with a planted-duplicate self-test, and deliberately does *not* pin which
+> roles are equal: canon wants diverging a pair on purpose to stay possible, and a pinned equality
+> would forbid it.
+
 > **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
 > Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
 > `GameState.bootstrap(seed: 20_260_812)` generates: **94 of the 166 team identifiers moved**, and
@@ -302,6 +370,21 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > `--legal-only` passes at 30 tests / 193 checks. No PNG was added, removed or re-rendered: every
 > one of the 166 packaged marks is still shipped and still owner-approved as artwork; what is
 > outstanding is which team each one belongs to.
+
+> **2026-08-23, later the same day — the 52 pictures landed, and the pin is now zero.** Merging
+> `codex/logos` replaces every one of the 166 packaged PNGs, the 52 stranded marks among them, and
+> adds `CanonicalTeamBranding`, an owner-approved id/name/nickname/colour table the league generator
+> applies at the canonical seed. That inverts the repair: rather than re-brief 52 records to chase
+> names the re-key had moved, the world is renamed to the identities the artwork was selected under,
+> so `manifest.json` carries no `awaiting a regeneration run` record at all. `"the artwork still owed
+> is counted, not left to a red gate"` is therefore pinned at **0**, not 52, and this paragraph is
+> the section that had to move with it. The gate is unchanged in kind: a future re-key that strands
+> a mark makes the count non-zero and fails here.
+>
+> Measured on the merge result, not inferred: `swift build -c release` of `SimTests` is green with
+> no errors; `Team logo manifest` passes **10 tests / 18,213 checks**; `Legal: name collision` (20
+> tests), `Legal: trade dress` (7) and `Legal: shipped copy` (3) all pass. The full default sweep
+> was not run to completion, so nothing here claims it.
 
 > **Current-tree verification boundary — 2026-08-21.** On the working tree at `a547404`, the
 > canonical release-mode `--catalog` command lists **19 registered gates, 19 runnable commands,
@@ -3578,6 +3661,20 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 | `PRODUCT.md` | Rewritten from the §6.3 gap argument | — |
 
 **Nothing in this table has been compiled, because there is nothing to compile yet.**
+
+> **Superseded 2026-08-23.** That sentence is true of the *table*, which lists documents only, and
+> false of the repository it now reads as describing. `Sources/` holds three targets and 317 Swift
+> files; `Tests/SimTests` is a running suite. What is compiled, and what each run actually covered,
+> is the dated evidence above this section — not this table, which was never extended past the
+> document package and is kept for that record.
+>
+> The same pass corrected the structural documents that had drifted from the tree: `03b` §1 (the
+> module layout, and `CoachWorldApp`, which it never mentioned), `03b` §2–§3 (three type names that
+> were never built), `03b` §4 (the save is zlib-compressed and shipping, not gzip-and-pending),
+> `03b` §5 (the test layout and the `-Xswiftc -enable-testing` flag a release run cannot omit),
+> `DOC-MANIFEST` §7 (it still described the pre-P0 tree as prior art), and `06` (two of its fifteen
+> named tests do not exist). `README.md` pointed at a deleted handoff and at an Xcode project path
+> `xcodegen` does not write.
 
 ---
 

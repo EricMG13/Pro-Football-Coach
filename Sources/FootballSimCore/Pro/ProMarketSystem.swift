@@ -85,15 +85,30 @@ public enum ProMarketSystem {
         )
         let owned = Set(state.programmes.values.flatMap(\.rosterIDs))
             .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        // Ranked before it is cut, and the ranking is the point. `maximumFreeAgentIDs` is 512 and
+        // the unattached population passes that inside a few seasons, so the `prefix` is doing real
+        // work every offseason. Sorted by identifier, it took an arbitrary 512 — and because a UUID
+        // never changes, it took the *same* arbitrary 512 every season, locking the rest out of the
+        // league permanently. A club could not sign them, so they never played again, whatever they
+        // could still do.
+        //
+        // Sorted by rating, the pool is the best 512 available, which is also what the free-agency
+        // policy immediately below assumes when it signs "best available": before this it was
+        // choosing the best of a slice picked by a coin toss. The bound `03b` requires is unchanged.
+        // Ties break on identifier so the cut is still the same on every run.
         let freeAgents = state.players.values
             .filter { player in
                 player.eligibility == nil
                     && player.contract == nil
                     && !owned.contains(player.id)
             }
-            .map(\.id)
-            .sorted { $0.uuidString < $1.uuidString }
+            .sorted { lhs, rhs in
+                lhs.overall.value == rhs.overall.value
+                    ? lhs.id.uuidString < rhs.id.uuidString
+                    : lhs.overall.value > rhs.overall.value
+            }
             .prefix(ProMarketState.maximumFreeAgentIDs)
+            .map(\.id)
 
         var next = state
         guard next.proMarket.open(

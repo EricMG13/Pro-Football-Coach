@@ -4,9 +4,12 @@
 > the end-to-end goal is the primary authority. Follow milestones M0–M9 in its
 > `06-BUILD-ROADMAP-AND-GATES.md` — since 2026-08-12 imported at
 > `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` with manifest rows. This file remains historical detail for the preserved P0–P4
-> foundation and its existing gates. M0 architecture hardening, M1 playable world, and M2 people
-> lifecycle have exited; the active dependency milestone is M3 college management. Do not resume isolated P4 tuning ahead
-> of the roadmap's interconnected tactical and product-completion work.
+> foundation and its existing gates. M0 architecture hardening, M1 playable world and M2 people
+> lifecycle have exited; M3 college management, M4 tactical, M5 career, M6 professional and M7
+> living world/history have implemented slices, and the active milestone is M8 production UI —
+> `docs/STATUS.md` carries which gates were green on which commit, and is the authority over this
+> line. Do not resume isolated P4 tuning ahead of the roadmap's interconnected tactical and
+> product-completion work.
 
 Phased build with per-phase gates. One phase at a time; a phase is not done until its gates are
 green.
@@ -29,8 +32,8 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 
 | Gate | Requirement |
 |---|---|
-| **G1 Build green** | `swift build` clean. Asserted only by having run it in the session that claims it — see the D11 note below. |
-| **G2 Tests green** | `swift run -c release SimTests` passes in full. Same rule: run it, or do not claim it. |
+| **G1 Build green** | `./scripts/verify.sh --build` clean. Asserted only by having run it in the session that claims it — see the D11 note below. |
+| **G2 Tests green** | `./scripts/verify.sh` passes in full — the build, then the whole suite, ending in TestKit's `N tests, M checks` summary. A run that stops short of that line is a truncated run, not a red one, and is not evidence either way. Same rule: run it, or do not claim it. Run by hand it is `swift run -c release -Xswiftc -enable-testing SimTests`; the flag is not optional (`03b` §5). |
 | **G3 Surface audit** | Touched surfaces score **≥31/40 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md` — its eight dimensions at 0–5 each, owner-approved 2026-08-11. The older ≥17/20 five-dimension frame (Accessibility, Performance, Appearance & Theming) is superseded and the bars are not equivalent. |
 | **G4 Scope** | The diff contains what the phase specifies and nothing else. No opportunistic refactors. |
 | **G5 Calibration** | All bands in `03` §5 hold under TOST. |

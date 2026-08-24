@@ -86,6 +86,7 @@ at. **There is no archive as of 2026-08-10** — the superseded documents were d
 | `*-v3.dc.html` (8 root sheets) | **The definitive design references** (owner-approved 2026-08-12): composition and states for the `04` §6.5 registry. Renders and index in `docs/proofs/design-references/`. Five first-example screen mockups (HQ, Roster, Player Profile, Recruiting Board, Match Day): `docs/proofs/screen-mockups/` (not canon, not a ninth sheet, not the full 62). A rendering — `04` still owns every value |
 | `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
+| `docs/roadmap/` | The Master Build Documentation. `06-BUILD-ROADMAP-AND-GATES.md` defines the M0–M9 milestones the rest of the repo names, and is the build ordering `05` defers to |
 | `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |
 | `docs/OPEN-DECISIONS.md` | Decision register D1–D14, each with an instrumented falsifier. **D11 closed 2026-08-09** |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | Phase-entry prompt. **Owns mission and definition of done** |
@@ -175,7 +176,7 @@ Agent environments frequently have **no `swift` and no `xcodebuild`**, and the e
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Pro-Football-Coach** (18416 symbols, 87323 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Pro-Football-Coach** (18859 symbols, 87924 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

@@ -23,11 +23,16 @@ setting, and `CLAUDE.md` requires one phase at a time with adversarial review at
 
 **Resumption contract — do this every time you start:**
 
-1. Read `docs/DOC-MANIFEST.md`. It is the authority on what is canon. **A document not listed there
-   as `RETAINED` carries no authority**, whatever path it sits at. There is no archive; superseded documents were deleted (see `docs/DOC-MANIFEST.md`).
-2. Read `CLAUDE.md`, then `docs/OPEN-DECISIONS.md`, then `docs/05-IMPLEMENTATION-PLAN.md`.
+1. Read `docs/DOC-MANIFEST.md`. It is the authority on what is canon, and its rule has **two
+   limbs**: a document carries authority if it is listed there as `RETAINED` **or** is one of the
+   canon paths in its §4 (which includes all of `docs/roadmap/`). **Anything else carries none**,
+   whatever path it sits at. Quoting only the first limb inverts the rule and strips authority from
+   most of canon. There is no archive; superseded documents were deleted (see `docs/DOC-MANIFEST.md`).
+2. Read `CLAUDE.md`, then `docs/OPEN-DECISIONS.md`, then
+   `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` — the M0–M9 milestone sequence `05` defers to — and
+   `docs/05-IMPLEMENTATION-PLAN.md` for the P0–P4 foundation detail and the G1–G8 gate definitions.
 3. Read `docs/STATUS.md` for the honest state of the build.
-4. Find the **first phase whose gates are not green**. That is your phase.
+4. Find the **first milestone whose exit gates are not green**. That is your phase.
 5. Check whether that phase is blocked (see escalation triggers). If it is, stop and escalate.
 6. Run `superpowers:writing-plans` against that phase's section of `05` to produce a bite-sized task
    plan. Save it to `docs/plans/`.
@@ -57,9 +62,9 @@ Done is split, because this environment cannot reach half of it.
   open, in what order, what should be true at each step — and hand it over.
 - The D1 timing protocol, the D9 onboarding protocol, the D6 identity protocol.
 
-**If there is no Swift toolchain** — and there frequently is not; `swift` and `xcodebuild` have been
-absent from every agent environment in this project's history, and `download.swift.org` is refused by
-egress policy — then:
+**If there is no Swift toolchain** — and there frequently is not, though it is no longer always so:
+D11 closed on 2026-08-09 by running the gates, and sessions since have had Swift and Xcode on the
+host. Where they are absent, `download.swift.org` remains refused by egress policy, and then:
 
 - Write the code anyway, to the same standard.
 - Record it in `docs/STATUS.md` as **unverified — never compiled**, naming the files.
