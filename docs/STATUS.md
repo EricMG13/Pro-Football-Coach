@@ -4,6 +4,71 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-24, later still — the citation sweep no earlier pass had run.** Deliberately not
+> numbered: two sessions worked this branch simultaneously today and both would have called
+> themselves the fifth. The passes below swept canon for absent test names, then for named
+> instruments that ship but cannot fail. This one swept the references themselves — every
+> cross-document section reference, and every intra-canon line-number citation, resolved against
+> the document it names. It ran before the entry above and landed after it.
+>
+> - **`03` has no section 3.5, and six live sites cited it.** The ambient-identity scan's `Model/`
+>   exemption is clause 5 of `03` §3's numbered list; the passage explaining it is an *unnumbered*
+>   subsection. `03b` §1 (three sites), `05`'s G6 row,
+>   `Sources/FootballSimCore/Model/Player.swift` and `Tests/SimTests/Suites/ContractTests.swift`
+>   all pointed a reader at a heading that has never existed. Retargeted to "§3 clause 5" rather
+>   than numbering the subsection, because the citations do not agree on what they mean:
+>   `docs/plans/2026-08-09-p0-foundation.md` uses §3.5 for the seeding hierarchy, which is clause 6,
+>   so numbering one would have blessed the wrong reading. `docs/PORT-LOG.md:75` and five sites in
+>   that plan are still stale, left alone as dated records this pass may not rewrite.
+> - **The engine holds twenty-two directories; `03` §3 and `03b` §1 said twenty-three.** Twenty at
+>   the top of `Sources/FootballSimCore/` plus `Rules/CollegeRules` and `Rules/ProRules`. It was 22
+>   at `4bb16480` as well, so this was wrong when written rather than overtaken since. The same
+>   sentence's own arithmetic already said so — "a hand list of four would give the other eighteen
+>   zero coverage" is 22 minus 4. The argument was right; only the number was wrong.
+> - **Four line-number self-citations in `04` point at unrelated text.** §6.7 cited `04:826` twice
+>   for the global Reduce Motion rule and `04:448` twice for the Match Day live-dot rule. The
+>   2026-08-22 five-band heat-scale amendment pushed both targets away: 826 now lands inside the
+>   heat scale, 448 inside the filled-control ink measurements. Retargeted to §7 and §6.1b, which
+>   hold the two rules verbatim and do not move when the file is edited. These were the only four
+>   intra-canon line-number citations in the governing documents; there are now none.
+> - **`docs/loops/` merged in from `main` unclassified, which made `DocumentManifestTests` red.**
+>   That suite walks every directory under `docs/` holding markdown and fails if `DOC-MANIFEST`
+>   does not name it. The loop series arrived during this pass with a `README.md` and no §8 row —
+>   the assertion working exactly as designed, on the first directory added since it was written.
+>   Classified as carrying no authority, in the directory's own words.
+>
+> Two sweeps came back clean and are recorded so the next pass need not repeat them; the entry
+> above reports the same two clean independently, which is agreement rather than duplication.
+> Every markdown link and rooted repo path in `README.md`, `CLAUDE.md`, `PRODUCT.md` and the canon
+> documents
+> resolves — the unresolved `docs/` paths in `DOC-MANIFEST.md` are its own DELETED rows, which is
+> what that table is for. And every backticked Swift identifier in canon either ships or is already
+> annotated as owed by the passes below. One method note for whoever runs it next: match against
+> comment-stripped sources **and** file names. Matching file *contents* alone reports
+> `DocumentManifestTests` absent, because `runDocumentManifestTests` is what ships it — the mirror
+> image of the `OrientationPolicyTest` mistake, and just as wrong.
+>
+> One prose repair with no finding behind it: the 2026-08-24 correction that widened the
+> `-Xswiftc -enable-testing` note from one module to three left `README.md` reading "infer
+> testability for one — so a release run", and left `03b` §5 carrying a 147-column line.
+>
+> **A concurrent session merged `origin/main` into this branch, in this working directory, while a
+> lane was building.** The first `--lane accessibility` attempt died at
+> `error: input file .../SeasonLifecycleSystem.swift was modified during the build` — a build race,
+> not a test result, and `verify.sh`'s truncation guard reported it as TRUNCATED rather than as a
+> pass. The merge is `62167f61`; all five commits and every fix above survived it, checked
+> individually. The re-run was made in a `git clone --shared` of this repository so a second merge
+> could not race it. Anyone running a long lane here should do the same.
+>
+> Verification, against `f0f46855` in that isolated clone (Swift 6.3.3, arm64-apple-macosx26.0),
+> both lanes ending at TestKit's summary line:
+> `./scripts/verify.sh --lane core` — `235 tests, 3448 checks`, `PASS core-contracts`.
+> `./scripts/verify.sh --lane accessibility` — `PASS design-contracts` (`56 tests, 1049 checks`),
+> `PASS reduce-motion` (`5 tests, 10 checks`), `PASS read-models` (`74 tests, 9997 checks`).
+> No other lane was run and no claim is made about any of them, including the `full` check that is
+> red on `main` for the lifecycle age band. An earlier `--lane core` on the pre-merge tree also
+> reported `235 tests, 3448 checks`; it is superseded by the run above and is not the evidence here.
+
 > **2026-08-24, later — the trade-dress guardrail reads as a compliance statement and is an
 > exception list.** This pass reconciled `docs/pass-2026-08-23` with `main` and then swept the
 > merged tree. The merge produced one conflict, in this file, where both sides had prepended a dated
