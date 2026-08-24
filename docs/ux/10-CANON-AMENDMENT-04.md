@@ -1,6 +1,7 @@
 # 10 — Proposed amendment to `docs/04-UX-AND-DESIGN-SYSTEM.md`
 
-**Status: MERGED into `docs/04-UX-AND-DESIGN-SYSTEM.md` — this file is the reasoning, not the rule.**
+**Status: MERGED into `docs/04-UX-AND-DESIGN-SYSTEM.md` — this file is the reasoning, not the rule.
+Part D was merged and has since been REVERSED; read `04` §6.4, not part D below.**
 Corrected 2026-08-23: this said "DRAFT, not canon until merged into `04` itself" long after commit
 `2f6d2fd4` merged all six parts. §2.1, §6.1a, §6.1d, §6.4's five-band heat scale and §4.5's density
 budget all carry the amendment now, so `04` is the authority and a disagreement between the two is a
@@ -127,6 +128,19 @@ warm hue *below* the median, and prints the band table on the surface that uses 
 ---
 
 ## D. Amend §6.4 — ranged ratings are the form of an unearned number
+
+> **REVERSED 2026-08-23. Do not build this.** The proposal below waits on a scouting-confidence
+> model, and the product decided against that model rather than deferring it: `Evaluation` retains a
+> verdict, a scheme fit, an `uncertainty` stated **in words** and `citedOutliers`, and the all-screen
+> presentation contract forbids a derived confidence by name on both surfaces that would draw one.
+> A range's width would itself be a band with no recorded observation behind it, which §4.5 already
+> calls fabrication. `04` §6.4 now carries the correction; `Unseen` and "draw the observation beside
+> the doubt" survive from this part, and the numeric band does not.
+>
+> This is the one part of the six that should not have landed, and it landed. Worth noting why the
+> file was relabelled from DRAFT: a merged proposal that is *wrong* is more dangerous than an open
+> one, because nobody re-reads it.
+
 
 §4.5 already forbids "a band without a recorded observation" as fabrication under §4.4. What canon
 does not yet supply is what to draw *instead*. Today an unscouted prospect's ability renders as a

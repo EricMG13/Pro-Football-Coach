@@ -303,7 +303,7 @@ default-seed team.*
   checks do not establish legal clearance. A human performs a manual similarity review before a
   mark is approved; the owner retains final originality and real-team-similarity approval.
 
-### 5.x Team identity is resolved once, at the stage (2026-08-23 amendment)
+### 5.3 Team identity is resolved once, at the stage (2026-08-23 amendment)
 
 The controlled team's colours are resolved **once**, where the stage is composed, and only when the
 chrome read model actually carries a club. Every surface below reads the resolved value from the
@@ -871,17 +871,32 @@ desktop-class management density.
    - **Where a surface bands a rating it prints the band table on that surface.** This answers “is 74
      good?” without computing a live percentile, and degrades correctly in a save with no league
      history yet.
-   - **A rating the simulation has not earned is drawn as a range, not a point.** Range width is the
-     confidence: it narrows as observation accumulates, and a rating observed enough to be certain
-     renders as a collapsed range (`83–83`), never as a different kind of number. An attribute with
-     no observation at all prints the word — `Unseen` — never a blank, a dash or a zero. Where a
-     range is drawn, the observation that produced it is drawn with it, so the player can see why the
-     number is vague. This is §4.5's existing prohibition — “a band without a recorded observation …
-     is fabrication under §4.4” — given a drawn form. It carries an engine dependency on a
-     scouting-confidence model that does not yet exist; until that lands, surfaces render point
-     values and **declare the gap** rather than implying a precision the engine cannot support.
-   - Thin progress bars or compact gauges may represent stamina, roster fit, development progress,
-     portal interest or scouting confidence.
+   - **An unearned rating is not drawn as a range. Corrected 2026-08-23 — this clause named an
+     engine dependency that has since been decided against rather than merely deferred.**
+
+     The 2026-08-22 amendment said a rating the simulation has not earned is drawn as a range whose
+     *width is the confidence*, pending a scouting-confidence model. That model is not late; **the
+     product chose the opposite and has already built it.** `Evaluation` retains a verdict, a scheme
+     fit, an `uncertainty` stated **in words**, and `citedOutliers`. The all-screen presentation
+     contract says so twice, and forbids the derived form by name on both surfaces that would use
+     it: *"uncertainty is the model's stated `uncertainty` text, never a derived confidence"*, and
+     *"no projection, no comparison to another prospect, no derived grade, no probability of
+     commitment"*.
+
+     **That is the better answer, not the poorer one.** A bar from 62 to 74 implies a precision the
+     scouting does not have; *"seen twice, both in the wet"* is a truer statement of doubt, and it
+     is the one the contract's own line asks for — **what is unknown is said to be unknown.** A
+     range would also fail §4.5 on its own terms: its width would be a band with no recorded
+     observation behind it.
+
+     **What survives unchanged:** an attribute with no observation at all prints the word —
+     `Unseen` — never a blank, a dash or a zero; and wherever doubt is drawn, the observation that
+     produced it is drawn with it. What is withdrawn is the numeric band and the engine dependency
+     it waited on.
+   - Thin progress bars or compact gauges may represent stamina, roster fit, development progress
+     or portal interest — each a value the simulation retains. **Not scouting confidence**, removed
+     from this list 2026-08-23 with the clause above: a gauge is the same derived band in a thinner
+     shape, and confidence is stated in words.
 
    ```swift
    Text("\(value)")
@@ -1024,7 +1039,7 @@ same one curve back and forth; the shape of a single cycle is unchanged, only it
 | Duration | Seconds | Reduced form | Where used |
 |---|---:|---|---|
 | **press** | 0.12 | discrete: the pressed state applies with no dim | A committing control's press feedback |
-| **value** | 0.22 | discrete: the new figure appears, no settle | A rating, score or attribute value changing |
+| **value** | 0.22 | discrete: the new figure appears, no settle | A rating, score or attribute value changing — and, from 2026-08-23, the sibling cross-fade below, which is the same act at plate scale: the content is replaced in place, nothing travels |
 | **world** | 0.42 | discrete: the destination appears, no travel | A world-scale transition — screen to screen, register to register |
 | **panelEnter** | 0.24 | discrete: the panel is present or absent, never entering | The staff call-in panel's entrance |
 | **pulse** | 1.5 | discrete: the live indicator is shown at full opacity, never dimming | The live-snap dot, `04:448`'s named example — a period, not a state-change duration, so it is the one row that repeats rather than resolving once |
@@ -1043,6 +1058,27 @@ this table, a reduced form is never "the same animation, faster" — duration co
 still asks a screen reader and a motion-sensitive player to track something moving. It is the
 *destination state*, presented immediately, exactly as `04:448` already requires for Match Day: the
 ball's flight, the live dot's pulse and the panel push are removed, not accelerated.
+
+**The two navigation moves, named 2026-08-23.** With navigation living entirely in the identity band
+(§6.6) there are exactly two moves between surfaces, and until now only one of them had a value.
+**Neither adds a duration** — this section caps the vocabulary, and a third transition token would be
+the leak it warns about.
+
+| Move | Duration | What moves | What does not |
+|---|---|---|---|
+| **Family switch** | `world` 0.42 | the world may change with it (pitch, facility, film), which is what this row was always for; the family label and the sibling strip are replaced | the band itself, which is the whole of navigation and never re-enters |
+| **Sibling within a family** | `value` 0.22 | the plate cross-fades **in place**, and the selected-sibling indicator travels | the band, the world, the plate's position |
+
+**A sibling is not somewhere else.** It is the same desk with different paper, so the plate does not
+slide, rise or push — §2's Coach's Office row already says a plan changes state rather than
+travelling to prove it, and reusing `world`'s 0.42 for a tab would both feel sluggish and claim a
+journey the player did not take. The **selected-sibling indicator is the one thing licensed to
+travel**, because its position *is* the information: that is §2's Acquisition Room exception —
+"a rank may travel, because the movement is the fact being reported" — generalised to any mark whose
+location carries the meaning.
+
+Reduced forms follow the rule below without special-casing: **both become cuts.** The destination
+surface is simply present, the indicator is simply at its new tab, and nothing crosses the screen.
 
 **Nothing here licenses a screen to animate.** §2's per-register motion phrase and §4.5's motion
 currency decide *whether* a state change may carry motion at all; this table only fixes *how*, once

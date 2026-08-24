@@ -193,7 +193,7 @@ safe.
 
 ### A4d · Team identity injected once at the stage — ADOPTED 2026-08-23
 
-**ADD. Written into `04` §5.x. This is the case where the reconciliation plan beats Press Box.** The plan resolves `CoachWorldTeamIdentity` once
+**ADD. Written into `04` §5.3. This is the case where the reconciliation plan beats Press Box.** The plan resolves `CoachWorldTeamIdentity` once
 at `CoachWorldFloodlitStage`, only when `chrome?.club` exists, and injects it through the
 environment — so **teamless entry screens retain nil automatically** rather than each surface
 remembering to opt out.
@@ -556,6 +556,14 @@ its rows as data now.
 
 **Nothing in this section may be worked around by inventing data.**
 
+**Read the document before raising an ask against it.** Three entries here have now been withdrawn
+or closed as partly wrong — D1 asked the engine for a confidence band the product had deliberately
+decided against, D2 asked for a transition value that had existed since 2026-08-18, and D6 said canon
+predated a register model that canon already contained. Each was written from what the reference
+package implied rather than from the source, which is the same failure as trusting the older sheets
+over the newer contract. **An ask costs the owner attention; a wrong one costs their trust in the
+rest of the list.**
+
 ### D1 · ~~No scouting-confidence model exists~~ — WITHDRAWN, and the design was wrong
 
 **Withdrawn 2026-08-23, same day.** This asked the engine to supply a numeric confidence band —
@@ -574,6 +582,14 @@ outliers**. That is a better answer than a numeric band, not a poorer one: a bar
 the scouting does not have, and "we have seen him twice, both in the rain" is a truer statement of
 doubt than `68–89`.
 
+**Canon carried the wrong form too, and has been corrected (2026-08-23).** `04` §6.4 held the range
+rule verbatim, waiting on a scouting-confidence model — merged from part D of
+`docs/ux/10-CANON-AMENDMENT-04.md` on 2026-08-22, the same day the contract that contradicts it was
+written. It now records that the dependency was decided against rather than deferred. `Unseen`
+survives; the numeric band does not. **Five of that amendment's six parts were right and one was
+wrong, and the wrong one is the only one that carried an engine dependency** — a proposal that ends
+"until the engine lands" is the one nobody re-reads once it is merged.
+
 **So the ask is withdrawn and a change replaces it — see B2-C1.** `ConfidenceRange` as drawn is
 unbacked, and the premise it was built on — *an unearned rating is a range whose width is the
 confidence* — is a model this product does not have and does not want.
@@ -581,14 +597,35 @@ confidence* — is a model this product does not have and does not want.
 What survives: **`Unseen` is still correct** where the model holds no value at all, and `Versus`
 still must decline to mark a lead against it. What goes is the numeric band.
 
-### D2 · Screen transitions are unspecified
+### D2 · ~~Screen transitions are unspecified~~ — CLOSED 2026-08-23, and this one was half wrong too
 
-**ASK.** One easing curve and named durations exist in `CoachWorldMotion.swift`, but **nothing names
-a move between two surfaces** — the reference package's own register says so, and says the mock cuts
-instantly.
+**Closed in `04` §6.7. The ask claimed "nothing names a move between two surfaces". Something does.**
+`Motion.world`, 0.42 s, has been in the table since 2026-08-18, described as *"a world-scale
+transition — screen to screen, register to register"*. That is the family switch, already specified.
 
-With family-then-sibling navigation there are only **two moves** to specify: sibling within a family,
-and family switch. Small, and unstarted. Reduce Motion must reduce both to a cut.
+**What was actually missing is narrower and more useful: the *sibling* move had no value, and
+`world` is the wrong one for it.** 0.42 s for changing a tab feels sluggish, and more than that it
+claims a journey the player did not take — a sibling is not somewhere else, it is the same desk with
+different paper.
+
+Both moves are now named, and **neither adds a duration**, because §6.7 caps the motion vocabulary
+the way §6.6 caps symbols:
+
+| Move | Duration | What moves |
+|---|---|---|
+| Family switch | `world` 0.42 | the world may change with it; family label and sibling strip are replaced. The band never re-enters. |
+| Sibling within a family | `value` 0.22 | the plate cross-fades **in place**; the selected-sibling indicator travels. Nothing else. |
+
+**The indicator is the one thing licensed to travel**, because its position *is* the information —
+§2's Acquisition Room exception ("a rank may travel, because the movement is the fact being
+reported") generalised to any mark whose location carries the meaning.
+
+Reduce Motion needs no special case: both collapse to cuts under the rule §6.7 already states.
+
+**Two of the three asks I raised against canon turned out to be partly wrong the moment I read the
+document** — this and D6. Both were written from what the reference package implied about canon
+rather than from canon. The pattern is now recorded once, at the top of Part D, rather than three
+times.
 
 ### D3 · Commits do not propagate
 
@@ -672,14 +709,14 @@ been written in rather than left in a design tool the repository cannot open:
 |---|---|
 | §4.4 | An unavailable control stays drawn beside its reason. Removing it or greying it in silence is a listed failure. |
 | §4.5 | **Never *derive* a remainder** — the same class as the change-mark-without-a-delta rule this section already held. Where the read model retains one it prints. |
-| §5.x | Team identity resolved once at the stage; nil is the honest teamless case, reachable by construction rather than by discipline. |
+| §5.3 | Team identity resolved once at the stage; nil is the honest teamless case, reachable by construction rather than by discipline. |
 | §6.1a | The gold budget in three cases, including **zero for several equal actions**, and destructive actions taking `state.negative`. Team colour never carries an action. |
 | §6.2 | The display end of the type scale is register-aware. The working end does not move. |
 | §6.6 | **The icon rail is removed**; every management surface takes the leading 63 that Title, Job Board and Offer already used, and the content column derives to **761**. The header's top comes off the safe-area inset, not the frame. |
 | §7 | Increase Contrast raises hairlines and drops material and **moves no ink** — every ink is already measured, and a setting that repairs a palette is a report that the palette was wrong. |
 
-`04b` moved with it: its enforcement list asserted *"both appearances meet contrast"* four months
-after §6.1a retired the light register, so it was a check that could not fail. It now names the one
+`04b` moved with it: its enforcement list asserted *"both appearances meet contrast"* a week after
+§6.1a retired the light register on 2026-08-16, so it was a check that could not fail. It now names the one
 appearance that ships, plus the contrast branch, the gold count and the unavailable-reason pairing —
 all countable in source, which is why they belong in that list rather than in prose.
 
