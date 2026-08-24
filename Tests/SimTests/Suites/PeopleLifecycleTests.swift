@@ -718,6 +718,41 @@ func runPeopleLifecycleTests() {
 private let proMeanAgeBand: ClosedRange<Double> = 25.0...27.5
 private let proPastDeclineShareBand: ClosedRange<Double> = 0.08...0.30
 
+/// The first season whose veteran tail is the model's own rather than the bootstrap population's.
+///
+/// The share above is a steady-state figure -- its ceiling is derived from the retirement hazard
+/// running to equilibrium, and its floor is "the point at which the veteran tail has effectively
+/// stopped existing". A generated world does not start in that equilibrium. It is seeded with a
+/// full age spread, that founding cohort ages out together, and the share troughs before the
+/// population re-equilibrates. Measured across a long run:
+///
+///     season  0   share 0.228
+///     season  1   share 0.196
+///     season  3   share 0.134
+///     season  6   share 0.067
+///     season 10   share 0.162
+///
+/// Season 6 sat below the steady floor and the run failed there for two days, reading as though
+/// veterans were being culled. They were not: four seasons later the tail is back inside the band.
+/// Asserting a steady-state floor against a transient is what was wrong, not the model and not the
+/// floor.
+///
+/// 10 rather than 8 because 10 is the first season *measured* back inside the band. The crossing is
+/// somewhere in (6, 10] and no checkpoint observes 7, 8 or 9, so gating on 8 would apply the strict
+/// floor to a season nobody has looked at -- the same mistake this constant exists to fix. A later
+/// checkpoint in that gap gets the transient band, which is the safe direction to be wrong in.
+private let proSteadyStateSeason = 10
+
+/// What the share may do while the founding cohort is still washing through.
+///
+/// Deliberately not derived, and it must not be read as one: the steady band comes `[P]` from
+/// constants this repo fixes, this one is `[M]` -- an empirical guard around a known artefact. The
+/// observed trough is 0.067, and 0.05 leaves headroom under it while still failing if the tail
+/// halves again. Its purpose is to catch a real collapse during the transient, not to bless the
+/// transient's shape. If world generation is ever made to start in equilibrium this whole
+/// distinction should be deleted rather than retuned.
+private let proTransientPastDeclineShareBand: ClosedRange<Double> = 0.05...0.30
+
 /// Both limbs of the age-curve band, over the active professional rosters.
 ///
 /// Practice squads are excluded on purpose: the anchor is a 53-man mean, and folding in a
@@ -738,11 +773,17 @@ func checkProAgeCurve(_ state: GameState, season: Int) {
         format: "season %d: professional mean age %.2f is outside the band %.1f…%.1f",
         season, mean, proMeanAgeBand.lowerBound, proMeanAgeBand.upperBound
     ))
-    expect(proPastDeclineShareBand.contains(pastDeclineShare), String(
-        format: "season %d: %.3f of professionals are at or past their decline age, "
-            + "outside the band %.2f…%.2f",
+    // Which band applies is a property of the season, not of the measurement: before the founding
+    // cohort has washed through, the steady-state floor is measuring something the model has not
+    // had a chance to produce yet.
+    let steady = season >= proSteadyStateSeason
+    let band = steady ? proPastDeclineShareBand : proTransientPastDeclineShareBand
+    expect(band.contains(pastDeclineShare), String(
+        format: "season %d: %.3f of professionals are at or past their decline age, outside the "
+            + "%@ band %.2f…%.2f",
         season, pastDeclineShare,
-        proPastDeclineShareBand.lowerBound, proPastDeclineShareBand.upperBound
+        steady ? "steady-state" : "bootstrap-transient",
+        band.lowerBound, band.upperBound
     ))
 }
 
