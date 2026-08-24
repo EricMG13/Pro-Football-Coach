@@ -211,9 +211,46 @@ public enum MatchupRules {
     /// (4, then 12, then 24), so multiplying them by a tier factor stepped the first break from 4
     /// to 5 between multipliers of 1.09 and 1.13 and jumped the explosive-run rate from 0.136 to
     /// 0.171 with nothing in between. Break *probability* moves continuously with the threshold.
-    public static let collegeBreakTackleRelief = 0.05
+    ///
+    /// **0.05 until 2026-08-23.** `Assignment.atTheSecondLevel` puts a linebacker in front of the
+    /// carrier exactly when the lane was won, and a linebacker tackles better than the lineman he
+    /// replaced, so college explosive runs fell from 0.1395 to 0.1360 against a 0.1350 floor -- a
+    /// band already sitting on its floor with 0.0022 to spare before any of this moved. 0.08
+    /// re-centres it at 0.1488 against a band midpoint of 0.150. This is the tier-local lever the
+    /// paragraph above was written for, used for the thing it was written for.
+    public static let collegeBreakTackleRelief = 0.08
+    /// Lane quality above which the carrier is met at the second level rather than at the line,
+    /// and above which he is into the secondary rather than either.
+    ///
+    /// `03` §1.1 resolves the front into lane quality *before* anyone tackles anybody, which makes
+    /// it the one thing in the record that already says where the carrier was met. A line that lost
+    /// is a carrier stopped in the backfield by the men who beat it; a line that won is a carrier at
+    /// the second level, where the linebackers are; a line blown open is a carrier the secondary has
+    /// to come down and get.
+    ///
+    /// This exists because ordering the front statically was not enough. With the line always
+    /// leading a run, linebackers took **1 of 93** recorded stops -- and a defence whose linebackers
+    /// never make a tackle is wrong in the same kind of way as one where the same man makes all of
+    /// them, just less obviously. Real defences are led in tackles by their linebackers.
+    public static let secondLevelLaneThreshold = 0.0
+    public static let openFieldLaneThreshold = 0.55
     /// Leverage above which the carrier breaks a tackle.
-    public static let breakTackleThreshold = 0.46
+    ///
+    /// **0.46 until 2026-08-23, when the pursuit-order defect was fixed.** `Assignment.assign` used
+    /// to hand `yardsAfterContact` the defence ranked best-first, so the carrier ran at the single
+    /// best tackler on the field on every snap. That is not a neutral simplification: it is a
+    /// systematic overestimate of the defence at exactly the moment that decides the yardage, and
+    /// this constant had been fitted on top of it. Ordering pursuit by the play instead put the
+    /// right man there, the carrier started beating him more often, and rushing inflated -- pro
+    /// rush yards 111 to 128 per team-game, pro explosive runs 0.119 to 0.152 against a 0.130
+    /// ceiling, and college points and combined totals through their upper edges with them.
+    ///
+    /// 0.60 is the minimum of a bracketed grid (0.54 / 0.60 / 0.66) measured on the **tuning**
+    /// ladder, per `01` §6.6 clause 2. Reported against the holdout ladder afterwards, the failing
+    /// set is identical to the pre-change one -- the same seven bands on the same edges -- so the
+    /// correctness fix costs no band. The model moved and the constant followed it; no band was
+    /// touched, which `01` §6.6 and `03` §5.2 both forbid.
+    public static let breakTackleThreshold = 0.60
     /// Yards for the first break. Each successive one is worth a multiple of this, which is what
     /// gives a run distribution its right tail.
     public static let brokenTackleYards = 4

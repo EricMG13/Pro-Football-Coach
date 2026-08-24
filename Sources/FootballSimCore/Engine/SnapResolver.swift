@@ -192,9 +192,20 @@ public enum SnapResolver {
         }
 
         // 6. Yards after the catch, from the receiver against the nearest pursuit.
+        //
+        // The man covering him leads it. `assignment.pursuit` is already ordered secondary-first
+        // for a pass, but the assignment cannot know *which* receiver would win -- the resolver
+        // does, and the defender it beat is by definition the one standing at the catch. Hoisting
+        // him is reading the record rather than guessing at it, and it is what makes the recorded
+        // tackler vary with the route that actually won.
         let air = offensiveCall.passDepth.airYards
+        // `routes[target.offset].defender`, the same indexing the `.throwing` matchup above
+        // already uses for exactly this reason: the target is the argmax over `weightedTarget` and
+        // is frequently not the first read.
+        let covering = assignment.routes[target.offset].defender
+        let atTheCatch = [covering] + assignment.pursuit.filter { $0.id != covering.id }
         let (afterCatch, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
-            carrier: target.element.receiver, pursuit: assignment.pursuit,
+            carrier: target.element.receiver, pursuit: atTheCatch,
             aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage,
             threshold: MatchupRules.catchBreakTackleThreshold, rng: &rng
         )
@@ -264,8 +275,11 @@ public enum SnapResolver {
                                matchups: matchups)
         }
 
+        // The level of the defence that meets him follows from the lane the front just gave up,
+        // which is resolved above and is the record's own answer to "where was he stopped".
+        let met = Assignment.atTheSecondLevel(assignment.pursuit, lane: lane)
         let (broken, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
-            carrier: carrier, pursuit: assignment.pursuit, aggression: offensiveCall.aggression,
+            carrier: carrier, pursuit: met, aggression: offensiveCall.aggression,
             homeFieldAdvantage: homeFieldAdvantage,
             threshold: MatchupRules.breakTackleThreshold
                 - (rules.tier == .college ? MatchupRules.collegeBreakTackleRelief : 0),
@@ -314,7 +328,7 @@ public enum SnapResolver {
         threshold: Double,
         rng: inout SeededRandom
     ) -> (yards: Int, record: MatchupRecord?, extraAttempts: [MatchupRecord]) {
-        guard let tackler = pursuit.first else { return (0, nil, []) }
+        guard !pursuit.isEmpty else { return (0, nil, []) }
         var yards = 0
         var record: MatchupRecord?
         // Attempts beyond the first, kept out of `record` for the same reason `record` alone used
@@ -337,8 +351,12 @@ public enum SnapResolver {
                 rng: &rng
             )
             if record == nil {
+                // `defender`, not a separately-captured `pursuit.first`. The two are the same
+                // man on attempt zero and always were, so this changes no behaviour and moves no
+                // fingerprint -- but the alias made the record's identity look independent of the
+                // loop when it never was, which is a trap for whoever changes the chain next.
                 record = MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
-                                       defenderID: tackler.id, leverage: leverage)
+                                       defenderID: defender.id, leverage: leverage)
             } else {
                 extraAttempts.append(MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
                                                    defenderID: defender.id, leverage: leverage))

@@ -4,6 +4,86 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-22 — Match Day moves like football now, and one engine defect is escalated.** The owner
+> watched the 2D animation on a booted iPhone 17e and rejected it: players stopped moving after the
+> play, did not follow it to the end, and tackles did not read as tackles. Measured over 200
+> resolved snaps, **62% of actor-snaps had `end == start`** — 13.6 of the 22 frozen every snap, with
+> coverage, run fits and decoys still **100%** of the time, the quarterback still 97%, and 1,342 of
+> the 1,673 movers drawn as one constant-velocity straight line across the whole playback.
+>
+> That was **canon, not a defect**: `03` §9.6 read "one man converges on the ball, and only one …
+> everyone in coverage or a run fit holds", so it could not be fixed in the view. §9.6 is amended
+> (`928105b`) around the principle it was reaching for — *a recorded fact is inviolable, unrecorded
+> geometry may come from a deterministic template, a template may never assert a fact* — which also
+> resolves an inconsistency already in canon, since §9.4 has always invented every player's stance.
+> §9.7 became what a template may not invent (the legal limb on playbook route trees is untouched)
+> and a new §9.8 pins the VoiceOver sentence to the record alone.
+>
+> **After: 0% frozen, and no mover without an interior waypoint.** Same 200-snap measurement. On
+> device, mean per-frame motion while the field is live rose from 0.68 to 1.01. Tokens now print the
+> position shorthand MATCH-DAY.md §4 and `04` §6.5 #18 both specify (`LT LG C RG RT QB RB X H Z TE`
+> / `RE NT DT LE W M N RC LC FS SS`) instead of `SnapRole` codes, on a new `Actor.shorthand` kept
+> separate from `position` so the printed label getting shorter cannot shorten what VoiceOver says.
+>
+> **SUPERSEDED BY THE MERGE, 2026-08-23.** The paragraph below called four suites pre-existing and
+> proved it on `main` at the time. `main` has since fixed three of them — the entry immediately after
+> this one explains why they were red: PR #69 resolved file by file, taking the tests from one branch
+> and the production code from the other. On the merged tree `M4 tactical state`, `M5 career arc` and
+> the portal scheduler are **green**. What is red on the merged tree is `Design token sync`, whose
+> parser cannot read `04` §6.4's heat-scale sentence; that is `main`'s, reproduced on a clean
+> `origin/main` worktree, and §6.4 is byte-identical between the two. Calibration was re-run after
+> the merge because `main` changed engine rules: unchanged, college 1 of 8 and pro 5 of 17.
+>
+> **Verified:** `--snap-anchors` 34 tests / 2,887 checks, `--engine` 60 / 32,443, `--core-contracts`
+> 232 / 3,356, `--screen-read-models` 74 / 9,997, `--design-contracts` 50 / 914, `--legal-only`
+> 30 / 193, `--reduce-motion` and `--match-reducer` — all green, and the app builds and runs on the
+> simulator. The full `./scripts/verify.sh` lane is red in four suites — portal scheduler lifecycle,
+> M5 career arc, M4 tactical state, and the lifecycle distribution bands. **All four are
+> pre-existing, and all four were reproduced red on `main` itself** (the last two in a detached
+> `main` worktree so this branch was never disturbed), at identical failed-check counts: 2, 1, 1, 1.
+> A structural argument pointed the same way and is worth keeping, because it is what makes the
+> result unsurprising rather than lucky — `SnapAnchors` and `AnchorRules` are referenced only from
+> `CoachWorldMatchProvider` and `MatchDayView`, never from the simulation loop, and the one
+> `SnapResolver` edit is a proven no-op (`tackler` and `defender` are the same object on attempt
+> zero) — but the reproductions are the evidence, not the reasoning.
+>
+> **RESOLVED 2026-08-23 (`6aaaacb`) — the recorded tackler.** Escalated first, then fixed on the
+> owner's instruction, with the recalibration it forced rather than without it. Pursuit is now
+> ordered by the play; `breakTackleThreshold` moves 0.46 → 0.60, picked on the **tuning** ladder and
+> reported against the **holdout**, where the failing set is *identical* to before — the same seven
+> bands on the same edges, college 2 of 8 and pro 5 of 17 either way. No band was touched. Both
+> fingerprints re-pinned (only the college one moved on the recalibration; the pro game at seed
+> 12,345 has no carry in the window the threshold crossed). Measured on the defender the animation
+> draws converging: **1 distinct defender and 1 position before, 9 defenders across all five
+> defensive positions after.**
+>
+> **The linebacker skew is closed too (`e276b65`).** The first fix left linebackers taking 1 of 93
+> stops, because only the first attempt is recorded on a snap nobody breaks and on a run that man
+> was always a lineman. A static order could not fix that and would only have inverted it; what was
+> needed was for the level that leads to *vary with what happened*, which `03` §1.1 already records
+> as lane quality. `Assignment.atTheSecondLevel` keys on it: a line that lost means a carrier
+> stopped in the backfield, a line that won means the second level, a line blown open means the
+> secondary. Same 200 snaps: **LB 38 / S 24 / DT 12 / edge 11 / CB 8**, which is what a real tackle
+> chart looks like.
+>
+> That change *improved* the fit rather than costing one — a linebacker tackles better than the
+> lineman he replaced and waits exactly where the lane was won, damping the long run at its source.
+> One band moved and was bought back with the tier-local lever written for it
+> (`collegeBreakTackleRelief` 0.05 → 0.08, re-centring college explosive runs at 0.1488 against a
+> 0.150 midpoint; the band had been sitting on its floor with 0.0022 to spare beforehand).
+>
+> **On the holdout ladder the engine now sits strictly better than before any of this: 6 failing
+> bands against 7, and the failing set is a strict subset** — college home win rate now passes and
+> nothing new fails. No band was ever touched. The original escalation text follows.
+>
+> **Original escalation (2026-08-22).** `Assignment.assign` builds `pursuit` as
+> `ranked(defense)`, best-first and blind to the play, and `yardsAfterContact` always starts its
+> break-tackle chain at index zero. So the highest-rated defender on the field is the recorded
+> tackler on **every snap of a game**: 200 of 200 measured tackles went to one position. Whoever is
+> first in that list is whose `tackling` the leverage reads, so ordering it by run gap, coverage and
+> target moves the yardage distribution and the calibration bands with it. That is its own task with
+> its own gate and needs an owner decision; the defect is written down at the line that causes it.
+
 > **2026-08-23 — live portal capacity reads the active limits, and one of the two frozen copies of
 > them is gone.** `CollegePortalMatchingV1.makeMarketSnapshot` measured every destination's
 > `rosterOpenings` and `scholarshipOpenings` against `CollegePortalPolicyV1`'s own frozen

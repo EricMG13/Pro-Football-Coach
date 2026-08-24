@@ -172,6 +172,51 @@ public enum AnchorRules {
     /// A pass is in the air until this point of the playback.
     public static let releaseFraction = 0.55
 
+    // MARK: The stride profile
+
+    /// Share of the playback spent leaving a stance, and share spent being stopped.
+    ///
+    /// `03` §9.6: a straight line at constant velocity for the whole playback is not a neutral
+    /// default, it is a claim that players do not accelerate — which is false, and reads as false.
+    /// Both are tunable, because what looks right at roughly seven points per yard is a judgement
+    /// about how a 15 pt disc reads in motion and not a number anything can derive.
+    public static let strideAccelerate = 0.18
+    public static let strideDecelerate = 0.22
+
+    /// Wall-clock playback progress to progress along the authored path, under a trapezoidal
+    /// velocity profile: ramp up over `strideAccelerate`, cruise, ramp down over
+    /// `strideDecelerate`.
+    ///
+    /// Deliberately *not* applied inside `position(of:at:)`. That function works in path fractions,
+    /// and the anchor set's own fractions are path fractions too — a waypoint at `handoffFraction`
+    /// means "when the handoff happens", which is a fact about the play and not about the wall
+    /// clock. Warping inside it would silently redefine every authored fraction and break the one
+    /// invariant that matters most: that a man and the ball he is carrying are in the same place at
+    /// the same moment.
+    ///
+    /// So this is applied once, at the single point wall time becomes a fraction, and everything
+    /// downstream — every actor, every ball leg, and the loop that decides the snap is over —
+    /// inherits the same warped value. That is what makes desynchronisation impossible rather than
+    /// merely unlikely (§9.6 constraint 3).
+    public static func pathFraction(atPlayback fraction: Double) -> Double {
+        let t = Swift.min(1, Swift.max(0, fraction))
+        let cruiseEnd = 1 - strideDecelerate
+        // Area under the trapezoid. Dividing by it is what makes the profile land on exactly 1
+        // rather than needing a clamp to get there.
+        let total = 1 - strideAccelerate / 2 - strideDecelerate / 2
+        let travelled: Double
+        if t < strideAccelerate {
+            travelled = t * t / (2 * strideAccelerate)
+        } else if t <= cruiseEnd {
+            travelled = strideAccelerate / 2 + (t - strideAccelerate)
+        } else {
+            let remaining = 1 - t
+            travelled = strideAccelerate / 2 + (cruiseEnd - strideAccelerate)
+                + strideDecelerate / 2 - remaining * remaining / (2 * strideDecelerate)
+        }
+        return Swift.min(1, Swift.max(0, travelled / total))
+    }
+
     // MARK: Alignment, offense
 
     public static let lineLaterals: [Double] = [0.38, 0.44, 0.50, 0.56, 0.62]
@@ -184,9 +229,18 @@ public enum AnchorRules {
 
     // MARK: Alignment, defense
 
-    public static let frontDepth = 1.0
-    public static let edgeLaterals: [Double] = [0.34, 0.66]
-    public static let interiorLaterals: [Double] = [0.46, 0.54]
+    /// How far off the ball the defensive front sets.
+    ///
+    /// Was 1.0, which is where a front really does line up and is also about seven points at the
+    /// install floor -- half a token. With the interior laterals two hundredths off the guards', the
+    /// two lines interleaved into a single column of chips rather than reading as two lines facing
+    /// each other, which is what a formation is. Widened for legibility, which `04` §9 asks of the
+    /// diagram before it asks for anything else.
+    public static let frontDepth = 1.8
+    /// Outside the tackles, who stand at `lineLaterals`' ends.
+    public static let edgeLaterals: [Double] = [0.31, 0.69]
+    /// In the gaps either side of the centre, rather than stacked on the guards.
+    public static let interiorLaterals: [Double] = [0.47, 0.53]
     public static let linebackerDepth = 5.0
     public static let linebackerLaterals: [Double] = [0.36, 0.50, 0.64]
     public static let cornerDepth = 7.0
@@ -208,6 +262,52 @@ public enum AnchorRules {
     /// record says he missed. Short of 1 on purpose -- reaching it would draw a tackle nothing in
     /// the record says happened.
     public static let missedTackleCloseFraction = 0.7
+
+    // MARK: Template motion (03 section 9.6, amended 2026-08-22)
+
+    /// The width of the field in yards, so a distance with a lateral component can be measured in
+    /// the same unit as one without. `lateral` is 0 to 1 across the field and yards are yards; a
+    /// standoff stated in yards has to be a standoff on both axes or it is a standoff on neither.
+    public static let fieldWidthYards = 53.3
+
+    /// How far short of the ball a defender the record does *not* name must stop.
+    ///
+    /// This constant is the whole of §9.6 constraint 2 in one number. Everyone chases, because a
+    /// defence that holds still while the ball goes past is the thing the owner watched and
+    /// rejected. Nobody but the recorded tackler arrives, because arriving is a claim to have made
+    /// the stop, and the record names exactly one man who did.
+    public static let pursuitStandoffYards = 2.0
+
+    /// Extra standoff per yard of ground a pursuer had to make up, so eleven men do not close on
+    /// one spot like filings on a magnet. A corner twenty-five yards away trails the play; a
+    /// linebacker eight yards away is nearly on it. Both are chasing; only their arrears differ.
+    public static let pursuitTrailFraction = 0.18
+
+    /// The closest an unnamed pursuer may get, as a share of the ground he started with.
+    ///
+    /// A flat standoff alone is not total: a defender who lines up *inside* it -- a linebacker the
+    /// ball is carried straight at -- either has to be frozen or has to back away from the play to
+    /// satisfy it, and both are worse than the thing being prevented. Capping the closing distance
+    /// as a fraction instead means every pursuer always moves, always moves toward the ball, and
+    /// still never arrives, however close he began.
+    public static let pursuitClosestFraction = 0.6
+
+    /// How deep a quarterback finishes his drop, measured like `passerDepth` from the line. The
+    /// alignment template already stands him at `passerDepth`, so this is the drop itself rather
+    /// than where he starts -- and without it he was still 97% of the time, which no quarterback
+    /// has ever been.
+    public static let passerDropDepth = 7.5
+    /// How far a blocker who *won* his duel steps into contact. Small, because winning a block is
+    /// holding ground; but not zero, because holding ground is not standing frozen.
+    public static let blockerEngageYards = 0.8
+    /// How far a receiver blocks downfield on a running play, and how far a back who did not carry
+    /// steps up to lead or protect.
+    public static let runBlockYards = 2.0
+    /// How far past the catch a receiver keeps drifting once the ball has gone elsewhere.
+    public static let routeTailYards = 1.5
+    /// How much deeper a defender in coverage gets on a play nobody carried -- the drop itself,
+    /// with no spot to converge on because no spot was recorded.
+    public static let coverageDropYards = 3.0
 }
 
 /// Turns a recorded snap into a sparse spatial description of it.
@@ -289,6 +389,61 @@ public enum SnapAnchors {
             let depth = isOffense ? -AnchorRules.specialistDepth : AnchorRules.specialistDepth
             return FieldPoint(yard: lineOfScrimmage + depth, lateral: AnchorRules.centerLateral)
         }
+    }
+
+    /// What a token is labelled: the position shorthand for this player's slot in the formation.
+    ///
+    /// MATCH-DAY.md §4 and `04` §6.5 #18 state the vocabulary outright — "labels are position
+    /// shorthand, not numbers" — and name both elevens: `LT LG C RG RT QB RB X H Z TE` and
+    /// `RE NT DT LE W M N RC LC FS SS`. The provider was emitting `SnapRole` codes instead (`B`,
+    /// `R`, `CV`, `FIT`), so the field read as a diagram of duties rather than as a formation.
+    ///
+    /// Lives here rather than in the view for the same reason §9.4's alignment template does: it is
+    /// keyed on exactly the same `(position, index)` pair, from exactly the same lineup order, and a
+    /// second derivation of a slot index is a second thing that can drift out of step with the first.
+    ///
+    /// Total on any index, including a negative or an absurd one, because `choreograph` is total and
+    /// a label it feeds cannot be the thing that isn't.
+    public static func shorthand(for position: Position, index: Int) -> String {
+        let marks: [String]
+        switch position {
+        case .quarterback: marks = ["QB"]
+        case .runningBack: marks = ["RB", "FB"]
+        // Outside receivers first, then the slots, matching `receiverLaterals`' own order: two wide,
+        // then inside. A label that disagreed with where the man is standing is worse than none.
+        case .wideReceiver: marks = ["X", "Z", "H", "F"]
+        case .tightEnd: marks = ["TE", "Y"]
+        case .leftTackle: marks = ["LT"]
+        case .guardPosition: marks = ["LG", "RG"]
+        case .center: marks = ["C"]
+        case .rightTackle: marks = ["RT"]
+        case .edgeRusher: marks = ["RE", "LE"]
+        case .defensiveTackle: marks = ["NT", "DT"]
+        case .linebacker: marks = ["W", "M", "N"]
+        case .cornerback: marks = ["RC", "LC"]
+        case .safety: marks = ["FS", "SS"]
+        case .kicker: marks = ["K"]
+        case .punter: marks = ["P"]
+        }
+        // A twelfth man at a position that names eleven repeats the last mark rather than blanking.
+        // Two dots reading `FB` is how a two-back set reads anyway; a dot reading nothing is not.
+        return marks[Swift.min(Swift.max(0, index), marks.count - 1)]
+    }
+
+    /// Each player's slot at his own position, in the order the caller lined them up.
+    ///
+    /// The one derivation of that index. `choreograph` needs it to place a man and the provider
+    /// needs it to label him, and the moment those are two separate counts they are two counts that
+    /// can disagree — a right guard drawn at the left guard's spot, or the other way about.
+    public static func lineupIndices(_ players: [Player]) -> [UUID: Int] {
+        var seen: [Position: Int] = [:]
+        var indices: [UUID: Int] = [:]
+        for player in players {
+            let index = seen[player.position, default: 0]
+            seen[player.position] = index + 1
+            indices[player.id] = index
+        }
+        return indices
     }
 
     /// Where an actor is at a given point of the playback.
@@ -429,10 +584,11 @@ public enum SnapAnchors {
         }
 
         func placements(_ players: [Player], side: Side, isOffense: Bool) -> [Placement] {
-            var seen: [Position: Int] = [:]
+            // The same slot index the provider labels from, from the same function, so a right
+            // guard cannot be drawn at one spot and labelled as the other.
+            let indices = lineupIndices(players)
             return players.map { player in
-                let index = seen[player.position, default: 0]
-                seen[player.position] = index + 1
+                let index = indices[player.id] ?? 0
                 return Placement(
                     player: player,
                     side: side,
@@ -569,7 +725,9 @@ public enum SnapAnchors {
                 outcome: outcome,
                 lineOfScrimmage: los,
                 endSpot: endSpot,
-                catchSpot: catchSpot
+                catchSpot: catchSpot,
+                ballRestsAt: ballRestsAt,
+                carryBegins: carryBegins
             )
             return ActorAnchor(
                 playerID: placement.player.id,
@@ -629,7 +787,15 @@ public enum SnapAnchors {
         )
     }
 
-    /// Where an actor goes, and when. Nothing moves without a field in the record naming why.
+    /// Where an actor goes, and when.
+    ///
+    /// `03` §9.6, amended 2026-08-22. The rule this used to follow was "nothing moves without a
+    /// field in the record naming why", and the measurement of what that produced is in the
+    /// amendment: 62% of actor-snaps with `end == start`, coverage and run fits and decoys still
+    /// 100% of the time, a quarterback who never dropped back. The rule now is that a recorded fact
+    /// is inviolable and everything else may come from a deterministic template — so the recorded
+    /// depths, spots and identities below are unchanged, and the men the record says nothing about
+    /// finally play football around them.
     private static func movement(
         role: SnapRole,
         start: FieldPoint,
@@ -638,7 +804,9 @@ public enum SnapAnchors {
         outcome: SnapOutcome,
         lineOfScrimmage: Double,
         endSpot: Double,
-        catchSpot: FieldPoint?
+        catchSpot: FieldPoint?,
+        ballRestsAt: FieldPoint,
+        carryBegins: Double
     ) -> (end: FieldPoint, path: [ActorWaypoint]) {
         switch role {
         case .carrier:
@@ -663,55 +831,143 @@ public enum SnapAnchors {
             // same man — sacked, tackled for a safety, or keeping it himself — and without it he
             // stood at his drop point while the ball travelled off without him. Asking the record
             // who has the ball is truer than listing the results in which he might.
-            guard outcome.ballCarrierID == outcome.passerID, outcome.ballCarrierID != nil else {
-                return (start, [])
+            if outcome.ballCarrierID == outcome.passerID, outcome.ballCarrierID != nil {
+                return (
+                    FieldPoint(yard: endSpot, lateral: start.lateral),
+                    [ActorWaypoint(point: start, fraction: AnchorRules.snapFraction)]
+                )
             }
-            return (
-                FieldPoint(yard: endSpot, lateral: start.lateral),
-                [ActorWaypoint(point: start, fraction: AnchorRules.snapFraction)]
+            // Otherwise he drops and sets. The alignment template already stands him behind the
+            // line, so this is the drop and not the stance — and it is why he is no longer one of
+            // the frozen.
+            //
+            // Complete by `snapFraction`, which is when the ball reaches him, and then he holds.
+            // Not by the release: the ball's own legs leave his hands at `snapFraction`, so a drop
+            // still running at that moment throws the pass from a spot he has left.
+            let set = FieldPoint(
+                yard: lineOfScrimmage - AnchorRules.passerDropDepth, lateral: start.lateral
             )
+            return (set, [ActorWaypoint(point: set, fraction: AnchorRules.snapFraction)])
 
         case .routeRunner:
-            // Only on a pass. `passDepth` carries a default on every call, so reading it on a run
-            // would send every receiver twelve yards downfield off a handoff — movement invented
-            // from a field that meant nothing, which is exactly what `04` §9 prohibits.
-            guard call.playType == .pass else { return (start, []) }
+            guard call.playType == .pass else {
+                // On a run he blocks. `passDepth` carries a default on every call, so reading it
+                // here would send every receiver twelve yards downfield off a handoff — movement
+                // invented from a field that meant nothing, which stays prohibited.
+                let block = FieldPoint(
+                    yard: lineOfScrimmage + AnchorRules.runBlockYards, lateral: start.lateral
+                )
+                return (block, [ActorWaypoint(point: block, fraction: AnchorRules.releaseFraction)])
+            }
             // Recorded depth, not an invented route shape: the call's air yards are the only
-            // downfield distance the record actually holds.
+            // downfield distance the record actually holds. What is template is *when* he gets
+            // there — by the release, not by the whistle, so a route ends when the ball arrives
+            // instead of still being run after the play is dead — and the drift afterwards.
+            let depth = lineOfScrimmage + Double(call.passDepth.airYards)
+            let atDepth = FieldPoint(yard: depth, lateral: start.lateral)
             return (
-                FieldPoint(
-                    yard: lineOfScrimmage + Double(call.passDepth.airYards), lateral: start.lateral
-                ),
-                []
+                FieldPoint(yard: depth + AnchorRules.routeTailYards, lateral: start.lateral),
+                [ActorWaypoint(point: atDepth, fraction: AnchorRules.releaseFraction)]
             )
 
         case .rusher:
-            return (
-                FieldPoint(
-                    yard: lineOfScrimmage - AnchorRules.rusherClosingYards, lateral: start.lateral
-                ),
-                []
+            // Closes by the release rather than over the whole playback. A rush that arrives on the
+            // whistle is a rush that never happened.
+            let closed = FieldPoint(
+                yard: lineOfScrimmage - AnchorRules.rusherClosingYards, lateral: start.lateral
             )
+            return (closed, [ActorWaypoint(point: closed, fraction: AnchorRules.releaseFraction)])
 
         case .blocker:
-            // Blocking needs no engine change (Phase 5): `.passProtection` and `.runLane` duels are
-            // already in `outcome.matchups`, keyed on this player as the attacker. A blocker who
-            // held his ground is drawn exactly as he lined up — the winning case needs no invented
-            // motion, and `04` §995 forbids drawing more than the record supports.
-            guard let duel = outcome.matchups.first(where: {
+            // `.passProtection` and `.runLane` duels are already in `outcome.matchups`, keyed on
+            // this player as the attacker. Winning a block is holding ground — but holding ground
+            // is a man in contact, not a man frozen, so the winner steps into it.
+            let beaten = outcome.matchups.first {
                 ($0.kind == .passProtection || $0.kind == .runLane) && $0.attackerID == playerID
-            }), !duel.attackerWon else {
-                return (start, [])
-            }
-            return (
-                FieldPoint(yard: start.yard - AnchorRules.beatenBlockerPushYards,
-                          lateral: start.lateral),
-                []
+                    && !$0.attackerWon
+            } != nil
+            let yard = beaten
+                ? start.yard - AnchorRules.beatenBlockerPushYards
+                : start.yard + AnchorRules.blockerEngageYards
+            let engaged = FieldPoint(yard: yard, lateral: start.lateral)
+            return (engaged, [ActorWaypoint(point: engaged, fraction: AnchorRules.releaseFraction)])
+
+        case .decoy:
+            // A back who did not get the ball. He leads, or he stays in to protect; either way he
+            // steps toward the line rather than watching from his stance.
+            let lead = FieldPoint(
+                yard: start.yard + AnchorRules.runBlockYards, lateral: start.lateral
+            )
+            return (lead, [ActorWaypoint(point: lead, fraction: AnchorRules.releaseFraction)])
+
+        case .coverage, .runFit:
+            // A man in coverage chases the ball only once it has crossed the line. On a sack the
+            // resting spot is *behind* it, and treating that as a pursuit sent both corners and
+            // both safeties fifteen to twenty-five yards upfield into the offensive backfield --
+            // an eleven-man collapse where `04` §5.3 asks for the protection duel that lost. He
+            // plays his coverage instead. A run fit still converges: closing on a sack is what a
+            // front seven does.
+            let chases = outcome.ballCarrierID != nil
+                && (role == .runFit || ballRestsAt.yard >= lineOfScrimmage)
+            return pursuit(
+                from: start, to: ballRestsAt, carried: chases,
+                carryBegins: carryBegins, lineOfScrimmage: lineOfScrimmage, role: role,
+                playType: call.playType
             )
 
-        case .decoy, .coverage, .runFit, .kicker, .blockLeverage:
+        case .kicker, .blockLeverage:
+            // A kicker plants and kicks. This is the one exemption, and it is a real one.
             return (start, [])
         }
+    }
+
+    /// A defender the record does not name, chasing a ball he does not get to.
+    ///
+    /// The §9.6 constraint-2 line, and the only place it is drawn: he holds his alignment until the
+    /// carrier actually has the ball, then closes on the spot — and stops short of it by a standoff
+    /// that grows with the ground he had to make up, so eleven men converge as a pursuit rather than
+    /// as filings on a magnet. Reaching the spot is a claim to have made the stop; the record names
+    /// exactly one man who did, and `choreograph` overrides this for him.
+    ///
+    /// On a snap nobody carried there is no spot and no claim to make, so he plays his assignment
+    /// instead: a man in coverage gets deeper, a run fit steps up on a run and drops on a pass.
+    private static func pursuit(
+        from start: FieldPoint,
+        to restingSpot: FieldPoint,
+        carried: Bool,
+        carryBegins: Double,
+        lineOfScrimmage: Double,
+        role: SnapRole,
+        playType: OffensivePlayType
+    ) -> (end: FieldPoint, path: [ActorWaypoint]) {
+        guard carried else {
+            // A run fit steps up to the line on a run and drops into a hook on a pass. Sending him
+            // forward either way put a linebacker in the backfield on an incompletion, which is the
+            // opposite of what he was doing.
+            let drop = role == .coverage || playType != .run
+                ? start.yard + AnchorRules.coverageDropYards
+                : lineOfScrimmage + AnchorRules.runBlockYards
+            let played = FieldPoint(yard: drop, lateral: start.lateral)
+            return (played, [ActorWaypoint(point: played, fraction: AnchorRules.releaseFraction)])
+        }
+
+        let alongField = restingSpot.yard - start.yard
+        let acrossField = (restingSpot.lateral - start.lateral) * AnchorRules.fieldWidthYards
+        let distance = (alongField * alongField + acrossField * acrossField).squareRoot()
+        // Only when he is standing on the spot already, which is a division by zero rather than a
+        // pursuit. Everything else moves, including a man the ball is carried straight at.
+        guard distance > 0.01 else { return (start, []) }
+
+        let standoff = Swift.min(
+            AnchorRules.pursuitStandoffYards + distance * AnchorRules.pursuitTrailFraction,
+            distance * AnchorRules.pursuitClosestFraction
+        )
+        let closed = (distance - standoff) / distance
+        let end = FieldPoint(
+            yard: start.yard + alongField * closed,
+            lateral: start.lateral + (restingSpot.lateral - start.lateral) * closed
+        )
+        return (end, [ActorWaypoint(point: start, fraction: carryBegins)])
     }
 
     /// The ball's journey, as legs with when each happens.
@@ -728,7 +984,13 @@ public enum SnapAnchors {
             guard let id else { return nil }
             return actors.first(where: { $0.playerID == id })?.start
         }
-        let passerSpot = point(outcome.passerID)
+        // Where the passer *is* when the ball gets to him, not where he lined up. Since he began
+        // dropping back, those are 2.5 yards apart -- about seventeen points at the install floor --
+        // and reading the stance threw every pass and handed off every handoff from a spot he had
+        // already left. Evaluated through the anchor rather than recomputed from the drop constant,
+        // so a change to the drop's shape or timing cannot put them back out of step.
+        let passerSpot = actors.first { $0.playerID == outcome.passerID }
+            .map { position(of: $0, at: AnchorRules.snapFraction) }
             ?? FieldPoint(
                 yard: lineOfScrimmage - AnchorRules.passerDepth,
                 lateral: AnchorRules.centerLateral

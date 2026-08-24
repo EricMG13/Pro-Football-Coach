@@ -316,49 +316,79 @@ deterministic and testable. A template living in the view would be geometry no t
 Nothing is persisted. An anchor set is derived on demand from a `PlayRecord` that the save already
 holds under D7's current-game play-by-play bound, so G-06 adds no save growth at all.
 
-### 9.6 Pursuit and the tackle (added 2026-08-18)
+### 9.6 Template motion (amended 2026-08-22)
 
-`04` §9 prohibits invented movement, and pursuit looks at first glance like exactly that — the record
-holds no path a defender ran. It holds something better: **it names him.**
+**The rule this section used to state was: only what the record names may move. That rule shipped,
+and what it produced is a diagram of chips.** Measured over 200 resolved snaps, 62% of actor-snaps
+had `end == start` - 13.6 of the 22 on every snap never moved at all, with coverage, run fits and
+decoys frozen 100% of the time. Every mover slid start-to-end in one straight line at constant
+velocity across the whole playback. The owner's judgement on watching it on device (2026-08-22) is
+that it does not read as football, and that is the gate `04` §9 exists to protect.
 
-`SnapResolver` records `MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier,
-defenderID: tackler, …)`, and `.passProtection` records the blocker against the rusher who beat him.
-So the man who ended the play is recorded by identity, in the same way `ballCarrierID` and `passerID`
-already are. Drawing him is reading the record, not inventing a second opinion about it.
+The rule was also **inconsistent with §9.4, which is the thing that resolves it.** §9.4 already
+accepts invented geometry for something the record does not hold: nobody's *stance* is recorded
+either, and the starts come from a template anyway. A pursuit path is no more unrecorded than a
+stance. What made one acceptable and the other forbidden was never a principle - it was where the
+line happened to be drawn.
 
-**The rule, and it is one rule:** *the defender the record names as ending the play is where the ball
-is when the play ends.* He converges from his alignment on the spot the ball finished at, arriving as
-it arrives. The tackle is not a separate mark or an animation of its own — it is the moment two dots
-that the record says met, meet.
+So the line moves, to where the principle actually is:
 
-That is deliberately the whole of it, because it is the whole of what is recorded:
+> **A recorded fact is inviolable. Unrecorded geometry may come from a deterministic template.
+> A template may never assert a fact.**
 
-- **One man converges on the ball, and only one.** The record names a single tackler per snap, so a
-  single dot closes on the end spot. A second defender drifting that way would be a path nothing
-  recorded, which is the prohibition in `04` §9 exactly. Rushers are the one other defenders who
-  move, and they move because `.passProtection` names them in a duel; their closing *depth* is a
-  template in the §9.4 sense, not a recorded distance. Everyone in coverage or a run fit holds.
-- **No pursuit angle, no closing speed, no missed-tackle geometry.** `maximumBrokenTackles` means a
-  carrier may beat several men, and the record keeps only the first duel. Drawing the broken tackles
-  would mean inventing where they happened.
-- **A tackle is not asserted where the record does not claim one.** An incompletion has no carrier to
-  tackle, a kick has no tackler, and a snap whose matchups are empty names nobody. Each draws no
-  convergence at all rather than a plausible one.
-- **Only the defender who *won* his duel converges.** `.carrierVersusPursuit` names the carrier as
-  the attacker, so `attackerWon` means the carrier broke the tackle. Drawing that defender arriving
-  at the end spot would claim a stop he did not make — on a touchdown it would stand a tackler on
-  the goal line of a play nobody stopped. When the carrier won, nobody converges, because the record
-  keeps only that first duel and cannot say who eventually brought him down.
+**Recorded facts** - the ones a template may never contradict, reshape or soften:
 
-### 9.7 What is still not drawn
+- the end spot, and that it equals the line of scrimmage plus the recorded yardage (§9.3 clause 2)
+- who had the ball, when, and every leg of the ball's own journey
+- the identity of the man the record names as ending the play, and that he is the one who ends it
+- who won each recorded duel
+- the sentence a VoiceOver user hears, which is derived from the record alone (§9.8)
 
-Stated here so the gap is a decision rather than an omission a reader has to discover:
+**Template motion** is permitted for everything else, under four constraints, all four testable:
 
-1. **Blocking.** `.passProtection` and `.runLane` name blocker-against-defender duels on every snap,
-   and none of them move. Only the rusher who *won* is drawn, and only on a sack.
-2. **Route shapes.** A route is a straight line to the recorded air-yard depth. The record holds a
-   depth, not a shape, and the shape is the part that is someone's expression.
-3. **Broken tackles**, as above.
+1. **Deterministic and rng-free.** Derived from the record and the §9.4 template only.
+   `choreograph` stays pure and total; two runs over one `PlayRecord` produce identical paths.
+2. **Asserts nothing.** No template may draw a tackle, a block won, a catch, a turnover or a stop
+   that the record does not name. Convergence short of the ball is movement; convergence *onto* the
+   ball is a claim, and only the recorded tackler may make it.
+3. **Consistent with the record at every instant, not merely at the end.** A man cannot be drawn
+   somewhere the record says the ball was not, and two actors the record says met must meet.
+4. **Bounded by plausibility, not by precision.** A template says "a corner covering this receiver
+   goes roughly here"; it does not claim to know that he did. Where the record holds the real
+   answer, the real answer wins.
 
-Each is absent for the same reason: the record does not hold it. Each becomes drawable the day the
-engine records it, and not before.
+**The tackle, restated.** The defender the record names still ends where the ball ends, arriving as
+it arrives - that part was right and does not change. What changes is that he is no longer the only
+man on the field who moves toward the play. Other defenders converge *toward* the end spot and stop
+short of it, at a distance that keeps constraint 2: visibly chasing, and visibly not the man who
+made the stop. When the carrier won his duel, nobody reaches him at all, exactly as before.
+
+**Motion has a shape.** A straight line at constant velocity for the full playback is not a neutral
+default; it is a claim that players do not accelerate, which is false and reads as false. Template
+paths carry a stride profile - acceleration off the snap, deceleration into contact, and phase
+timings that end a route when the ball arrives rather than when the whistle blows. The profile is a
+rules constant in `AnchorRules`, applied identically to every actor and to the ball, so nothing can
+desynchronise from the man carrying it.
+
+### 9.7 What a template may not invent (amended 2026-08-22)
+
+The gap §9.7 used to list - blocking, route shapes, broken tackles - closes under §9.6, because none
+of those was ever refused on the grounds that drawing it would be *untrue*. They were refused on the
+grounds that they were unrecorded, and §9.6 no longer treats unrecorded as undrawable.
+
+What stays refused, and why it is a different kind of thing:
+
+1. **A specific playbook's route tree.** `04` §9's legal limb, untouched: route-tree notation is a
+   drawn convention of the sport; a named programme's actual concepts are someone's expression. A
+   template draws a depth and a break, never a catalogued concept.
+2. **Any mark that reads as an event the record does not hold.** A collision, a pile, a flag, a
+   fumble the record did not record. Motion is not an event; a mark is.
+3. **Anything that changes what the simulation decided.** `04` §9's closing line stands in full:
+   animation visualises an already-recorded outcome and cannot change simulation truth. A template
+   is drawn *from* the record and can never feed back into it.
+
+### 9.8 The accessible equivalent is record-only
+
+Stated separately because it is the one place the amendment must not reach. `SnapAnchors.sentence`
+is derived from the outcome and the two rosters, and from nothing a template produced. A VoiceOver
+user hears what the record says happened; they never hear a plausible path described as a fact.

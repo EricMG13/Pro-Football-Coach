@@ -59,6 +59,9 @@ public struct SnapAssignment: Sendable, Equatable {
     public let passer: Player?
     public let carrier: Player?
     /// The pursuit the carrier has to beat, best defender first.
+    ///
+    /// Ordered by who actually gets there for *this* call, not by the depth chart. See
+    /// `Assignment.pursuitOrder`.
     public let pursuit: [Player]
 
     public init(
@@ -146,7 +149,108 @@ public enum Assignment {
             carrier: offensiveCall.playType == .run
                 ? personnel.offensive(group: .runningBacks).first
                 : nil,
-            pursuit: SnapPersonnel.ranked(personnel.defense)
+            pursuit: pursuitOrder(
+                offensiveCall: offensiveCall,
+                front: front,
+                coverage: coverageDefenders,
+                personnel: personnel
+            )
         )
+    }
+
+    /// Who reaches the carrier, in the order they get there.
+    ///
+    /// **This was `ranked(personnel.defense)` until 2026-08-23** -- best-overall-first, and blind to
+    /// the call. `yardsAfterContact` always starts its break-tackle chain at index zero, so the
+    /// highest-rated defender on the field was the recorded tackler on *every snap of a game*:
+    /// measured over 200 resolved snaps, all 200 went to one position. It also meant the carrier
+    /// always ran at the best tackler on the field, which is not a neutral simplification -- it is
+    /// a systematic overestimate of the defence at the one moment that decides the yardage.
+    ///
+    /// The replacement keys on what the record already knows. A run is met by the front seven, and
+    /// by the part of it the ball is going at; a catch happens downfield, where the secondary is.
+    /// The near side of the gap leads, so two runs to different gaps do not produce the same first
+    /// man. Nothing here is a coin flip -- assignment stays pure and rng-free, per §1.1 -- and the
+    /// full ranked defence is appended so the chain can never run short of men.
+    public static func pursuitOrder(
+        offensiveCall: OffensiveCall,
+        front: [Player],
+        coverage: [Player],
+        personnel: SnapPersonnel
+    ) -> [Player] {
+        let ordered: [Player]
+        switch offensiveCall.playType {
+        case .run:
+            let interior = SnapPersonnel.ranked(
+                personnel.defense.filter { $0.position == .defensiveTackle }
+            )
+            let edges = SnapPersonnel.ranked(
+                personnel.defense.filter { $0.position == .edgeRusher }
+            )
+            let backers = personnel.defensive(group: .linebackers)
+            // Outside runs are met at the edge, inside runs in the interior. The other half of the
+            // line is still in the chase, just behind the men whose gap it actually was.
+            let firstWave = offensiveCall.runGap.isOutside ? edges : interior
+            let secondWave = offensiveCall.runGap.isOutside ? interior : edges
+            ordered = nearSideFirst(firstWave, gap: offensiveCall.runGap)
+                + nearSideFirst(backers, gap: offensiveCall.runGap)
+                + secondWave + coverage
+
+        case .pass:
+            // A completed pass is caught where the coverage is. The front rushed the passer and
+            // arrives late, if at all -- and the resolver hoists the man who was actually beaten on
+            // the route ahead of everyone, because for a catch it knows exactly who that was.
+            ordered = coverage + front
+
+        case .fieldGoal, .punt, .kneel:
+            // No gap and no route to key on. A kneel is not tackled at all and a return is met by
+            // whoever is nearest, which the record does not describe. Unchanged, deliberately.
+            ordered = SnapPersonnel.ranked(personnel.defense)
+        }
+
+        // Linebackers appear in both `front` and `coverage`, so first appearance wins; the ranked
+        // defence backfills anyone neither list named.
+        var seen: Set<UUID> = []
+        return (ordered + SnapPersonnel.ranked(personnel.defense)).filter { seen.insert($0.id).inserted }
+    }
+
+    /// Who meets the carrier, once the line has actually been resolved.
+    ///
+    /// `pursuitOrder` runs in `assign`, before a single duel has been scored, so the best it can do
+    /// is key on the call. Lane quality is the thing that decides *where* the carrier is met, and it
+    /// is known by the time anyone tackles him -- so the run path applies this on top.
+    ///
+    /// Three levels, and the reason there are three rather than two is that two produced the defect
+    /// in a mirror. A static order hands the first man in the list almost every recorded stop,
+    /// because only the first attempt is recorded on a snap nobody breaks; so whichever level leads
+    /// unconditionally takes the lot. Keying on lane quality means the level that leads *varies with
+    /// what actually happened at the line*, which is both the football answer and the only thing
+    /// that spreads the record without inventing a spread.
+    ///
+    /// A permutation, never a filter: every defender keeps a place in the chase, so the break-tackle
+    /// chain can still run its full length whatever the lane did.
+    public static func atTheSecondLevel(_ pursuit: [Player], lane: Double) -> [Player] {
+        let level: (Player) -> Bool
+        if lane > MatchupRules.openFieldLaneThreshold {
+            level = { $0.position.group == .secondary }
+        } else if lane > MatchupRules.secondLevelLaneThreshold {
+            level = { $0.position == .linebacker }
+        } else {
+            return pursuit
+        }
+        let promoted = pursuit.filter(level)
+        guard !promoted.isEmpty else { return pursuit }
+        return promoted + pursuit.filter { !level($0) }
+    }
+
+    /// The men on the side the ball is going, first.
+    ///
+    /// Deterministic and rng-free. This is what stops one gap's answer being every gap's answer:
+    /// with it, a run left and a run right are met by different people.
+    public static func nearSideFirst(_ players: [Player], gap: RunGap) -> [Player] {
+        guard players.count > 1 else { return players }
+        let leadsLeft = gap == .insideLeft || gap == .outsideLeft
+        let lead = leadsLeft ? 0 : players.count - 1
+        return [players[lead]] + players.indices.filter { $0 != lead }.map { players[$0] }
     }
 }

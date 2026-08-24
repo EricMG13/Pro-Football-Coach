@@ -1309,7 +1309,20 @@ public struct MatchDayReadModel: Sendable, Equatable {
         public let stableID: String
         public let side: MatchSide
         public let uniformNumber: String
+        /// What VoiceOver says: the position group, spoken. `QB`, `RB`, `WR`.
         public let position: String
+        /// What the token prints: the slot shorthand, per MATCH-DAY.md §4 and `04` §6.5 #18.
+        /// `X`, `H`, `Z` where `position` says `WR` three times.
+        ///
+        /// Separate from `position` on purpose, and the reason is in `MatchDayView.actorToken`'s own
+        /// comment: the mark's printed label getting shorter must never shorten what VoiceOver says
+        /// about it. One field serving both would force a choice between a field that reads as a
+        /// formation and a field that is describable, and the accessibility contract does not
+        /// permit trading the second for the first.
+        ///
+        /// Defaulted, because every caller that predates the distinction meant the printed label to
+        /// be the spoken one and is still right about that.
+        public let shorthand: String
         public let xYardsFromLeftGoalLine: Double
         public let yFraction: Double
 
@@ -1318,6 +1331,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
             side: MatchSide,
             uniformNumber: String,
             position: String,
+            shorthand: String? = nil,
             xYardsFromLeftGoalLine: Double,
             yFraction: Double
         ) {
@@ -1325,6 +1339,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
             self.side = side
             self.uniformNumber = uniformNumber
             self.position = position
+            self.shorthand = shorthand ?? position
             self.xYardsFromLeftGoalLine = xYardsFromLeftGoalLine
             self.yFraction = yFraction
         }
