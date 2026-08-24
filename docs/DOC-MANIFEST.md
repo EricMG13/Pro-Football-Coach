@@ -325,3 +325,30 @@ hand-maintained list becomes the coverage boundary.
 | `docs/superpowers/specs/` | Nine design specs, several marked superseded in their own headers | **None.** Read the `Status:` line before believing any of them |
 | `docs/refs/` | The surface-reference generator's baseline, decisions and gap manifest. `Tools/refs/build.py` writes here; the rendered HTML is gitignored because the deliverable is a published artifact | **None.** Generated output plus the notes explaining a pinned commit |
 | `docs/proofs/figma-pool-2026-08-13/`, `docs/proofs/stitch-2026-08-13/` | Dated proof artefacts beneath the already-listed `docs/proofs/` | **None.** Evidence of what was tried on a date. Note that `CLAUDE.md` records the Stitch references as rejected on 2026-08-11; this directory postdates that and is the proof, not a revival |
+
+## 9. Every markdown file at `docs/` root, classified — added 2026-08-24
+
+Section 8 closed the gap one level too high. It classifies the *directories* under `docs/`, and the
+walk that enforces it folds every root-level file into a single entry, `docs/`, which the manifest
+satisfies trivially because that string appears in almost every row. So the section that exists to
+stop a document sitting at an unnamed path could not see the eight documents sitting at the least
+hidden path in the repository — including one titled `HANDOFF-CLAUDE.md`, which a cold builder would
+reasonably open first, and one titled `BETA-READINESS-CONSOLIDATED.md`, which calls itself
+"the single completion register for the first functional beta". That is `CLAUDE.md`'s
+coverage-boundary rule failing at its own hands: the enforcement was real, its boundary was not
+where the reader assumed.
+
+The tables in sections 2 and 4 name every other root document. These eight are the remainder.
+
+| Path | What it is | Authority |
+|---|---|---|
+| `docs/BETA-READINESS-CONSOLIDATED.md` | A dated completion register for the first functional beta, audited 2026-08-14 against `main` at `fe16860` and three named branches | **None.** It calls itself a completion register, which reads as authority; it is an audit of a tree as it stood on 2026-08-14. Scope for v1 is `PRODUCT.md`; build order is `docs/roadmap/`; what is actually true of the build is `docs/STATUS.md` |
+| `docs/HANDOFF-CLAUDE.md` | Dated session-to-session handoff notes between Claude sessions, latest 2026-08-22 | **None.** A pointer to the `docs/STATUS.md` entry that carries the account, by its own words |
+| `docs/HANDOFF-CODEX.md` | A collector of open Codex handoff items, one dated section per session | **None.** It says so itself: "`docs/STATUS.md` is still the truth about the build" |
+| `docs/HANDOFF-CODEX-2026-08-20.md`, `docs/HANDOFF-CODEX-2026-08-21.md` | Two dated continuation memos on branch `agent/floodlit-injury-evidence` | **None.** Both open "continuation memo, not canon" and name the canon documents that outrank them |
+| `docs/HANDOFF-CODEX-CALIBRATION.md` | A checkpoint on the match engine's holdout calibration bands, merged as PR #44 | **None.** "A pointer, not a substitute" — the measurements are in `docs/STATUS.md` under P4 |
+| `docs/HANDOFF-CODEX-LIFECYCLE.md` | A checkpoint on the lifecycle bands and the professional draft stall, merged as PR #37 | **None.** Same shape and the same disclaimer as the calibration handoff |
+| `docs/OWNER-WALKTHROUGH.md` | The build-run-install procedure for a simulator and then a phone, written 2026-08-13 | **Supporting, and only for the owner action it describes.** Section 4 is the part no agent may claim to have done. It is a dated procedure against Xcode 26.6, not a statement about what the build currently does |
+
+`DocumentManifestTests` enumerates these files from disk on the same rule section 8 uses, so a
+document dropped at `docs/` root tomorrow is classified the day it appears.

@@ -197,6 +197,17 @@ private func documentedDirectories() -> [String] {
     return directories.sorted()
 }
 
+/// Every markdown file sitting at `docs/` root.
+///
+/// The directory walk above folds all of these into one entry, `docs/`, which the manifest satisfies
+/// trivially — the string appears in nearly every row. So the files at the least hidden path in the
+/// repository were the ones the directory rule could not see.
+private func rootDocuments() -> [String] {
+    let root = packageRoot().appendingPathComponent("docs")
+    let contents = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
+    return contents.filter { $0.hasSuffix(".md") }.map { "docs/\($0)" }.sorted()
+}
+
 func runDocumentManifestTests() {
     suite("Document manifest") {
         // DOC-MANIFEST decides what is canon, and it had gone stale against the tree it governs:
@@ -221,6 +232,35 @@ func runDocumentManifestTests() {
                        + "\(unclassified.joined(separator: ", ")). Add each to section 8 with what "
                        + "it is and what authority it carries — a path the manifest never names is "
                        + "a path a reader has to guess about.")
+        }
+
+        // Section 8 enforced the directory rule and stopped there, so eight documents at `docs/`
+        // root — among them `HANDOFF-CLAUDE.md` and `BETA-READINESS-CONSOLIDATED.md` — sat at paths
+        // the manifest never named while the suite reported the tree fully classified. Section 9
+        // classifies them; this is what keeps the next one from going unnamed.
+        test("every markdown file at docs root is named in DOC-MANIFEST") {
+            let manifestURL = packageRoot().appendingPathComponent("docs/DOC-MANIFEST.md")
+            guard let manifest = try? String(contentsOf: manifestURL, encoding: .utf8) else {
+                expect(false, "docs/DOC-MANIFEST.md is unavailable")
+                return
+            }
+            let documents = rootDocuments()
+            expect(documents.count >= 20,
+                   "walked only \(documents.count) root documents — the walk, not the manifest, "
+                       + "is what failed")
+            let unnamed = documents.filter { !manifest.contains($0) }
+            expect(unnamed.isEmpty,
+                   "DOC-MANIFEST does not name \(unnamed.count) root document(s): "
+                       + "\(unnamed.joined(separator: ", ")). Add each to section 9 with what it is "
+                       + "and what authority it carries — a document at the path a cold builder "
+                       + "opens first is the worst one to leave unclassified.")
+        }
+
+        test("the root-document scan would notice a file the manifest does not name") {
+            let manifest = "| `docs/STATUS.md` | the dated log | canon |"
+            let planted = ["docs/STATUS.md", "docs/HANDOFF-INVENTED.md"]
+            expectEqual(planted.filter { !manifest.contains($0) }, ["docs/HANDOFF-INVENTED.md"],
+                        "an unnamed root document must be reported")
         }
 
         test("the walk would notice a directory the manifest does not name") {
