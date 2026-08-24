@@ -102,7 +102,8 @@ run_sim() {
     shift
     local log="$lane_root/logs/$label.log"
     local status=0
-    # SimTests is a plain executable target that @testable imports ProFootballCoachUI (03b section
+    # SimTests is a plain executable target that @testable imports all three library modules --
+    # FootballSimCore, ProFootballCoachUI and CoachWorldApp (03b section
     # 5: "the ported TestKit harness, run as an executable target" -- not a recognised .testTarget,
     # so SwiftPM has no reason to infer testability the way `swift test` would). -c release does not
     # enable it by default the way debug builds happen to, so a release run fails every target that
@@ -189,7 +190,7 @@ case "$lane" in
         ;;
     full)
         # -enable-testing for the same reason run_sim needs it: an unfiltered `swift build` also
-        # builds SimTests, which @testable imports ProFootballCoachUI.
+        # builds SimTests, which @testable imports all three library modules.
         run_command build swift build --scratch-path "$lane_root/scratch" -c release \
             -Xswiftc -enable-testing
         if [ "$build_only" = true ]; then

@@ -147,7 +147,8 @@ swift build -c release -Xswiftc -enable-testing && swift run -c release -Xswiftc
 ```
 
 `-Xswiftc -enable-testing` is not optional. `SimTests` is a plain executable target that `@testable
-import`s `ProFootballCoachUI`, and SwiftPM has no reason to infer testability for one — so a release
+import`s **all three** library modules — `FootballSimCore`, `ProFootballCoachUI` and
+`CoachWorldApp` — and SwiftPM has no reason to infer testability for one — so a release
 run without the flag fails every target that `@testable` imports anything, with "module ... was not
 compiled for testing". `verify.sh` passes it for you.
 
