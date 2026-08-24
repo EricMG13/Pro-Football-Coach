@@ -24,24 +24,25 @@ public enum CoachWorldTokens {
     }
 
     /// The management stage's geometry, `04` section 6.1c. Absolute positions at the install
-    /// floor: the icon rail sits against the sensor housing, the content column is what is left
-    /// after the rail and the trailing gutter, and the header spans that same column.
+    /// floor: the content column starts at the leading inset and runs to the trailing gutter, and
+    /// the header spans that same column.
+    ///
+    /// **The 44 pt icon rail was removed on 2026-08-23** (`04` section 6.1c). Navigation lives
+    /// entirely in the identity band — family on the left, jump-to on the right — so a column of
+    /// glyphs beside it was a second navigation for the same set of places. Removing it
+    /// generalises the exception the section already carried: Title, Job Board and Offer started
+    /// at the rail-free leading edge because they sit outside the coaching week, and every
+    /// management surface now uses that geometry. The content column gains 52 pt.
     public enum Stage {
-        public static let railLeading: CGFloat = 59
-        public static let railWidth: CGFloat = 44
-        public static let railTop: CGFloat = 46
-        public static let railGap: CGFloat = 2
-        public static let contentLeading: CGFloat = 115
+        public static let contentLeading: CGFloat = Frame.leadingInset
         public static let contentTop: CGFloat = 46
         public static let headerTop: CGFloat = 3
         public static let headerPrimaryRow: CGFloat = 22
         public static let headerSecondaryRow: CGFloat = 16
-        /// `844 - 115 - 20`: the frame minus the rail column and the trailing gutter. Derived, not
-        /// chosen, so it stays right if the floor ever moves.
+        /// `844 - 63 - 20`: the frame minus the leading inset and the trailing gutter. Derived,
+        /// not chosen, so it stays right if the floor ever moves.
         public static let contentWidth: CGFloat =
             Frame.floorWidth - contentLeading - Frame.gutter
-        /// Title, Job Board and Offer carry no icon rail — they sit outside the coaching week.
-        public static let railFreeLeading: CGFloat = 63
         /// How far the world backdrop bleeds past the bottom edge.
         public static let worldBottomBleed: CGFloat = 0.55
     }
@@ -102,15 +103,31 @@ public enum CoachWorldTokens {
     public enum Heat {
         public static let scaleFloor = 40
         public static let scaleCeiling = 99
-        public static let strongFloor = 85
-        /// `04` section 6.4: "red below 70, amber from 70-84 and green from 85 upward."
+
+        // `04` section 6.4, amended 2026-08-22: five bands diverging around a neutral centre, not
+        // the three this shipped until 2026-08-23. Two defects went with the three-band form, and
+        // the second is the serious one. An ordinary starter at 74 read as a caution. And the
+        // middle band was the warning colour, which sat 6.1 degrees from gold — so every average
+        // rating in every dense table was spending the commit colour.
+        //
+        // The centre is deliberately ink rather than a colour: average is not a state, and
+        // colouring it makes the whole table look like a verdict.
+        public static let wellBelowCeiling = 59
+        public static let belowCeiling = 69
+        public static let averageCeiling = 79
+        public static let aboveCeiling = 84
+        /// Retained under its old name because call sites read it as "where warm stops": the floor
+        /// of the neutral centre.
         public static let steadyFloor = 70
+        public static let strongFloor = 85
 
         public static func color(for rating: Int, palette: Palette) -> Color {
             switch rating {
-            case strongFloor...: palette.statePositive.color
-            case steadyFloor..<strongFloor: palette.stateWarning.color
-            default: palette.stateNegative.color
+            case ...wellBelowCeiling: palette.stateNegative.color
+            case ...belowCeiling: palette.stateWarning.color
+            case ...averageCeiling: palette.contentSecondary.color
+            case ...aboveCeiling: palette.statePositiveLight.color
+            default: palette.statePositive.color
             }
         }
     }
@@ -264,6 +281,9 @@ public enum CoachWorldTokens {
         public let actionDestructive: ColorValue
         public let stateLive: ColorValue
         public let statePositive: ColorValue
+        /// `04` section 6.1a. The heat scale's fourth band — `state.positive` lightened, stated as
+        /// a measured value so no view has to invent the lightening.
+        public let statePositiveLight: ColorValue
         public let stateWarning: ColorValue
         public let stateNegative: ColorValue
         public let stateInfo: ColorValue
@@ -285,7 +305,11 @@ public enum CoachWorldTokens {
         contentQuiet: .init(hex: 0x7A8A9E), actionPrimary: .init(hex: 0xFFC53D),
         actionSecondary: .init(hex: 0xA9BACE),
         actionDestructive: .init(hex: 0xFF3B54), stateLive: .init(hex: 0x37E08A),
-        statePositive: .init(hex: 0x4FD08C), stateWarning: .init(hex: 0xFFB03A),
+        statePositive: .init(hex: 0x4FD08C), statePositiveLight: .init(hex: 0x7FCB9E),
+        // 0xFFB03A until 2026-08-23: 6.1 degrees from gold at the same saturation, so a caution and
+        // a commit were the same colour under a thumb at 11 pt. 0xC9704A is 24.1 degrees off and
+        // clears 4.5:1 on all three grounds (`04` section 6.1a).
+        stateWarning: .init(hex: 0xC9704A),
         stateNegative: .init(hex: 0xFF3B54), stateInfo: .init(hex: 0x6FA8DC),
         collegeIdentity: .init(hex: 0xB07BD6), proIdentity: .init(hex: 0x6FA8DC),
         fieldTurf: .init(hex: 0x072616), fieldLine: .init(hex: 0xF6FAFF),

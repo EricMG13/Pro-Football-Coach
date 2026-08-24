@@ -457,7 +457,8 @@ is deleted. Ratios below are the same WCAG 2.2 relative-luminance method as §6.
 | `action.destructive` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
 | `state.live` | `#37E08A` | 11.50 / 11.12 / 9.43 |
 | `state.positive` | `#4FD08C` | 10.13 / 9.79 / 8.30 |
-| `state.warning` | `#FFB03A` | 10.87 / 10.51 / 8.91 |
+| `state.warning` | `#C9704A` | 5.57 / 5.38 / 4.56 |
+| `state.positive.light` | `#7FCB9E` | 10.32 / 9.98 / 8.46 |
 | `state.negative` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
 | `state.info` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
 | `college.identity` | `#B07BD6` | 6.27 / 6.07 / 5.14 |
@@ -466,6 +467,15 @@ is deleted. Ratios below are the same WCAG 2.2 relative-luminance method as §6.
 | `field.line` (on turf) | `#F6FAFF` | 15.44 |
 | `field.annotation` (on turf) | `#FFCE6A` | 11.01 |
 | `field.live` (on turf) | `#4FD08C` | 8.27 |
+
+**Two corrections to this table, 2026-08-23.** `state.warning` read `#FFB03A` here for a week after
+the amendment below retired it — the prose said the value had to go and the table it governs kept
+serving it, which is how a retired colour stays in a product. Its replacement's ratios are computed
+from the same three grounds as every other row, and the computation reproduces the 24.1° and 5.57
+this document already states, which is what makes them checkable rather than asserted.
+`state.positive.light` is **new**: §6.4's five-band heat scale calls its fourth band
+*"`state.positive`, lightened"*, and a lightening nothing states is a colour a view has to invent.
+It is stated here so it can be a token instead.
 
 Measured constraints, binding on every consumer:
 
@@ -511,7 +521,7 @@ The palette above carries four role collisions, measured in HSL from the shipped
 
 | Colliding roles | Values | Separation |
 |---|---|---|
-| `action.primary` / `state.warning` | `#FFC53D` / `#FFB03A` | **6.1°** hue, identical saturation, 0.6% luminance |
+| `action.primary` / `state.warning` (retired) | `#FFC53D` / `#FFB03A` | **6.1°** hue, identical saturation, 0.6% luminance |
 | `state.negative` / `action.destructive` | `#FF3B54` / `#FF3B54` | identical |
 | `state.info` / `pro.identity` | `#6FA8DC` / `#6FA8DC` | identical |
 | `state.live` / `state.positive` | `#37E08A` / `#4FD08C` | **1.1°** hue |
@@ -863,7 +873,7 @@ desktop-class management density.
      | Well below | 40–59 | `state.negative` |
      | Below | 60–69 | the amended `state.warning` |
      | **Average** | **70–79** | **`content.secondary` — neutral, never amber** |
-     | Above | 80–84 | `state.positive`, lightened |
+     | Above | 80–84 | `state.positive.light` `#7FCB9E` — 102.4° from gold |
      | Well above | 85–99 | `state.positive` |
 
      Every band clears 4.5:1 on `world.page` and sits at least 24° from gold, per §6.1a(ii). Retain

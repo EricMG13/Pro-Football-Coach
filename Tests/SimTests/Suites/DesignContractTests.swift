@@ -235,29 +235,74 @@ func runDesignContractTests() {
         // `Heat.color(for:palette:)` rather than each carrying their own switch, so testing this one
         // function against canon, across the whole rating range, is what makes all three agree by
         // construction rather than by three people remembering to keep three copies in sync.
+        // Rewritten 2026-08-23. This parsed the sentence "red below 70, amber from 70-84 and
+        // green from 85 upward", which canon replaced with a five-band table on 2026-08-22 — so
+        // the parse failed and the test went red against tokens that were merely out of date.
+        // It now reads the table, which is what canon actually holds, and the boundaries come out
+        // of the ranges rather than being restated here.
         test("Heat.color's banding matches 04 section 6.4's stated heat scale, across the whole range") {
-            guard let steadyFloorText = matches(of: "red below (\\d+)", in: canon).first,
-                  let strongFloorText = matches(of: "green from (\\d+) upward", in: canon).first,
-                  let canonSteadyFloor = Int(steadyFloorText),
-                  let canonStrongFloor = Int(strongFloorText)
-            else {
-                expect(false, "could not parse 04 section 6.4's heat-scale sentence — "
-                    + "the parser, not the tokens, is what failed")
+            // `| Well below | 40–59 | ... |` — name, range, role. En dash, as canon writes it.
+            var bands: [(lower: Int, upper: Int, role: String)] = []
+            for line in canon.split(separator: "\n", omittingEmptySubsequences: false) {
+                let row = String(line).trimmingCharacters(in: .whitespaces)
+                guard row.hasPrefix("|") else { continue }
+                let cells = row.split(separator: "|", omittingEmptySubsequences: false)
+                    .map { $0.trimmingCharacters(in: .whitespaces)
+                            .replacingOccurrences(of: "*", with: "") }
+                guard cells.count >= 4 else { continue }
+                let numbers = matches(of: "(\\d+)\u{2013}(\\d+)", in: cells[2])
+                guard numbers.count == 1,
+                      let dash = cells[2].firstIndex(of: "\u{2013}"),
+                      let lower = Int(cells[2][cells[2].startIndex..<dash]),
+                      let upper = Int(cells[2][cells[2].index(after: dash)...])
+                else { continue }
+                bands.append((lower, upper, cells[3]))
+            }
+            guard bands.count == 5 else {
+                expect(false, "04 section 6.4 no longer states a five-band heat scale this can "
+                    + "read — found \(bands.count) banded rows. The parser, not the tokens, is "
+                    + "what failed")
                 return
             }
-            expectEqual(CoachWorldTokens.Heat.steadyFloor, canonSteadyFloor,
-                        "Heat.steadyFloor must match 04 section 6.4's stated amber floor")
-            expectEqual(CoachWorldTokens.Heat.strongFloor, canonStrongFloor,
-                        "Heat.strongFloor must match 04 section 6.4's stated green floor")
+
+            // The bands must tile the whole 40-99 range with no gap and no overlap, or a rating
+            // exists that canon does not colour and the sweep below would never notice.
+            expectEqual(bands.first?.lower, CoachWorldTokens.Heat.scaleFloor)
+            expectEqual(bands.last?.upper, CoachWorldTokens.Heat.scaleCeiling)
+            for (earlier, later) in zip(bands, bands.dropFirst()) {
+                expectEqual(later.lower, earlier.upper + 1,
+                            "canon's heat bands leave a gap or overlap at \(earlier.upper)")
+            }
 
             let palette = CoachWorldTokens.dark
+            let roleColor: (String) -> CoachWorldTokens.ColorValue? = { role in
+                if role.contains("state.negative") { return palette.stateNegative }
+                if role.contains("state.positive.light") { return palette.statePositiveLight }
+                if role.contains("state.warning") { return palette.stateWarning }
+                if role.contains("content.secondary") { return palette.contentSecondary }
+                if role.contains("state.positive") { return palette.statePositive }
+                return nil
+            }
+
             for rating in CoachWorldTokens.Heat.scaleFloor...CoachWorldTokens.Heat.scaleCeiling {
-                let expected = rating >= canonStrongFloor ? palette.statePositive.color
-                    : rating >= canonSteadyFloor ? palette.stateWarning.color
-                    : palette.stateNegative.color
-                expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), expected,
+                guard let band = bands.first(where: { rating >= $0.lower && rating <= $0.upper }),
+                      let expected = roleColor(band.role)
+                else {
+                    expect(false, "rating \(rating) lands in no band 04 section 6.4 names, or "
+                        + "names a role this test cannot resolve")
+                    continue
+                }
+                expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette),
+                            expected.color,
                             "rating \(rating) does not land in the band 04 section 6.4 describes")
             }
+
+            // The centre band is ink, not a colour, and that is the whole point of the amendment:
+            // an ordinary starter is not a caution.
+            expectEqual(CoachWorldTokens.Heat.color(for: 74, palette: palette),
+                        palette.contentSecondary.color,
+                        "the average band must be neutral ink — colouring it makes every dense "
+                            + "table read as a verdict")
         }
     }
 
@@ -369,7 +414,10 @@ func runDesignContractTests() {
             // CoachWorldStatusChip.Symbol, CoachWorldDeltaMark and MatchDayControlSymbol prove that
             // for their own sites with a dedicated canon-sync test; the rest were checked by hand
             // when this pin was set and must be re-checked by hand when it moves.
-            let knownNonLiteralSites = 9
+            // 9 until 2026-08-23. The icon rail's `Image(systemName: entry.symbol)` was the
+            // ninth; removing the rail removed the site, and the pin shrinks with it. The jump-to
+            // control that replaced the rail's registry entry draws a literal, so it adds none.
+            let knownNonLiteralSites = 8
             var found = 0
             var byFile: [String] = []
             for file in swiftFilesImportingUIFramework() {
@@ -577,6 +625,63 @@ func runDesignContractTests() {
             let action = CoachWorldCutCorner.action
             expectEqual(action.topLeading, 22); expectEqual(action.topTrailing, 22)
             expectEqual(action.bottomTrailing, 22); expectEqual(action.bottomLeading, 5)
+        }
+    }
+
+    suite("Retired symbols (06.1c)") {
+        // Deleting a symbol is not the same as preventing its return. The 44 pt icon rail was
+        // removed on 2026-08-23 because it named the same places the identity band already
+        // reaches; nothing about the codebase stops someone re-adding it in six weeks, having
+        // read a reference sheet that still draws one. This is that stop.
+        //
+        // The set is deliberately the *names*, not the geometry: a rail rebuilt under a new name
+        // is a different design decision and gets argued on its merits, while a rail rebuilt under
+        // the old one is a regression.
+        let retired = ["FloodlitIconRail", "RailEntry", "showsIconRail", "railFreeLeading"]
+
+        test("no production file names a symbol the icon-rail removal retired") {
+            let production = swiftFiles(under: "Sources")
+            expect(!production.isEmpty, "the production scan found no files to read")
+            for file in production {
+                let body = strippingLineComments(file.text)
+                for name in retired where body.contains(name) {
+                    expect(false, "\(file.path) still names the retired symbol \(name)")
+                }
+            }
+        }
+
+        test("the scan would notice a retired symbol coming back") {
+            // A scan that has never failed is not known to be a scan.
+            let planted = """
+                struct Example: View {
+                    var body: some View { FloodlitIconRail(entries: []) }
+                }
+                """
+            let body = strippingLineComments(planted)
+            expect(retired.contains { body.contains($0) },
+                   "the retired-symbol scan did not catch a planted icon rail")
+
+            // And it must not fire on a file that only mentions the removal in prose, or the
+            // comment explaining why the rail is gone becomes the thing that fails the build.
+            let prose = "// The icon rail (FloodlitIconRail) was removed on 2026-08-23.\nlet x = 1\n"
+            let stripped = strippingLineComments(prose)
+            expect(!retired.contains { stripped.contains($0) },
+                   "the scan fired on a line comment, which would forbid explaining the removal")
+        }
+
+        // The removal's whole point, asserted as arithmetic rather than as a number: the content
+        // column is the frame minus the leading inset and the trailing gutter, with no rail in it.
+        test("the content column derives from the leading inset, not from a rail") {
+            expectEqual(CoachWorldTokens.Stage.contentLeading,
+                        CoachWorldTokens.Frame.leadingInset,
+                        "every management surface starts at the rail-free leading edge now")
+            expectEqual(CoachWorldTokens.Stage.contentWidth, 761,
+                        "844 - 63 - 20; the rail's 52 pt went back to the content column")
+            expectEqual(CoachWorldTokens.Stage.contentLeading
+                            + CoachWorldTokens.Stage.contentWidth
+                            + CoachWorldTokens.Frame.gutter,
+                        CoachWorldTokens.Frame.floorWidth,
+                        "the three parts must still tile the install floor exactly")
         }
     }
 }
