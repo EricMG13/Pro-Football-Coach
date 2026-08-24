@@ -63,7 +63,7 @@ the build:
 
 **Three Root cells were corrected on 2026-08-23, all in the same direction: canon named a directory,
 the scan enumerates by construction.** Ambient randomness read `Engine/`, `Generation/`, `AI/`,
-`Abstracted/` — four of the engine's twenty-three directories; the scan walks the whole target and
+`Abstracted/` — four of the engine's twenty-two directories; the scan walks the whole target and
 exempts `Model/` by name, and the same hand list was removed from `03` §3 clause 5. Design tokens and
 authoritative root both read `ProFootballCoachUI/`; each scan actually enumerates **every file that
 imports a UI framework**, because the rule is about code that draws and the composition layer is a

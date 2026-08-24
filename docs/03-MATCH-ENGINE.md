@@ -113,7 +113,7 @@ they compare scores and stats, not identities.
 The shipped scan — the "engine mints no ambient identity, timestamp or randomness" test in
 `Tests/SimTests/Suites/ContractTests.swift` — deliberately does the inverse: it walks the whole of
 `Sources/FootballSimCore/` and exempts `Model/` by name. That is the correct construction and canon
-was wrong, because the engine now holds twenty-three directories rather than five, and a hand list
+was wrong, because the engine now holds twenty-two directories rather than five, and a hand list
 of four would give the other eighteen zero coverage while staying green. The scan's own comment
 records an adversarial review catching this file committing `CLAUDE.md`'s coverage-boundary failure;
 the rule above is restated so canon no longer specifies the version that failed.*
