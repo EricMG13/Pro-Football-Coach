@@ -217,6 +217,22 @@ every commitment named in `PRODUCT.md` resolves to a gate whose command is actua
 `accessibility`, `archive`, `release`, `app` and the default `full` — each with its own scratch
 directory and logs, so a failed run in one cannot contaminate another.
 
+**The catalogue's `lane` column is not that lane, measured 2026-08-24.**
+`SuiteCatalog.lane(for:)`'s own comment states the rule — "the lane column names the `verify.sh`
+lane that runs a gate" — and for **12 of the 20** registered gates it does not. Three of the seven
+values it emits (`performance`, `persistence`, `legal`) are not `verify.sh` lane names at all. Six
+gates labelled `accessibility` run elsewhere: `commitmentCoverage` in `release`, and
+`contrastByConstruction`, `voiceOver`, `touchTarget`, `reachability` and `errorSurface` in `core`,
+all five through `--core-contracts`. The four `persistence` gates run in `release` through
+`--save-document`. `performanceBudget` and `legal` are run by no lane at all — `legal` at least
+rides the default run, `performanceBudget` does not (see `docs/OPEN-DECISIONS.md` D4). Exactly six
+rows are right — `dynamicType`, `accessibility`, `reduceMotion`, `determinism`, `m1Soak`, `m2Soak` —
+and two more, `calibrationGate` and `twoTierConsistency`, read `manual`, which is the comment's own
+deliberate spelling for "no lane runs this" and so is not a defect. Nothing checks the column, because
+`CommitmentCoverageTest` asserts that a gate has a *dispatched runner*, not that its lane runs it —
+so the column is prose inside a data structure. Recompute it before quoting it: the mismatch is
+mechanical from `SuiteCatalog.swift` and `scripts/verify.sh` alone.
+
 One target, one flat `Suites/` directory inside `SimTests/`. An earlier four-directory split was the
 specification and was never built: the categories it named are suite *names* inside `Suites/` —
 `EngineTests.swift`, `CalibrationTests.swift`, the `M1`/`M2`/`M3` soaks, `ContractTests.swift`,
