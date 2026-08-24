@@ -11,6 +11,16 @@ importantly — what it does not.
 act on without re-deriving it. One row per change. Nothing here is speculative: each entry names a
 file or symbol that exists, or states plainly that the thing does not exist yet.
 
+**This file is self-sufficient, deliberately.** Press Box lives in a design tool the repository
+cannot open, so every value a builder needs is written out here in full rather than cited. If an
+entry says "see the standard" and nothing else, that entry is incomplete and should be treated as a
+defect in this document.
+
+**What has landed, and what has not.** Part A's shared layer is where the work started, because six
+files there are read by every surface. A1, A2 and A3 are **built and verified** (`3bd44a58`); A4
+onward and the whole of Parts B and C are **not written yet**. Nothing in Part B should start before
+A4 lands, because every plate width in it assumes the widened content column.
+
 ---
 
 ## Status legend
@@ -45,10 +55,10 @@ those sheets draw. Details in `docs/briefs/2026-08-23-surface-coverage.md` §1a.
 **Do this part first.** Six of these files are read by every surface, so each fix here removes the
 same defect from dozens of views at once. Nothing in Part B should start before A1–A4 land.
 
-### A1 · `DesignTokens.swift` — `Stage`: the rail is gone
+### A1 · `DesignTokens.swift` — `Stage`: the rail is gone — LANDED `3bd44a58`
 
-**CHANGE.** `Stage` still describes the 44 pt icon rail that direction 3a removed, and derives the
-content column from it.
+**DONE 2026-08-23.** `Stage` described the 44 pt icon rail that direction 3a removed, and derived
+the content column from it.
 
 | Symbol | Now | Required |
 |---|---|---|
@@ -84,9 +94,9 @@ not the same as preventing its return.
 This is the highest-leverage change in the document: it is +4.6% content area on all 47 canonical
 destinations, and it is a precondition for every plate width in Part B.
 
-### A2 · `DesignTokens.swift` — `Heat`: three bands must become five
+### A2 · `DesignTokens.swift` — `Heat`: three bands must become five — LANDED `3bd44a58`
 
-**CHANGE.** `Heat` implements *"red below 70, amber from 70–84 and green from 85 upward"* — three
+**DONE 2026-08-23.** `Heat` implemented *"red below 70, amber from 70–84 and green from 85 upward"* — three
 bands, with amber as the ordinary starter's colour.
 
 Required: **five bands around a neutral centre**, warm band *below* the median.
@@ -108,9 +118,9 @@ Two defects in the three-band version, and the second is the serious one:
 
 `04` §6.4 was amended to the five-band scale on 2026-08-22. This code is behind its own canon.
 
-### A3 · `DesignTokens.swift` — `stateWarning` is a refused value
+### A3 · `DesignTokens.swift` — `stateWarning` is a refused value — LANDED `3bd44a58`
 
-**CHANGE.** `stateWarning: 0xFFB03A`.
+**DONE 2026-08-23.** `stateWarning: 0xFFB03A`.
 
 Measured **6.1° from gold** at the same saturation. At 11 pt under a thumb a caution and a commit are
 the same colour. Required: **`0xC9704A`** — 24.1° from gold, 5.57:1 on page.
@@ -123,26 +133,107 @@ identical reasoning, applied to one value and not the other.
 
 ### A4 · `DesignTokens.swift` — the translucent-surfacing scales are missing
 
-**ADD.** Press Box carries four named scales that no Swift token holds. Without them every view
-writes its own opacity, which is how the design system got 75 hard-coded colours in its own
-components before this was fixed there.
+**ADD. Every value is written out below**, so this can be built without opening the design tool.
+Without them each view writes its own opacity, which is how the standard's own components
+accumulated 75 hard-coded colours before a census found them while the colour rule read PASS.
 
-| Scale | Steps | What it is |
+**The rule these exist to enforce:** a component that writes `Color(white: 1).opacity(0.07)` has
+hard-coded `contentPrimary` and will not follow when it moves — and a hex scan never sees it,
+because it is not a hex. Named by **job**, not by opacity. Reach for the nearest step rather than
+adding one; the point of a scale is that it runs out.
+
+#### A4.1 The four scales
+
+Each is a **pigment at an alpha**, never an independent colour. Suggested Swift home: a
+`CoachWorldTokens.Surfacing` enum returning `ColorValue`, so the alpha is applied once.
+
+| Token | Base | Alpha | Job |
+|---|---|---:|---|
+| `wash.faintest` | `contentPrimary` | 1% | the faintest lift off a ground |
+| `wash.faint` | `contentPrimary` | 7% | a row band |
+| `wash.soft` | `contentPrimary` | 10% | a chip, a track |
+| `wash.clear` | `contentPrimary` | 13% | a raised edge |
+| `wash.strong` | `contentPrimary` | 20% | the strongest lift |
+| `recess.light` | `page` | 34% | a surface pushed behind |
+| `recess.deep` | `page` | 70% | a well, a plate foot |
+| `plate.fill` | `glassFlat` `#11141E` | 96% | an opaque-enough working plate |
+| `plate.fillDeep` | `glassFlatDeep` `#0B0D14` | 96% | the same, one step down |
+| `select.faint` | `raised` `#12203A` | 30% | a hovered row |
+| `select.soft` | `raised` | 72% | a selected row |
+| `select.strong` | `raised` | 82% | focus |
+
+`plate` is `0.96` and not `1.0` on purpose: it is what lets a working plate read as solid while a
+trace of the world still reaches through it, which is the rule that **every screen still happens
+somewhere**.
+
+`select` is `raised` and **never gold and never the club accent**. Gold means the committing action;
+a club accent means a different thing per save, and the placeholder club's `#F2D864` is
+gold-adjacent, which is why position in a table is marked in ink.
+
+#### A4.2 Two base pigments the palette does not hold
+
+| Token | Hex | Why it is not a role |
 |---|---|---|
-| `wash` | 1 / 7 / 10 / 13 / 20 % of `contentPrimary` | a surface lifted off its ground |
-| `recess` | 34 / 70 % of `page` | a surface pushed behind |
-| `plate` | 96 % of `glassFlat` / `glassFlatDeep` | an opaque-enough working plate |
-| `select` | 30 / 72 / 82 % of `raised` | selection and focus on a working surface |
+| `glassFlat` | `#11141E` | the flat fallback a non-hero panel collapses to |
+| `glassFlatDeep` | `#0B0D14` | the same one step down |
 
-Also missing, and each currently has no home:
+`04` §6.1a's palette table states the four grounds and the roles; these two are the *material's*
+grounds and belong beside them. **Add them to `04` before shipping them** — the colour scan reads
+canon as a whitelist, so an unstated hex fails, and that is the scan working.
 
-- `ruleStructural` / `ruleLegible` / `ruleStrong` / `ruleGlass` / `ruleRow` — the hairline family
-- `unseenInk` + `unseenOpacity` — an unobserved rating's treatment
-- `inkOnGoldQuiet` — the sub-label under a commit's verb
-- `bannerInfo/Good/Bad` × `from`/`to`/`edge` — **nine values, and they are load-bearing**: they are
-  three grounds the four-ground palette does not cover, and `contentQuiet` measures 3.21 and 4.25 on
-  two of them. Only `contentPrimary` and `contentSecondary` are legal on a banner.
-- `maskTrailing` — the fade on a strip with more content than room
+#### A4.3 The hairline family
+
+Five values, two jobs. A **structural** rule groups and is nearly invisible; a **legible** seam is
+meant to be seen. Neither carries meaning on its own.
+
+| Token | Base | Alpha | Under Increase Contrast |
+|---|---|---:|---:|
+| `rule.structural` | `contentQuiet` | 20% | **38%** |
+| `rule.legible` | `contentQuiet` | 38% | **62%** |
+| `rule.strong` | `contentQuiet` | 42% | **72%** |
+| `rule.glass` | `contentPrimary` | 13% | = `rule.legible` |
+| `rule.row` | `contentPrimary` | 14% | **26%** |
+
+#### A4.4 The banner grounds — nine values, and they are load-bearing
+
+Three grounds the four-ground palette does not cover. **Kept as measured values rather than derived
+from the state roles**, which is the one place the mix-from-a-role rule is broken on purpose: the
+only contrast figures anyone has for a banner were measured on *these* stops. A ground mixed from
+`statePositive` would be a different green and would invalidate them with nothing saying so.
+
+| Banner | from | to | edge |
+|---|---|---|---|
+| info | `rgba(18, 32, 58, 0.97)` | `rgba(11, 13, 20, 0.97)` | `rgba(122, 138, 158, 0.42)` |
+| good | `rgba(15, 86, 55, 0.97)` | `rgba(9, 20, 16, 0.97)` | `rgba(79, 208, 140, 0.50)` |
+| bad | `rgba(74, 20, 32, 0.97)` | `rgba(17, 10, 14, 0.97)` | `rgba(255, 59, 84, 0.45)` |
+
+**Only `contentPrimary` and `contentSecondary` are legal on any of them.** `contentSecondary`
+measures 8.49 / 5.71 / 7.56 across the three; `contentQuiet` measures 4.77 / **3.21** / 4.25 and
+fails on two. Moving a stop forces a re-measure.
+
+#### A4.5 The remaining singletons
+
+| Token | Value | What it is |
+|---|---|---|
+| `unseen.ink` | `contentQuiet` | an unobserved rating |
+| `unseen.opacity` | `0.62` | with `Unseen` printed, never a blank, a dash or a zero |
+| `ink.onFill` | `page` | ink on any filled control is the ground, never white — measured on each fill: gold 12.55, live 11.50, positive 10.13, warning 10.87, info 7.84, negative 5.67. One token, no per-fill exceptions |
+| `ink.onGold` | `#150F02` | the verb on a commit |
+| `ink.onGoldQuiet` | `ink.onGold` at 74% | the sub-label naming where the commit goes |
+| `mask.trailing` | `linear-gradient(90deg, opaque 0, opaque calc(100% - 16px), clear 100%)` | the fade on a strip with more content than room. **Applied only when the strip actually overruns** — an always-on fade claims a truncation that is not happening |
+| `goldSheen` | white at 45%, inset top 1 pt | light falling on the gold fill, not a second colour in it |
+| `glowGold` | `0 2px 24px rgba(255, 197, 61, 0.42)` | the commit's lift |
+
+#### A4.6 Where an `rgba` is correct, and where it is a defect
+
+**The distinction is where the value lives, not how it is spelled.** An alpha on white or black is
+*light and shadow falling on something* — a mown stripe, a hairline, a sheen, a drop shadow — and is
+correctly written as an alpha, in the token layer. A **hex** is a different claim: it names a
+surface, and every one of those belongs in the palette.
+
+The same `rgba` inside a view is a decision the view does not own: it cannot be re-themed, cannot be
+checked, and will not follow when the light changes. **A colour scan that only looks for hexes is a
+coverage boundary mistaken for a quality boundary** — this is the defect that census found.
 
 ### A4b · The type scale — RESOLVED 2026-08-23, register-aware
 
@@ -201,18 +292,98 @@ remembering to opt out.
 Press Box has `--club-*` tokens and no equivalent story for a surface with no club. Adopt the
 pattern: one resolution point, contrast-checked, with nil as the honest teamless case.
 
-### A5 · Accessibility — `prefers-contrast` has no branch
+### A5 · Accessibility — the four branches, written out
 
-**ADD.** Reduce Motion, Reduce Transparency and forced colours are handled. **Increase Contrast is
-not**, while `SettingsAccessibilityView` reports it to the user — a promise about behaviour with
-nothing behind it.
+**ADD (`prefers-contrast`) and VERIFY (the other three).** Reduce Motion, Reduce Transparency and
+forced colours are handled. **Increase Contrast is not**, while `SettingsAccessibilityView` reports
+it to the user and states what it does — a promise about behaviour with nothing behind it. Same
+defect class as a caret that opens nothing, and it was found by auditing drawn surfaces against
+tokens rather than by reading either.
 
-Required, per `tokens/a11y.css`: every hairline steps up one stop, the material drops, and **the inks
-do not move** — they already clear 4.5:1 on all four grounds, and lightening passing ink flattens the
-three-step hierarchy that distinguishes a figure from a label.
+**The design point is where the branch lives.** A rule stated in a paragraph gets violated within a
+week. Put the branch in the *token*, so a view that reads `glassBackdrop`, `atmosphereDetail` or a
+duration cannot skip it, and a view that inlines a blur is a scannable defect rather than a judgement
+call.
 
-`codex/integrate-mock-reconciliation` carries a commit recording Increase Contrast as unimplemented,
-so this is known and unfixed rather than unnoticed.
+#### A5.1 Reduce Motion
+
+Every duration to `0.001s` and `panelPushDistance` to `0`. The reduced form is never "the same
+animation, faster": a near-zero duration still asks a motion-sensitive player to track something
+moving. It is the **destination state, presented immediately**. The ball's flight, the live dot's
+pulse and the panel push stop; the state each was carrying is still true and still drawn.
+
+#### A5.2 Reduce Transparency
+
+| Token | Becomes |
+|---|---|
+| `glassBackdrop` | none |
+| `glassBg` | `surfacePanel` (opaque) |
+| `glassBgDeep` | `surfacePanelDeep` (opaque) |
+| `glassSheen` | none |
+| `grainOpacity` | `0` |
+| `atmosphereDetail` | `0` |
+| `overlayScrim` | `surfaceScrim`, **fully opaque** |
+| `rule.glass` | `rule.legible` |
+
+**Depth order is preserved deliberately** — panel above deep, deep above the world — because losing
+the material must not also lose the stacking the composition depends on. `atmosphereDetail` takes out
+the raked planes, floodlight beams, window and projector throw, all of which are blurred or
+transformed; **the flat world ground stays**, because every screen still has to happen somewhere. The
+layer scrim goes fully opaque because with no blur behind it a translucent scrim leaves the surface
+competing with the thing on top of it.
+
+#### A5.3 Increase Contrast — and what it deliberately does not do
+
+Hairlines step up (the table in A4.3), `rule.glass` goes fully legible, `glassSheen` goes, grain goes
+to `0`, and `disabledOpacity` rises `0.40 → 0.62` — a disabled control may be quiet, not invisible.
+
+**The inks do not move, and that is the interesting half.** `contentPrimary`, `contentSecondary` and
+`contentQuiet` already clear 4.5:1 on all four grounds, and so do the state roles. There is nothing
+to repair; lightening ink that already passes would only flatten the three-step hierarchy that tells
+a reader what is a figure and what is a label. **A setting that repairs a palette is a report that
+the palette was wrong.**
+
+The material goes for the same reason it goes under Reduce Transparency: a grain overlay and a sheen
+sit on top of text at low alpha, and *"more contrast"* and *"a film over everything"* are
+contradictory instructions.
+
+#### A5.4 AX5 — the contract's strictest clause
+
+**AX5 expands and reflows rather than shrinking.** A dense table at AX5 becomes a *different
+composition*, not a smaller one. This is not a font-size multiplier: scaling type inside a fixed
+eight-column row produces eight columns of clipped text. The row has to stop being a row — cells
+restack into labelled pairs and the column head **removes itself**, because a stack has no columns to
+head.
+
+| Token | Standard | AX5 |
+|---|---:|---:|
+| row, readout | 32 | **56** |
+| row, tappable | 44 | **64** |
+| row, attention | 56 | **84** |
+| row, settled | 40 | **56** |
+| plate head | 24 | **34** |
+| dense track | 24, max 28 | **40**, max 48 |
+| authored floor | 12 | **17** |
+| working prose | 13 | **19** |
+| flag | 9 | **13** |
+| pill | 10.5 | **15** |
+| action, small | 12 | **17** |
+| action | 14 | **19** |
+| row text | 15 | **20** |
+
+**The 9 and 10.5 pt micro-label sizes are not permitted at AX5 at all** — there is no such thing as a
+tracked 9 pt label for someone who asked for the largest type.
+
+**Fewer rows fit, and that is correct rather than a regression:** the budget is in cells, the cells
+got bigger, so the surface carries less and scrolls. **A design that keeps all 48 cells visible at
+AX5 has shrunk something.**
+
+In production the branch is `dynamicTypeSize.isAccessibilitySize`.
+
+#### A5.5 Forced colours
+
+A high-contrast mode replaces the palette wholesale. Material goes; nothing is left carrying meaning
+in colour alone — which the composition rules already require, so nothing should be lost here.
 
 ### A6 · `FloodlitChrome.swift` — the band is three controls short
 
@@ -268,6 +439,116 @@ Position is marked in **ink** — never gold, and never the club accent either, 
 secondary can itself be gold-adjacent (the placeholder's is `#F2D864`). Audit every view for gold on
 a family chip, a sorted column, a selected row or a possession marker; all four are position, not
 commitment.
+
+### A7b · The plate arithmetic — the numbers every Part B surface was drawn against
+
+**REFERENCE, not a change.** Nothing in Part B can be built without these, and re-deriving them per
+surface is how two plates end up disagreeing about what fits.
+
+#### A7b.1 The stage
+
+```
+contentLeading = leadingInset                 = 63     (sensor housing 59 + 4)
+headerTop      = topInset                     = 12
+bandHeight                                    = 34
+contentTop     = headerTop + bandHeight + 8   = 54
+contentWidth   = 844 - 63 - 20                = 761
+```
+
+`63 + 761 + 20 = 844` exactly, at the install floor. The promise range (852x393 to 956x440) is slack.
+
+#### A7b.2 The plate's inner width
+
+```
+inner = 761 - sidecard - 12 - 24
+```
+
+`12` is the gap to the side column, `24` the plate's own horizontal padding. **Compute this before
+allocating columns.** The recurring defect while drawing the 47 was guessing a column width and
+finding it too narrow — one negotiation table gave the PLAYER column 39 pt when the longest name
+needed 95.
+
+#### A7b.3 Vertical budget
+
+| Part | Height |
+|---:|---|
+| plate head | 24 |
+| column head | 22 |
+| row, readout | 32 |
+| row, tappable | 44 |
+| row, attention (title + the sentence saying what it costs) | 56 |
+| row, settled (the same row once it needs no decision) | 40 |
+| two-line unavailable row (action + its stated reason) | 52 |
+| plate foot | 56 |
+| **available height inside the plate** | **311** |
+
+**A foot costs 56, and that is what runs a plate out of room.** Worked example from Standings: five
+rows at 44, plus head 28 and column head 22, plus a foot at 56, is 326 against 311 — so the foot
+came off and a plain reading line replaced it, and all five teams stayed visible. **A foot is only
+legal where the rows are a single question anyway** (see C5): a roster is not, which is why
+Personnel has no foot and no gold.
+
+#### A7b.4 The measured cell budget
+
+The count is of **declared data**. Chrome, labels, captions and prose are not cells.
+
+| Tier | Row | Viewport | Rows | Columns | Cells |
+|---|---:|---:|---:|---:|---:|
+| Dense | 32 | 291 | 9 | 8 | **72** |
+| Working | 44 | 291 | 6 | 8 | **48** |
+| Committing | 44 | 241 | 5 | 8 | **40** |
+| Broadcast | — | 390 | — | — | **12** |
+
+**Interactivity is bought with rows.** A row that responds to touch takes the 44 pt floor, so nine
+readout rows become six; reserving a commit bar outside the scroll takes six to five. A surface with
+a committing control has 40 cells, not 72.
+
+The content box is 761 x 319, but the **usable scroll viewport measures 291** — the budget follows
+the viewport, not the box. Widening the box to 761 did **not** buy a ninth column: the cell counts
+are capped by working memory, and pixels are spent before taps.
+
+#### A7b.5 The register's spend, per surface
+
+| | Broadcast | Desk | Dossier |
+|---|---|---|---|
+| ground | club colour, **flooded** | `world.page` | club above the seam, `page` below |
+| mark | 200–390 | 19 | 180–220 above |
+| largest numeral | 40–72 | 11–14 | 40 above, 11.5 below |
+| cells | ≤ 12 | ≤ 72 | ≤ 8 above, ≤ 40 below |
+| gold | 1 | ≤ 1, often 0 | 1 — **the seam spends it** |
+
+A Desk surface is allowed **exactly one** broadcast element; on the weekly hub that is the fixture
+card at 196 in the opponent's colour. A Dossier that draws a seam has spent its gold and **may not
+also carry a commit bar** — it routes to a committing surface instead. That agrees with the
+geometry: a 180–220 head, a printed band table and a reserved commit bar do not fit in 241 together.
+
+#### A7b.6 The shape and spacing sets, verbatim
+
+The gap ladder is deliberately **not** a 4/8 grid — gaps are tuned per surface, and snapping them to
+a grid is what makes a dense screen read as a template. Copy the values; do not regularise them.
+
+```
+gaps    2  3  4  6  7  8  9  11  12  14  18  20
+pads    panel 11/15   row 10/12   card 12/13   alert 11/16   band 14/16
+cuts    panel 4 22 4 22    row 3 14 3 14    action 22 22 22 5
+        actionSmall 18 18 18 4   card 4 18 4 18   alert 4 24 4 24
+        block 4 20 4 20   wide 3 18 3 18   play 14 14 6 6   broadcast 0
+```
+
+Corner order is topLeading / topTrailing / bottomTrailing / bottomLeading, matching the Swift type.
+**Broadcast geometry outside Match Day is square**: a ceremony is angled slabs and chevrons, not soft
+corners.
+
+#### A7b.7 Named content widths
+
+A surface uses either the full **761** or one of these narrower columns, with the world showing
+beside it. **A width not on this list is a composition decision somebody has not made yet.**
+
+```
+150 250 300 330 345 380 396 400 402 404 410 420 428 430 470 474 500 697 761
+```
+
+709 stays on the list as a narrower column; it is no longer the full width.
 
 ### A8 · What is already correct — do not change it
 
