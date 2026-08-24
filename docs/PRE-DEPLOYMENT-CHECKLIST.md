@@ -50,6 +50,15 @@ owner-checked ones are owner-checked because no agent in this project's environm
       or coach name matches the blocklist, across N generated leagues at many seeds.
 - [ ] **Trade-dress test** green: no generated primary/secondary colour pair falls within the stated
       ΔE of a real programme's pair.
+- [ ] **The two owner-approved exception lists are empty.** Green is not compliance while they hold
+      entries. `LegalTests.swift`'s `ownerApprovedTradeDressExceptions` (148 team ids) and
+      `ownerApprovedContrastExceptions` (36) exempt the canonical world from the two rows above;
+      owner decision 2026-08-23 defers them to "near the end of development", which is when this
+      checklist is read. Either both lists are empty at release, or the owner re-approves each
+      remaining entry in writing and counsel has seen the list. The suite cannot make this call. It
+      is strict in both directions — a new offender beyond the list fails, and a listed id that no
+      longer collides fails until the id is removed — so it tracks the list faithfully and has no
+      opinion about whether the list should still exist.
 - [ ] The blocklist has been refreshed for this release, **every limb of it**: institutions,
       nicknames (below Division I as well as in it), conferences, venues and bowls, rivalry
       trophies, people, and the marks limb — leagues, governing bodies, postseason systems,
