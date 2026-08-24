@@ -152,6 +152,91 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-24 — the professional age band holds, and the cause was an intake that invented
+> players.** `Lifecycle distributions hold their bands` had been red since 2026-08-22 on one check:
+> the past-decline share read **0.067** at season 6 against a band of 0.08…0.30. The draft stall,
+> the sample point, the roster shortfall and the free-agent pool's coin-toss cut were each
+> investigated and each ruled out; the pool fix in particular was re-measured and moved nothing
+> (0.161 → 0.162 at season 10, every other figure identical to three decimals).
+>
+> `--pro-movement-probe` named it: `expired=257 returned=2` in season 2 and `expired=200 returned=2`
+> in season 3. **Two players a season came back to a professional roster** while 223 were drafted and
+> the unattached population grew past 1,100. The tier had two intakes — `makeDraftClass` and
+> `SeasonLifecycleSystem`'s retirement backfill — and both minted 22-year-olds, so the league
+> refreshed itself almost entirely with rookies and could not age. The trough was never veterans
+> leaving too fast; it was a seat being filled by a new player while the man who used to hold one
+> sat unsignable.
+>
+> `46b96bb8` offers a vacated seat to the professionals the league already has before generating
+> one. Measured at seed 84,010, seasons 0/1/3/6/10:
+>
+> | | 0 | 1 | 3 | 6 | 10 |
+> |---|---|---|---|---|---|
+> | before | 0.228 | 0.196 | 0.134 | **0.067** | 0.162 |
+> | after | 0.228 | 0.196 | 0.183 | **0.203** | 0.218 |
+>
+> Mean age holds at 27.07, 26.81, 26.56, 26.80, 26.70 instead of sagging to 25.59. The trough is
+> gone rather than lifted over the floor, and season 10 at 0.218 against season 0's 0.228 says the
+> process now sustains what the bootstrap seeds — there is no demographic echo left to damp. **No
+> band was widened, no retirement constant moved, and the draft reserve is untouched**, so `02`
+> §4.2 needs no amendment. `--architecture-only` passes at 29 tests / 245 checks with no pin moved,
+> because the generator's `ordinal` still indexes the departure rather than the unfilled seats.
+> `docs/HANDOFF-CLAUDE.md` carries the full account, including the two suspects it rules out.
+
+> **2026-08-23 — the legal sweep never read the shipped world, and now that it does, 155 of the 166
+> canonical teams fail one of the two colour guardrails.** `sweptWorlds` (`LegalTests.swift`) fed
+> both Tier A tests 200 synthetic leagues and never the canonical one:
+> `CanonicalTeamBranding.apply` only fires at `worldSeed = 20_260_812`, so every other seed reaches
+> the generator's own colours and the one league every tester actually sees was the one league no
+> legal test read. The earlier claim a few paragraphs below — "`Legal: trade dress` (7) ... pass" —
+> was true of the 200 synthetic leagues and blind to the shipped one; it was never a measurement of
+> what ships.
+>
+> `sweptWorlds` now appends `LeagueGenerator.generate(seed: CanonicalTeamBranding.worldSeed)` as a
+> 201st member, so `Legal: trade dress` reads the actual shipped roster for the first time.
+> `Legal: name collision` and `Legal: shipped copy` stay green; `Legal: trade dress` was red on two
+> counts, corrected below after an undercount in the first pass:
+>
+> - **148 of 166 canonical teams (89%) collide with `Blocklist.tradeDress` under
+>   `ColourGenerator.collidesWithTradeDress`** — ΔE < 25 in CIE76 Lab against all 71 real pairs, in
+>   both orderings, per `02` section 11.3.5. **A first pass counted only literal hex duplicates
+>   (ΔE = 0) and found 36; that undercounted the actual predicate, which is the near-miss ΔE < 25
+>   standard, not exact equality.** The 200 synthetic leagues never produce a single offender —
+>   `ColourGenerator.next` rejects and retries any colliding pair before returning it — so this is
+>   not chance: the canonical table is hand-authored, was never run through that same filter, and
+>   drew from the same general "bold sports colour" palette real programmes draw from, which lands
+>   near one of 71 real pairs at a very high rate once both colours and both orderings are checked.
+>   Examples: `Carlin A&M Founders` ships `#002244/#69BE28`, an exact copy of a real pair;
+>   `Mesquite Comets` ships `#007BC7/#FFC20E` against a real `#0080C6/#FFC20E`, a near miss under
+>   the same threshold. The full 148-name list is `ownerApprovedTradeDressExceptions` in
+>   `LegalTests.swift`.
+> - **36 of 166 (29 overlapping the 148 above) fail `04` section 2.1's 3.0:1 secondary-on-primary
+>   legibility floor** — this count did not change; it is a plain WCAG contrast check, not a ΔE
+>   match. Worst: `Nacogdoches Poly Planters` and `Webster City Coastal Tornadoes`, both
+>   `#008E97/#F58220`, at 1.523:1.
+> - **155 distinct teams (93.4% of the roster) fail at least one of the two.**
+>
+> This is the guardrail CLAUDE.md calls absolute, failing on the table `STATUS.md` and the owner
+> both treated as approved and shipped. **No colour was changed to produce or investigate this
+> finding** — recolouring an owner-approved identity is a design decision for the owner, per
+> CLAUDE.md's "flag anything borderline for the owner to take to counsel; never resolve it
+> yourself."
+>
+> **Owner decision, same day: approved as exceptions, addressed near the end of development.**
+> Beta-level implementation is the priority; these 155 teams' colours are not being chased now.
+> `LegalTests.swift` encodes that as two `Set<UUID>` exception lists — `ownerApprovedTradeDressExceptions`
+> (148) and `ownerApprovedContrastExceptions` (36), 29 overlapping — named by team id and applied
+> only to the canonical world, not a blanket allowance. Both tests still assert the exception count
+> matches the live offender count exactly, so `Legal: trade dress` is green again but not blind: a
+> new violation beyond these 155, or the canonical table changing under an exception that no longer
+> collides, still fails and demands the list be updated deliberately. This is the same idiom as
+> `pendingCanonAmendment` in `DesignContractTests.swift` and the pinned 52-mark count during the
+> logo re-key — an owner-approved gap stays visible and exact rather than silently passing or
+> silently blocking. At this scale the check now exercises the 11 canonical teams outside both
+> lists, plus every synthetic league in full; it is not a strong guarantee about the shipped roster
+> any more, and re-running the canonical colours through `ColourGenerator`'s own avoidance logic is
+> the standing option when the owner wants that guarantee back before release. Verified with
+> `--legal-only`: 30 tests, 195 checks, all green.
 > **2026-08-23 — the heat scale caught up with canon, and the parser that hid the gap was the
 > reason it could.** `--core-contracts` was red on `main` for one check:
 > `Design token sync / Heat.color's banding matches 04 section 6.4's stated heat scale`, failing in
