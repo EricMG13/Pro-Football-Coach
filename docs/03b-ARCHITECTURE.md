@@ -180,9 +180,9 @@ swift run -c release -Xswiftc -enable-testing SimTests
 `.testTarget`, so SwiftPM has no reason to infer testability for it the way `swift test` would — and
 it `@testable import`s **all three** library modules: `FootballSimCore`, `ProFootballCoachUI` and
 `CoachWorldApp`. This section, `README.md` and `scripts/verify.sh`'s two comments each named only
-`ProFootballCoachUI` until 2026-08-24; the flag was never optional for the other two either. A release run without the flag fails every target that
-`@testable` imports anything, with "module ... was not compiled for testing". Debug builds happen to
-enable it; release does not.
+`ProFootballCoachUI` until 2026-08-24; the flag was never optional for the other two either. A
+release run without the flag fails every target that `@testable` imports anything, with
+"module ... was not compiled for testing". Debug builds happen to enable it; release does not.
 
 **A run is complete only if it ends with TestKit's `N tests, M checks` summary.** `TestKit.test`
 records a thrown error as a failed check, but a Swift `precondition` is SIGTRAP: it kills the
