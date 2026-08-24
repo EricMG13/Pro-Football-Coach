@@ -52,9 +52,12 @@ The honest picture: what exists, what is verified, what is not.
 > in `LegalTests.swift` all exist. The backticked-identifier sweep over canon, run against
 > comment-stripped sources, surfaced nothing the passes below had not already recorded.
 >
-> Verification: `./scripts/verify.sh --lane core` — see the run recorded with this pass's PR. No
-> other lane was run. `main`'s required `full` check remains red on `Lifecycle distributions hold
-> their bands`, which this pass neither caused nor fixed.
+> Verification: `./scripts/verify.sh --lane core` (Swift 6.3.3, arm64-apple-macosx26.0), run after
+> the last commit of this pass. Ended at TestKit's summary line: `235 tests, 3448 checks`, all
+> passed — the same counts as the entry above, which is what a pass touching only prose and two
+> shell comments should produce. No other lane was run and no claim is made about any of them.
+> `main`'s required `full` check remains red on `Lifecycle distributions hold their bands`, which
+> this pass neither caused nor fixed.
 
 > **2026-08-23, later still — reconciling this branch with `main` found a fourth stale scan-root
 > cell, on `main`'s side, that neither pass below had checked.** `main` had separately merged a
