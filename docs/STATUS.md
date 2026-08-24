@@ -4,6 +4,58 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-24 — a fourth documentation pass, and the finding class the first three could not
+> see.** The earlier passes swept canon for test names with nothing behind them and found several.
+> This one swept for the opposite: a named instrument that *does* exist, and still cannot fail.
+>
+> - **`PerformanceBudgetTests` is a gate that cannot go red, and nothing runs it anyway.** D4, D14
+>   and D15 in `docs/OPEN-DECISIONS.md` each name it as their falsifier instrument, and `05`'s P5
+>   entry lists it as a phase gate that "must assert only in release, and must measure in both".
+>   `Tests/SimTests/Suites/PerformanceBudgetTests.swift` ships and is dispatched as
+>   `--performance-budget`. It asserts two things — that the world bootstraps at 134 programmes, and
+>   that the recruiting AI returns a non-empty decision set — and neither is a timing. The
+>   week-advance measurement leaves through a formatted `print` ending "host measurement; no
+>   pass/fail threshold", so **no hard ceiling in D4's table can turn this suite red**. There is no
+>   `#if DEBUG` branch, so it measures one configuration rather than both. And it is unreachable
+>   without typing the flag: it is not in `SuiteCatalog.defaultRun`, `main.swift`'s no-flag branch
+>   does not call `runPerformanceBudgetTests()`, and no `scripts/verify.sh` lane passes
+>   `--performance-budget`. This is the same defect as D8's `JeopardyTests` and D10's three, wearing
+>   a file. A sweep for absent names cannot find it; only reading the body can. D4, D14, D15 and
+>   `05` P5 now each record it.
+>
+> - **`SuiteCatalog`'s `lane` column is not a `verify.sh` lane for 12 of the 20 gates.**
+>   `SuiteCatalog.lane(for:)`'s own comment states the rule it breaks: "the lane column names the
+>   `verify.sh` lane that runs a gate". Three of the seven values it emits — `performance`,
+>   `persistence`, `legal` — are not lane names `verify.sh` accepts. Six gates labelled
+>   `accessibility` are run by `core` and `release`; the four labelled `persistence` are run by
+>   `release`. Six rows are correct, and `manual` on `calibrationGate` and `twoTierConsistency` is
+>   that same comment's deliberate spelling for "no lane runs this", so those two are not defects.
+>   `CommitmentCoverageTest` cannot catch this: it asserts a gate has a *dispatched runner*, not
+>   that its lane runs it. Recorded in `03b` §7 beside the lane list. Not fixed — whether to
+>   relabel the data or correct the comment is an owner call, because the `accessibility` and
+>   `persistence` groupings may be the semantic intent and the comment the thing that is wrong.
+>
+> - **The suite `@testable import`s three modules; four sites said one.** `README.md`,
+>   `03b` §7 and both of `scripts/verify.sh`'s comments explained `-Xswiftc -enable-testing` by
+>   naming `ProFootballCoachUI` alone. `git grep "@testable import" -- Tests/SimTests` returns
+>   `FootballSimCore`, `ProFootballCoachUI` and `CoachWorldApp`. The flag's necessity was stated
+>   correctly everywhere; the reason given for it named a third of the cause. This one was found
+>   independently by the concurrent pass on `claude/doc-pass-2026-08-23` (PR #90) and is grafted
+>   here after re-verifying it against the tree. Fixed in all four places.
+>
+> **Swept and clean, so the next pass need not repeat them:** every markdown link in `README.md`,
+> `CLAUDE.md`, `PRODUCT.md` and `docs/*.md` resolves; every backticked repo path in those files
+> resolves or is a `path:line` reference, a deliberately-named deleted document, or a glob; the
+> `Tests/` tree matches `03b` §7's listing including both XCTest bundles and their `App/project.yml`
+> declarations; every flag `verify.sh` dispatches is handled in `main.swift`; `CLAUDE.md`'s legal
+> guardrail resolves — `Blocklist.blocks`, `Blocklist.blocksPlaceName` and the partition assertion
+> in `LegalTests.swift` all exist. The backticked-identifier sweep over canon, run against
+> comment-stripped sources, surfaced nothing the passes below had not already recorded.
+>
+> Verification: `./scripts/verify.sh --lane core` — see the run recorded with this pass's PR. No
+> other lane was run. `main`'s required `full` check remains red on `Lifecycle distributions hold
+> their bands`, which this pass neither caused nor fixed.
+
 > **2026-08-23, later still — reconciling this branch with `main` found a fourth stale scan-root
 > cell, on `main`'s side, that neither pass below had checked.** `main` had separately merged a
 > `03b` §1 table with an **Authoritative-root** row whose `Root` cell named `ProFootballCoachUI/`,
